@@ -1,8 +1,8 @@
 #the mod name as displayed in-game
-displayName: "Mlog Assertions"
+displayName: "Mlog Assertions (v8)"
 
 #the internal name of your mod
-name: "mlog-assertions"
+name: "mlog-assertions-8"
 
 subtitle: "Easier debugging for mlog",
 
@@ -16,10 +16,10 @@ main: "cardillan.mlogassertions.Main"
 description: "Provides custom mlog instructions for enhanced runtime checks in Mindustry Logic."
 
 #the mod version
-version: 0.2.0
+version: 0.3.0
 
 #the minimum game build required to run this mod
-minGameVersion: 146
+minGameVersion: 147
 
 #this is a java mod
 java: true

@@ -11,14 +11,14 @@ public enum AssertionType {
     ;
 
     public static final AssertionType[] all = values();
-    public final TypeAssertionObjLambda objFunction;
-    public final TypeAssertionLambda function;
+    public final AssertionTypeObjLambda objFunction;
+    public final AssertionTypeLambda function;
 
-    AssertionType(TypeAssertionLambda function) {
+    AssertionType(AssertionTypeLambda function) {
         this(function, obj -> false);
     }
 
-    AssertionType(TypeAssertionLambda function, TypeAssertionObjLambda objFunction) {
+    AssertionType(AssertionTypeLambda function, AssertionTypeObjLambda objFunction) {
         this.function = function;
         this.objFunction = objFunction;
     }
@@ -28,11 +28,11 @@ public enum AssertionType {
         return super.toString();
     }
 
-    public interface TypeAssertionObjLambda {
+    public interface AssertionTypeObjLambda {
         boolean get(Object obj);
     }
 
-    public interface TypeAssertionLambda {
+    public interface AssertionTypeLambda {
         boolean get(double val);
     }
 }

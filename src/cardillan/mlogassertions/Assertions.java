@@ -55,7 +55,7 @@ public class Assertions {
     }
 
     private static void draw(LogicBuild block) {
-        if (block.tile().build != block) {
+        if (block.tile.build != block) {
             removeX = (int) block.getX();
             removeY = (int) block.getY();
             return;
