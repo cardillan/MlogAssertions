@@ -9,6 +9,8 @@ public class Main extends Mod {
     public void init(){
         super.init();
 
+        LogicDialogAddon.init();
+
         AssertLogic.init();
         Assertions.init();
     }
