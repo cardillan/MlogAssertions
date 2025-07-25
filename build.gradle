@@ -35,7 +35,7 @@ allprojects{
 dependencies{
     compileOnly "com.github.Anuken.Arc:arc-core:$mindustryVersion"
     // Manually put latest commit ID here from https://github.com/Anuken/MindustryJitpack/commits/main/
-    compileOnly 'com.github.Anuken:MindustryJitpack:47cf3c4'
+    compileOnly 'com.github.Anuken:MindustryJitpack:a4a7a46'
 
     annotationProcessor "com.github.Anuken:jabel:$jabelVersion"
 }

@@ -10,7 +10,7 @@ subtitle: "Easier debugging for mlog",
 author: "cardillan"
 
 #the fully qualified main class of the mod
-main: "cardillan.mlogassertions.Main"
+main: "cardillan.mlogassertions.MlogAssertions"
 
 #the mod description as seen in the mod dialog
 description: "Provides custom mlog instructions for enhanced runtime checks in Mindustry Logic."
