@@ -1,6 +1,6 @@
 # MlogAssertions
 
-> ![TIP]
+> [!TIP]
 > This mod supports Mindustry BE. 
 
 Mod for making debugging in Mindustry Logic a bit easier. Provided functionality:
