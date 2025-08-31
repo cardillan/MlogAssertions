@@ -13,10 +13,10 @@ author: "cardillan"
 main: "cardillan.mlogassertions.MlogAssertions"
 
 #the mod description as seen in the mod dialog
-description: "Provides custom mlog instructions for enhanced runtime checks in Mindustry Logic."
+description: "Provides tools for easier debugging in Mindustry Logic."
 
 #the mod version
-version: 0.3.0
+version: 0.5.0
 
 #the minimum game build required to run this mod
 minGameVersion: 147

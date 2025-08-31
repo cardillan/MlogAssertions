@@ -12,7 +12,6 @@ public class MlogAssertions extends Mod {
     public MlogAssertions() {
         Events.on(EventType.ClientLoadEvent.class, e -> {
             Settings.init();
-            LExecutor.maxInstructions = Core.settings.getInt(Settings.maxInstructions);
 
             LogicDialogAddon.init();
 
