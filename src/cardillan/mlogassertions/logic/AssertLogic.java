@@ -12,5 +12,7 @@ public class AssertLogic {
         assertsCategory = new LCategory(AssertVars.assertionsCategory, Color.slate, Icon.warningSmall);
 
         LogicStatements.register();
+
+
     }
 }

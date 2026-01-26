@@ -7,82 +7,152 @@ import arc.graphics.g2d.Draw;
 import arc.graphics.g2d.Font;
 import arc.graphics.g2d.GlyphLayout;
 import arc.scene.ui.layout.Scl;
-import arc.struct.GridMap;
+import arc.struct.ObjectMap;
+import arc.struct.Seq;
 import arc.util.Align;
 import arc.util.Log;
 import arc.util.pooling.Pools;
+import cardillan.mlogassertions.logic.LogicInstructions;
+import mindustry.Vars;
 import mindustry.game.EventType;
 import mindustry.graphics.Drawf;
 import mindustry.graphics.Layer;
+import mindustry.logic.LExecutor;
 import mindustry.ui.Fonts;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
 
 import static mindustry.Vars.tilesize;
 
 public class Assertions {
-    final static GridMap<LogicBuild> blocks = new GridMap<>();
-    final static GridMap<String> messages = new GridMap<>();
-    final static Color textColor = Color.brick;
+    static final String WAIT = new String("W");
 
-    static int removeX = -1;
-    static int removeY = -1;
+    static final Color textColor = Color.coral;
 
-    public static void add(LogicBuild block, Prov<String> message) {
-        int x = (int) block.getX();
-        int y = (int) block.getY();
-        if (blocks.get(x, y) != block) {
-            blocks.put(x, y, block);
-            messages.put(x, y, message.get());
+    // Active messages
+    static final ObjectMap<LogicBuild, String> blocks = new ObjectMap<>();
+
+    // All blocks
+    static final Seq<LogicBuild> allBlocks = new Seq<>();
+
+    // Invalid blocks
+    static final Seq<LogicBuild> invalidBlocks = new Seq<>();
+
+    public static void setMessage(LogicBuild block, Prov<String> message) {
+        if (blocks.get(block) == null) {
+            String str = message.get();
+            blocks.put(block, str == null ? "<null string>" : str);
         }
     }
 
-    public static void remove(LogicBuild block) {
-        remove((int) block.getX(), (int) block.getY());
-    }
-
-    public static void remove(int x, int y) {
-        blocks.remove(x, y);
-        messages.remove(x, y);
+    public static void reset(LogicBuild block) {
+        blocks.remove(block);
     }
 
     public static void init() {
         Events.on(EventType.ResetEvent.class, e -> {
-            Log.info("ResetEvent: removing all active assertions.");
             blocks.clear();
-            messages.clear();
+            allBlocks.clear();
+            invalidBlocks.clear();
         });
 
-        Events.on(EventType.WorldLoadEvent.class, e -> {
-            Log.info("WorldLoadEvent: removing all active assertions.");
+        Events.on(EventType.WorldLoadEndEvent.class, e -> {
             blocks.clear();
-            messages.clear();
+            allBlocks.clear();
+            invalidBlocks.clear();
+
+            Vars.world.tiles.eachTile(tile -> {
+                if (tile.build instanceof LogicBuild build && blocks.put(build, "") == null) {
+                    allBlocks.add(build);
+                }
+            });
+
+            blocks.clear(32);
+
+            Log.info("WorldLoadEndEvent: found " + allBlocks.size + " processors on the map.");
         });
 
-        Events.on(EventType.BlockDestroyEvent.class, e -> remove((int) e.tile.x, (int) e.tile.y));
+        Events.on(EventType.BlockBuildEndEvent.class, e -> {
+            if (e.tile.build instanceof LogicBuild build) {
+                Log.info("BlockBuildEndEvent: new processor " + e.tile.build);
+                allBlocks.add(build);
+            }
+        });
 
-        Events.on(EventType.ConfigEvent.class, e -> remove((int) e.tile.x, (int) e.tile.y));
+        Events.on(EventType.ConfigEvent.class, e -> {
+            if (e.tile instanceof LogicBuild build) {
+                reset(build);
+                Log.info("ConfigEvent: configured processor " + e.tile);
+            }
+        });
 
         Events.run(EventType.Trigger.drawOver, () -> {
-            blocks.values().forEach(Assertions::draw);
-            if (removeX != -1) {
-                remove(removeX, removeY);
-                removeX = -1;
-                removeY = -1;
-            }
+            checkBlocks();
+            blocks.each(Assertions::draw);
+
+            invalidBlocks.each(blocks::remove);
+            allBlocks.removeAll(invalidBlocks);
+            invalidBlocks.clear();
         });
     }
 
-    private static void draw(LogicBuild block) {
+    static final int MAX_CHECKS = 50;
+    static int checkIndex;
+
+    private static void checkBlocks() {
+        if (allBlocks.size < MAX_CHECKS) {
+            allBlocks.each(Assertions::check);
+        } else {
+            for (int i = 0; i < MAX_CHECKS; i++) {
+                check(allBlocks.get(checkIndex));
+                checkIndex = (checkIndex + 1) % allBlocks.size;
+            }
+        }
+    }
+
+    private static void check(LogicBuild block) {
         if (block.tile.build != block) {
-            removeX = (int) block.getX();
-            removeY = (int) block.getY();
+            Log.info("Removed block " + block);
+            invalidBlocks.add(block);
+            return;
+        } else if (block.executor == null || block.executor.counter == null) {
+            reset(block);
             return;
         }
 
-        String message = messages.get((int) block.getX(), (int) block.getY());
+        int ix = (int) block.executor.counter.numval;
+        LExecutor.LInstruction[] instructions = block.executor.instructions;
+
+        if (ix >= 0 && ix < instructions.length) {
+            LExecutor.LInstruction instruction = instructions[ix];
+            if (instruction instanceof LogicInstructions.Assertinstruction) {
+                // These are handled separately
+                return;
+            }
+            if (instruction instanceof LExecutor.StopI) {
+                setMessage(block, () -> "Stopped at " + ix);
+                return;
+            }
+            if (instruction instanceof LExecutor.WaitI w && w.value.num() >= 1f) {
+                setMessage(block, () -> WAIT);
+                return;
+            }
+        }
+
+        reset(block);
+    }
+
+    private static void draw(LogicBuild block, String message) {
+        if (block.tile.build != block) {
+            Log.info("Removed block " + block);
+            invalidBlocks.add(block);
+            return;
+        }
+
+        // Wait indication is displayed in the center of the block
+        boolean center = message == WAIT;
 
         float x = block.getX();
-        float y = block.getY() + block.block.size * tilesize / 2f + 1f;
+        float y = block.getY() + (center ? 0 : block.block.size * tilesize/2f + 1f);
 
         Draw.z(Layer.turret + 1);
         float z = Drawf.text();
@@ -100,7 +170,7 @@ public class Assertions {
 
         Draw.color();
         font.setColor(textColor);
-        font.draw(message, x - l.width/2f, y + l.height, 90f, Align.left, false);
+        font.draw(message, x - l.width/2f, y + (center ? l.height/2f : l.height), 90f, Align.left, false);
         font.setUseIntegerPositions(ints);
         font.getData().setScale(1f);
         Draw.z(z);

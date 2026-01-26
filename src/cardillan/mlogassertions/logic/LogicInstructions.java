@@ -13,7 +13,10 @@ import mindustry.world.blocks.logic.LogicBlock;
 
 public class LogicInstructions {
 
-    public static class AssertBoundsI implements LExecutor.LInstruction {
+    public interface Assertinstruction {
+    }
+
+    public static class AssertBoundsI implements LExecutor.LInstruction, Assertinstruction {
         public AssertionType type = AssertionType.any;
         public LVar multiple;
         public LVar min;
@@ -45,9 +48,9 @@ public class LogicInstructions {
                     && (type != AssertionType.multiple || (value.num() % multiple.num() == 0))
                     && (opMin.function.get(min.num(), value.num()))
                     && (opMax.function.get(value.num(), max.num()))) {
-                Assertions.remove((LogicBlock.LogicBuild) building);
+                Assertions.reset((LogicBlock.LogicBuild) building);
             } else {
-                Assertions.add((LogicBlock.LogicBuild) building, () -> print(message));
+                Assertions.setMessage((LogicBlock.LogicBuild) building, () -> print(message));
 
                 //skip back to self.
                 exec.counter.numval--;
@@ -56,7 +59,7 @@ public class LogicInstructions {
         }
     }
 
-    public static class AssertEqualsI implements LExecutor.LInstruction {
+    public static class AssertEqualsI implements LExecutor.LInstruction, Assertinstruction {
         public LVar expected;
         public LVar actual;
         public LVar message;
@@ -75,9 +78,9 @@ public class LogicInstructions {
             Building building = exec.thisv.building();
 
             if (ConditionOp.strictEqual.test(expected, actual)) {
-                Assertions.remove((LogicBlock.LogicBuild) building);
+                Assertions.reset((LogicBlock.LogicBuild) building);
             } else {
-                Assertions.add((LogicBlock.LogicBuild) building, () -> "Assertion failed: " + print(message));
+                Assertions.setMessage((LogicBlock.LogicBuild) building, () -> "Assertion failed: " + print(message));
                 exec.counter.numval--;
                 exec.yield = true;
             }
@@ -100,7 +103,7 @@ public class LogicInstructions {
         }
     }
 
-    public static class AssertPrintsI implements LExecutor.LInstruction {
+    public static class AssertPrintsI implements LExecutor.LInstruction, Assertinstruction {
         public LVar flushIndex;
         public LVar expected;
         public LVar message;
@@ -120,26 +123,26 @@ public class LogicInstructions {
 
             int flushIndex = this.flushIndex.numi();
             if (flushIndex < 0 || flushIndex > exec.textBuffer.length()) {
-                Assertions.add((LogicBlock.LogicBuild) building, () -> "Invalid flush index");
+                Assertions.setMessage((LogicBlock.LogicBuild) building, () -> "Invalid flush index");
                 exec.counter.numval--;
                 exec.yield = true;
             } else {
                 String text = exec.textBuffer.substring(flushIndex);
 
                 if (!text.equals(expected.obj())) {
-                    Assertions.add((LogicBlock.LogicBuild) building,
+                    Assertions.setMessage((LogicBlock.LogicBuild) building,
                             () -> "Assertion failed: " + print(message));
                     exec.counter.numval--;
                     exec.yield = true;
                 } else {
                     exec.textBuffer.setLength(flushIndex);
-                    Assertions.remove((LogicBlock.LogicBuild) building);
+                    Assertions.reset((LogicBlock.LogicBuild) building);
                 }
             }
         }
     }
 
-    public static class ErrorI implements LExecutor.LInstruction {
+    public static class ErrorI implements LExecutor.LInstruction, Assertinstruction {
         public LVar[] vars;
 
         public ErrorI(LVar[] vars) {
@@ -154,7 +157,7 @@ public class LogicInstructions {
         public final void run(LExecutor exec) {
             Building building = exec.thisv.building();
 
-            Assertions.add((LogicBlock.LogicBuild) building, () -> {
+            Assertions.setMessage((LogicBlock.LogicBuild) building, () -> {
                 int used = 0;
                 StringBuilder sbr = new StringBuilder(print(vars[0]));
                 int pos = sbr.indexOf("[[");
