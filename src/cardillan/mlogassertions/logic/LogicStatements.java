@@ -93,7 +93,7 @@ public class LogicStatements {
                 table.add("").growX();
             });
             t.row();
-            t.add("Bounds ").color(category().color).padLeft(4);;
+            t.add("Bounds ").color(category().color).padLeft(4);
             t.table(table -> {
                 table.left();
                 table.color.set(category().color);
