@@ -308,7 +308,7 @@ public class LogicStatements {
 
         public ErrorStatement() {
             super("Error");
-            params[0] = "\"Error has occurred at [[1]\"";
+            params[0] = "\"Runtime error at #[[1]\"";
             params[1] = "@counter";
             for (int i = 2; i < params.length; i++) params[i] = "null";
         }

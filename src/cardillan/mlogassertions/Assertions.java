@@ -1,5 +1,6 @@
 package cardillan.mlogassertions;
 
+import arc.Core;
 import arc.Events;
 import arc.func.Prov;
 import arc.graphics.Color;
@@ -24,6 +25,9 @@ import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
 import static mindustry.Vars.tilesize;
 
 public class Assertions {
+    public static int minWaitTimeUpdate = 1000;
+    public static int processorUpdatesPerTick = 50;
+
     static final String WAIT = new String("W");
 
     static final Color textColor = Color.coral;
@@ -95,14 +99,19 @@ public class Assertions {
         });
     }
 
-    static final int MAX_CHECKS = 50;
     static int checkIndex;
+    static double totalUpdates = 0;
 
     private static void checkBlocks() {
-        if (allBlocks.size < MAX_CHECKS) {
+        // Do not use fractional values of updates
+        totalUpdates += Math.max(Core.graphics.getDeltaTime(), 1.5) * processorUpdatesPerTick;
+        long updates = (long) totalUpdates;
+        totalUpdates -= updates;
+
+        if (allBlocks.size <= updates) {
             allBlocks.each(Assertions::check);
         } else {
-            for (int i = 0; i < MAX_CHECKS; i++) {
+            for (int i = 0; i < updates; i++) {
                 check(allBlocks.get(checkIndex));
                 checkIndex = (checkIndex + 1) % allBlocks.size;
             }
@@ -129,10 +138,10 @@ public class Assertions {
                 return;
             }
             if (instruction instanceof LExecutor.StopI) {
-                setMessage(block, () -> "Stopped at " + ix);
+                setMessage(block, () -> "Stopped at #" + ix);
                 return;
             }
-            if (instruction instanceof LExecutor.WaitI w && w.value.num() >= 1f) {
+            if (minWaitTimeUpdate > 0 && instruction instanceof LExecutor.WaitI w && 1000 * w.value.num() >= minWaitTimeUpdate) {
                 setMessage(block, () -> WAIT);
                 return;
             }
