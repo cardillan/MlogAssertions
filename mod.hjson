@@ -16,10 +16,10 @@ main: "cardillan.mlogassertions.MlogAssertions"
 description: "Provides tools for easier debugging in Mindustry Logic."
 
 #the mod version
-version: 0.5.0
+version: 0.6.0
 
 #the minimum game build required to run this mod
-minGameVersion: 147
+minGameVersion: 154.2
 
 #this is a java mod
 java: true

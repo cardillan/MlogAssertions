@@ -1,6 +1,7 @@
 package cardillan.mlogassertions;
 
 import arc.Events;
+import arc.func.Prov;
 import arc.graphics.Color;
 import arc.graphics.g2d.Draw;
 import arc.graphics.g2d.Font;
@@ -8,8 +9,11 @@ import arc.graphics.g2d.GlyphLayout;
 import arc.scene.ui.layout.Scl;
 import arc.struct.GridMap;
 import arc.util.Align;
+import arc.util.Log;
 import arc.util.pooling.Pools;
 import mindustry.game.EventType;
+import mindustry.graphics.Drawf;
+import mindustry.graphics.Layer;
 import mindustry.ui.Fonts;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
 
@@ -18,17 +22,17 @@ import static mindustry.Vars.tilesize;
 public class Assertions {
     final static GridMap<LogicBuild> blocks = new GridMap<>();
     final static GridMap<String> messages = new GridMap<>();
-    final static Color textColor = Color.brick; //.a(0.8f);
+    final static Color textColor = Color.brick;
 
     static int removeX = -1;
     static int removeY = -1;
 
-    public static void add(LogicBuild block, String message) {
+    public static void add(LogicBuild block, Prov<String> message) {
         int x = (int) block.getX();
         int y = (int) block.getY();
         if (blocks.get(x, y) != block) {
             blocks.put(x, y, block);
-            messages.put(x, y, message);
+            messages.put(x, y, message.get());
         }
     }
 
@@ -42,6 +46,20 @@ public class Assertions {
     }
 
     public static void init() {
+        Events.on(EventType.ResetEvent.class, e -> {
+            Log.info("ResetEvent: removing all active assertions.");
+            blocks.clear();
+            messages.clear();
+        });
+
+        Events.on(EventType.WorldLoadEvent.class, e -> {
+            Log.info("WorldLoadEvent: removing all active assertions.");
+            blocks.clear();
+            messages.clear();
+        });
+
+        Events.on(EventType.BlockDestroyEvent.class, e -> remove((int) e.tile.x, (int) e.tile.y));
+
         Events.on(EventType.ConfigEvent.class, e -> remove((int) e.tile.x, (int) e.tile.y));
 
         Events.run(EventType.Trigger.drawOver, () -> {
@@ -66,6 +84,9 @@ public class Assertions {
         float x = block.getX();
         float y = block.getY() + block.block.size * tilesize / 2f + 1f;
 
+        Draw.z(Layer.turret + 1);
+        float z = Drawf.text();
+
         Font font = Fonts.outline;
         GlyphLayout l = Pools.obtain(GlyphLayout.class, GlyphLayout::new);
         boolean ints = font.usesIntegerPositions();
@@ -81,8 +102,8 @@ public class Assertions {
         font.setColor(textColor);
         font.draw(message, x - l.width/2f, y + l.height, 90f, Align.left, false);
         font.setUseIntegerPositions(ints);
-
         font.getData().setScale(1f);
+        Draw.z(z);
 
         Pools.free(l);
     }
