@@ -8,6 +8,7 @@ import arc.scene.ui.layout.Cell;
 import arc.scene.ui.layout.Table;
 import mindustry.gen.LogicIO;
 import mindustry.logic.LAssembler;
+import mindustry.logic.LCanvas;
 import mindustry.logic.LCategory;
 import mindustry.logic.LExecutor;
 import mindustry.logic.LStatement;
@@ -42,8 +43,14 @@ public class LogicStatements {
             return name;
         }
 
-        protected Cell<TextField> numField(Table table, String num, Cons<String> getter) {
-            return field(table, num, getter).width(120).left();
+        protected void stretchRow(Table table){
+            if(LCanvas.useRows()){
+                table.add("").growX().row();
+            }
+        }
+
+        void message(Table table, String value, Cons<String> setter) {
+            field(table, value, setter).width(LCanvas.useRows() ? 280f : 0f).growX().padRight(3);
         }
     }
 
@@ -73,11 +80,12 @@ public class LogicStatements {
             t.clearChildren();
             t.left();
             t.add("Value type ").color(category().color).padLeft(4);
+            row(t);
             t.table(table -> {
                 table.left();
                 table.color.set(category().color);
                 table.add("value of ").padLeft(4);
-                numField(table, value, str -> value = str);
+                field(table, value, str -> value = str);
                 table.add(" is ").padLeft(4);
                 table.button(b -> {
                     b.label(() -> type.name());
@@ -85,8 +93,9 @@ public class LogicStatements {
                         type = o;
                         build(t);
                     }, 2, cell -> cell.size(110, 50)));
-                }, Styles.logict, () -> {}).size(110, 40).left().pad(4f).color(table.color);
+                }, Styles.logict, () -> {}).size(108, 40).left().pad(4f).color(table.color);
                 if (type == AssertionType.multiple) {
+                    row(table);
                     table.add(" of ");
                     numField(table, multiple, str -> multiple = str);
                 }
@@ -94,6 +103,7 @@ public class LogicStatements {
             });
             t.row();
             t.add("Bounds ").color(category().color).padLeft(4);
+            row(t);
             t.table(table -> {
                 table.left();
                 table.color.set(category().color);
@@ -106,7 +116,12 @@ public class LogicStatements {
             });
             t.row();
             t.add("Message").color(category().color).padLeft(4);
-            field(t, message, str -> message = str).width(0f).maxTextLength(64).growX().padRight(3);
+            row(t);
+            field(t, message, str -> message = str).width(0f).growX().padRight(3);
+        }
+
+        void numField(Table table, String value, Cons<String> setter) {
+            field(table, value, setter).width(84f).left();
         }
 
         void opButton(Table parent, Table table, AssertOp op, Cons<AssertOp> getter) {
@@ -177,11 +192,13 @@ public class LogicStatements {
             table.defaults().left();
 
             table.add(" expected ").self(this::param);
-            numField(table, expected, v -> expected = v);
+            field(table, expected, v -> expected = v);
+            stretchRow(table);
             table.add(" actual ").self(this::param);
-            numField(table, actual, v -> actual = v);
+            field(table, actual, v -> actual = v);
+            stretchRow(table);
             table.add(" message ").self(this::param);
-            field(table, message, str -> message = str).width(0f).growX().padRight(3);
+            message(table, message, str -> message = str);
         }
 
         @Override
@@ -226,7 +243,7 @@ public class LogicStatements {
         @Override
         public void build(Table table) {
             table.add(" position ").self(this::param);
-            numField(table, position, v -> position = v);
+            field(table, position, v -> position = v);
         }
 
         @Override
@@ -269,11 +286,13 @@ public class LogicStatements {
         public void build(Table table) {
             table.defaults().left();
             table.add(" position ").self(this::param);
-            numField(table, position, v -> position = v);
+            field(table, position, v -> position = v);
+            stretchRow(table);
             table.add(" expected ").self(this::param);
             field(table, expected, v -> expected = v);
+            stretchRow(table);
             table.add(" message ").self(this::param);
-            field(table, message, str -> message = str).width(0f).growX().padRight(3);
+            message(table, message, str -> message = str);
         }
 
         @Override
@@ -321,17 +340,23 @@ public class LogicStatements {
         @Override
         public void build(Table table) {
             table.defaults().left();
-            Cell<Table> t1 = table.table().growX().left();
-            t1.get().add(" message ").self(this::param).left();
-            field(t1.get(), params[0], str -> params[0] = str).width(0f).growX().padRight(3);
+            Table t1 = table.table().growX().left().get();
+            t1.setColor(category().color);
+            t1.add(" message ").self(this::param).left();
+            message(t1, params[0], str -> params[0] = str);
             table.row();
-            Cell<Table> t2 = table.table().growX().left();
-            t2.get().left();
+            Table t2 = table.table().growX().left().get().left();
+            t2.setColor(category().color);
+
             for (int i = 1; i < params.length; i++) {
                 final int index = i;
-                t2.get().add(" p" + i + " ").self(this::param);
-                field(t2.get(), params[index], v -> params[index] = v);
-                if (i % 3 == 0) t2.get().row();
+                t2.add(" p" + i + " ").self(this::param);
+                field(t2, params[index], v -> params[index] = v).width(LCanvas.useRows() ? 150f : 220f);
+                if (LCanvas.useRows()) {
+                    if (i % 2 == 0) row(t2);
+                } else {
+                    if (i % 3 == 0) t2.row();
+                }
             }
         }
 
