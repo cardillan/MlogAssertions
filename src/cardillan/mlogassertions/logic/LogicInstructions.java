@@ -1,11 +1,7 @@
 package cardillan.mlogassertions.logic;
 
-import cardillan.mlogassertions.Assertions;
-import mindustry.ctype.Content;
-import mindustry.ctype.MappableContent;
-import mindustry.game.Team;
+import cardillan.mlogassertions.ui.Assertions;
 import mindustry.gen.Building;
-import mindustry.gen.Unit;
 import mindustry.logic.ConditionOp;
 import mindustry.logic.LExecutor;
 import mindustry.logic.LVar;
@@ -13,10 +9,10 @@ import mindustry.world.blocks.logic.LogicBlock;
 
 public class LogicInstructions {
 
-    public interface Assertinstruction {
+    public interface AssertInstruction {
     }
 
-    public static class AssertBoundsI implements LExecutor.LInstruction, Assertinstruction {
+    public static class AssertBoundsI implements LExecutor.LInstruction, AssertInstruction {
         public AssertionType type = AssertionType.any;
         public LVar multiple;
         public LVar min;
@@ -59,7 +55,7 @@ public class LogicInstructions {
         }
     }
 
-    public static class AssertEqualsI implements LExecutor.LInstruction, Assertinstruction {
+    public static class AssertEqualsI implements LExecutor.LInstruction, AssertInstruction {
         public LVar expected;
         public LVar actual;
         public LVar message;
@@ -103,7 +99,7 @@ public class LogicInstructions {
         }
     }
 
-    public static class AssertPrintsI implements LExecutor.LInstruction, Assertinstruction {
+    public static class AssertPrintsI implements LExecutor.LInstruction, AssertInstruction {
         public LVar flushIndex;
         public LVar expected;
         public LVar message;
@@ -142,7 +138,7 @@ public class LogicInstructions {
         }
     }
 
-    public static class ErrorI implements LExecutor.LInstruction, Assertinstruction {
+    public static class ErrorI implements LExecutor.LInstruction, AssertInstruction {
         public LVar[] vars;
 
         public ErrorI(LVar[] vars) {
@@ -190,7 +186,7 @@ public class LogicInstructions {
 
     private static String print(LVar value) {
         if (value.isobj) {
-            return toString(value.objval);
+            return LExecutor.PrintI.toString(value.objval);
         } else {
             if (Math.abs(value.numval - Math.round(value.numval)) < 0.00001) {
                 return String.valueOf(Math.round(value.numval));
@@ -198,17 +194,5 @@ public class LogicInstructions {
                 return String.valueOf(value.numval);
             }
         }
-    }
-
-    private static String toString(Object obj) {
-        return obj == null ? "null" :
-            obj instanceof String s ? s :
-            obj instanceof MappableContent content ? content.name :
-            obj instanceof Content ? "[content]" :
-            obj instanceof Building build ? build.block.name :
-            obj instanceof Unit unit ? unit.type.name :
-            obj instanceof Enum<?> e ? e.name() :
-            obj instanceof Team team ? team.name :
-            "[object]";
     }
 }

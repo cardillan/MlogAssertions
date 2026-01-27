@@ -3,8 +3,6 @@ package cardillan.mlogassertions.logic;
 import arc.func.Cons;
 import arc.func.Func;
 import arc.func.Prov;
-import arc.scene.ui.TextField;
-import arc.scene.ui.layout.Cell;
 import arc.scene.ui.layout.Table;
 import mindustry.gen.LogicIO;
 import mindustry.logic.LAssembler;

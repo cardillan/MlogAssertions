@@ -1,4 +1,4 @@
-package cardillan.mlogassertions;
+package cardillan.mlogassertions.ui;
 
 import arc.Core;
 import arc.Events;
@@ -15,6 +15,7 @@ import arc.util.Log;
 import arc.util.pooling.Pools;
 import cardillan.mlogassertions.logic.LogicInstructions;
 import mindustry.Vars;
+import mindustry.content.Fx;
 import mindustry.game.EventType;
 import mindustry.graphics.Drawf;
 import mindustry.graphics.Layer;
@@ -27,10 +28,16 @@ import static mindustry.Vars.tilesize;
 public class Assertions {
     public static int minWaitTimeUpdate = 1000;
     public static int processorUpdatesPerTick = 50;
+    public static int warnEffectFrequency = 0;
+    public static float layer = Layer.darkness + 1;
+    public static float waitLayer = Layer.turret + 1;
+    public static float textWidth = 110f;
 
+    // wait is a special case, recognized by comparison to this instance
     static final String WAIT = new String("W");
 
-    static final Color textColor = Color.coral;
+    // Color of the displayed text
+    static final Color color = Color.coral;
 
     // Active messages
     static final ObjectMap<LogicBuild, String> blocks = new ObjectMap<>();
@@ -41,10 +48,27 @@ public class Assertions {
     // Invalid blocks
     static final Seq<LogicBuild> invalidBlocks = new Seq<>();
 
+    // The next time the effect should be run (game time)
+    static double nextWarnEffect = 0;
+
+    private static void effect(LogicBuild block) {
+        Fx.unitCapKill.at(block.getX(), block.getY(), 10f, color);
+    }
+
+    public static void setWait(LogicBuild block) {
+        if (blocks.get(block) != WAIT) {
+            blocks.put(block, WAIT);
+        }
+    }
+
     public static void setMessage(LogicBuild block, Prov<String> message) {
-        if (blocks.get(block) == null) {
+        String prev = blocks.get(block);
+        if (prev == null || prev == WAIT) {
             String str = message.get();
-            blocks.put(block, str == null ? "<null string>" : str);
+            blocks.put(block, str == null ? "<error>" : str);
+
+            // Just this once
+            if (warnEffectFrequency == 0) effect(block);
         }
     }
 
@@ -57,12 +81,14 @@ public class Assertions {
             blocks.clear();
             allBlocks.clear();
             invalidBlocks.clear();
+            nextWarnEffect = 0;
         });
 
         Events.on(EventType.WorldLoadEndEvent.class, e -> {
             blocks.clear();
             allBlocks.clear();
             invalidBlocks.clear();
+            nextWarnEffect = 0;
 
             Vars.world.tiles.eachTile(tile -> {
                 if (tile.build instanceof LogicBuild build && blocks.put(build, "") == null) {
@@ -101,9 +127,10 @@ public class Assertions {
 
     static int checkIndex;
     static double totalUpdates = 0;
+    static boolean runWarnEffect;
 
     private static void checkBlocks() {
-        // Do not use fractional values of updates
+        // Do not lose fractional values of updates at high FPS
         totalUpdates += Math.max(Core.graphics.getDeltaTime(), 1.5) * processorUpdatesPerTick;
         long updates = (long) totalUpdates;
         totalUpdates -= updates;
@@ -116,6 +143,14 @@ public class Assertions {
                 checkIndex = (checkIndex + 1) % allBlocks.size;
             }
         }
+
+        // Should spawn warning effects during this update?
+        if (warnEffectFrequency > 0 && nextWarnEffect < Vars.state.tick) {
+            runWarnEffect = true;
+            nextWarnEffect = Vars.state.tick + 60 * warnEffectFrequency;
+        } else {
+            runWarnEffect = false;
+        }
     }
 
     private static void check(LogicBuild block) {
@@ -124,6 +159,7 @@ public class Assertions {
             invalidBlocks.add(block);
             return;
         } else if (block.executor == null || block.executor.counter == null) {
+            // Not yet ready
             reset(block);
             return;
         }
@@ -133,8 +169,8 @@ public class Assertions {
 
         if (ix >= 0 && ix < instructions.length) {
             LExecutor.LInstruction instruction = instructions[ix];
-            if (instruction instanceof LogicInstructions.Assertinstruction) {
-                // These are handled separately
+            if (instruction instanceof LogicInstructions.AssertInstruction) {
+                // These are handled in the instruction itself
                 return;
             }
             if (instruction instanceof LExecutor.StopI) {
@@ -142,7 +178,7 @@ public class Assertions {
                 return;
             }
             if (minWaitTimeUpdate > 0 && instruction instanceof LExecutor.WaitI w && 1000 * w.value.num() >= minWaitTimeUpdate) {
-                setMessage(block, () -> WAIT);
+                setWait(block);
                 return;
             }
         }
@@ -157,13 +193,17 @@ public class Assertions {
             return;
         }
 
-        // Wait indication is displayed in the center of the block
-        boolean center = message == WAIT;
+        // This is a wait indication
+        boolean wait = message == WAIT;
+
+        if (runWarnEffect && !wait) {
+            effect(block);
+        }
 
         float x = block.getX();
-        float y = block.getY() + (center ? 0 : block.block.size * tilesize/2f + 1f);
+        float y = block.getY() + (wait ? 0 : block.block.size * tilesize/2f + 1.5f);
 
-        Draw.z(Layer.turret + 1);
+        Draw.z(wait ? waitLayer : layer);
         float z = Drawf.text();
 
         Font font = Fonts.outline;
@@ -172,14 +212,11 @@ public class Assertions {
         font.getData().setScale(1 / 4f / Scl.scl(1f));
         font.setUseIntegerPositions(false);
 
-        l.setText(font, message, textColor, 90f, Align.left, false);
-
-//        Draw.color(0f, 0f, 0f, 0.2f);
-//        Fill.rect(x, y+2f, l.width+4f, l.height+2f);
+        l.setText(font, message, color, textWidth, Align.left, true);
 
         Draw.color();
-        font.setColor(textColor);
-        font.draw(message, x - l.width/2f, y + (center ? l.height/2f : l.height), 90f, Align.left, false);
+        font.setColor(color);
+        font.draw(message, x - l.width/2f, y + (wait ? l.height/2f : l.height), textWidth, Align.left, true);
         font.setUseIntegerPositions(ints);
         font.getData().setScale(1f);
         Draw.z(z);

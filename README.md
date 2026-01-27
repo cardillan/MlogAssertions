@@ -11,7 +11,7 @@ Mod intended to make debugging in Mindustry Logic a bit easier. Provided functio
 * Settings for overriding instruction limit (the limit can be increased up to 2000 instructions). This allows you to insert debugging code (e.g., additional `print` instructions) into your code, even if the original instruction limit is exceeded.
 * Buttons to copy the variables (including their full, unrounded values) and the processor's text buffer to clipboard. The variables can be pasted into a spreadsheet and sorted by name for easier inspection.
 * Custom mlog instructions for performing runtime checks.
-* Indication of failed runtime checks, stopped processors, or processors performing a `wait`.  
+* Indication of failed runtime checks, stopped processors, and processors performing a `wait`.  
 
 ![Screenshot of state indicated on processors](processors.png)
 
@@ -90,3 +90,7 @@ Sets the minimal wait time specified in the `wait` instruction parameter which c
 ## Processor updates per tick
 
 To indicate the stopped and waiting processors, the mod needs to inspect the state of all processors on the map periodically. At most the given number of processors gets inspected in each tick. If there are a lot of processors on the map and the performance suffers, reducing this value may help.   
+
+## Visual warning
+
+Governs the use of visual effects on the map itself to draw attention to stopped or failed processors. Effects can be turned off completely, performed just once hwen the processor is stopped or failed, or performed periodically with a given interval. 
