@@ -1,11 +1,14 @@
 package cardillan.mlogassertions.logic;
 
+import arc.util.Log;
 import cardillan.mlogassertions.ui.Assertions;
 import mindustry.gen.Building;
 import mindustry.logic.ConditionOp;
 import mindustry.logic.LExecutor;
 import mindustry.logic.LVar;
 import mindustry.world.blocks.logic.LogicBlock;
+
+import java.util.Arrays;
 
 public class LogicInstructions {
 
@@ -153,35 +156,58 @@ public class LogicInstructions {
         public final void run(LExecutor exec) {
             Building building = exec.thisv.building();
 
-            Assertions.setMessage((LogicBlock.LogicBuild) building, () -> {
-                int used = 0;
-                StringBuilder sbr = new StringBuilder(print(vars[0]));
-                int pos = sbr.indexOf("[[");
-                while (pos >= 0) {
-                    if (sbr.charAt(pos + 2) >= '1' && sbr.charAt(pos + 2) <= '9' && sbr.charAt(pos + 3) == ']') {
-                        int index = sbr.charAt(pos + 2) - '0';
-                        String str = print(vars[index]);
-                        sbr.replace(pos, pos + 4, str);
-                        pos = sbr.indexOf("[[", pos + str.length());
-                        used |= (1 << index);
-                    } else {
-                        pos = sbr.indexOf("[[", pos + 1);
-                    }
-                }
-
-                for (int i = 1; i < vars.length; i++) {
-                    if ((used & (1 << i)) == 0 && nonNull(vars[i])) sbr.append(' ').append(print(vars[i]));
-                }
-
-                return sbr.toString();
-            });
+            Assertions.setMessage((LogicBlock.LogicBuild) building, () -> buildMessage("", vars));
             exec.counter.numval--;
             exec.yield = true;
         }
+    }
 
-        private boolean nonNull(LVar var) {
-            return !var.isobj || var.objval != null;
+    public static class LogI implements LExecutor.LInstruction, AssertInstruction {
+        Log.LogLevel level;
+        public LVar[] vars;
+
+        public LogI(Log.LogLevel level, LVar[] vars) {
+            this.level = level;
+            this.vars = vars;
         }
+
+        public LogI() {
+            Log.LogLevel level = Log.LogLevel.info;
+            vars = new LVar[10];
+        }
+
+        @Override
+        public final void run(LExecutor exec) {
+            Building building = exec.thisv.building();
+            Log.log(level, buildMessage("[MlogAssertions] ", vars));
+        }
+    }
+
+    private static String buildMessage(String prefix, LVar[] vars) {
+        int used = 0;
+        StringBuilder sbr = prefix.isEmpty() ? new StringBuilder(print(vars[0])) : new StringBuilder(prefix).append(print(vars[0]));
+        int pos = sbr.indexOf("[[");
+        while (pos >= 0) {
+            if (sbr.charAt(pos + 2) >= '1' && sbr.charAt(pos + 2) <= '9' && sbr.charAt(pos + 3) == ']') {
+                int index = sbr.charAt(pos + 2) - '0';
+                String str = print(vars[index]);
+                sbr.replace(pos, pos + 4, str);
+                pos = sbr.indexOf("[[", pos + str.length());
+                used |= (1 << index);
+            } else {
+                pos = sbr.indexOf("[[", pos + 1);
+            }
+        }
+
+        for (int i = 1; i < vars.length; i++) {
+            if ((used & (1 << i)) == 0 && nonNull(vars[i])) sbr.append(' ').append(print(vars[i]));
+        }
+
+        return sbr.toString();
+    }
+
+    private static boolean nonNull(LVar var) {
+        return !var.isobj || var.objval != null;
     }
 
     private static String print(LVar value) {

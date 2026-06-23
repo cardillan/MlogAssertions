@@ -77,6 +77,16 @@ This instruction displays an error message and stops the program execution. The 
 
 If the message contains placeholders in the form `[[1]` to `[[9]`, they are replaced by the corresponding parameters. If there are other parameters not used by the message, whose value is not `null`, they are appended to the message one by one.
 
+## Instruction `log`
+
+This instruction writes a message into the game's log file. It is up to the user to avoid writing too many error messages into the file. The instruction takes these parameters:
+
+* `level`: the log level of the message, one of `debug`, `info`, `warning`, or `err`.
+* `message`: the error message to display.
+* `p1` .. `p9`: additional parameters to display in the error message.
+
+If the message contains placeholders in the form `[[1]` to `[[9]`, they are replaced by the corresponding parameters. If there are other parameters not used by the message, whose value is not `null`, they are appended to the message one by one.
+
 # Settings
 
 ## Instruction limit

@@ -4,14 +4,12 @@ import arc.func.Cons;
 import arc.func.Func;
 import arc.func.Prov;
 import arc.scene.ui.layout.Table;
+import arc.util.Log;
 import mindustry.gen.LogicIO;
-import mindustry.logic.LAssembler;
-import mindustry.logic.LCanvas;
-import mindustry.logic.LCategory;
-import mindustry.logic.LExecutor;
-import mindustry.logic.LStatement;
-import mindustry.logic.LVar;
+import mindustry.logic.*;
 import mindustry.ui.Styles;
+
+import java.util.Arrays;
 
 public class LogicStatements {
     private static final LogicStatementWriter writer = new LogicStatementWriter();
@@ -22,6 +20,7 @@ public class LogicStatements {
         register(AssertFlushStatement::new, AssertFlushStatement.opcode, AssertFlushStatement::read);
         register(AssertPrintsStatement::new, AssertPrintsStatement.opcode, AssertPrintsStatement::read);
         register(ErrorStatement::new, ErrorStatement.opcode, ErrorStatement::read);
+        register(LogStatement::new, LogStatement.opcode, LogStatement::read);
     }
 
     private static void register(Prov<LStatement> prov, String opcode, Func<String[], LStatement> parser) {
@@ -39,6 +38,11 @@ public class LogicStatements {
         @Override
         public String name() {
             return name;
+        }
+
+        @Override
+        public LCategory category() {
+            return AssertLogic.assertsCategory;
         }
 
         protected void stretchRow(Table table){
@@ -65,11 +69,6 @@ public class LogicStatements {
 
         public AssertBoundsStatement() {
             super("Assert Bounds");
-        }
-
-        @Override
-        public LCategory category() {
-            return AssertLogic.assertsCategory;
         }
 
         @Override
@@ -181,11 +180,6 @@ public class LogicStatements {
         }
 
         @Override
-        public LCategory category() {
-            return AssertLogic.assertsCategory;
-        }
-
-        @Override
         public void build(Table table) {
             table.defaults().left();
 
@@ -234,11 +228,6 @@ public class LogicStatements {
         }
 
         @Override
-        public LCategory category() {
-            return AssertLogic.assertsCategory;
-        }
-
-        @Override
         public void build(Table table) {
             table.add(" position ").self(this::param);
             field(table, position, v -> position = v);
@@ -273,11 +262,6 @@ public class LogicStatements {
 
         public AssertPrintsStatement() {
             super("Assert Prints");
-        }
-
-        @Override
-        public LCategory category() {
-            return AssertLogic.assertsCategory;
         }
 
         @Override
@@ -319,26 +303,41 @@ public class LogicStatements {
         }
     }
 
-    private static class ErrorStatement extends AssertStatement {
-        public static final String opcode = "error";
+    private abstract static class MessageStatement extends AssertStatement {
+        private final String opcode;
+        private final boolean hasLevel;
+        public Log.LogLevel level = Log.LogLevel.info;
         public String[] params = new String[10];
 
-        public ErrorStatement() {
-            super("Error");
-            params[0] = "\"Runtime error at #[[1]\"";
+        public MessageStatement(String opcode, String name, String message) {
+            super(name);
+            this.opcode = opcode;
+            this.hasLevel = opcode.equals("log");
+            params[0] = "\"" + message + " at #[[1]\"";
             params[1] = "@counter";
             for (int i = 2; i < params.length; i++) params[i] = "null";
         }
 
         @Override
-        public LCategory category() {
-            return AssertLogic.assertsCategory;
+        public void build(Table table){
+            rebuild(table);
         }
 
-        @Override
-        public void build(Table table) {
+        void rebuild(Table table){
+            table.clearChildren();
+
             table.defaults().left();
             Table t1 = table.table().growX().left().get();
+            if (hasLevel) {
+                t1.button(b -> {
+                    b.label(() -> level.name());
+                    b.clicked(() -> showSelect(b, levels, level, o -> {
+                        level = o;
+                        rebuild(table);
+                    }, 1, cell -> cell.width(80)));
+                }, Styles.logict, () -> {
+                }).size(80f, 40f).left().pad(4f).color(table.color);
+            }
             t1.setColor(category().color);
             t1.add(" message ").self(this::param).left();
             message(t1, params[0], str -> params[0] = str);
@@ -359,27 +358,66 @@ public class LogicStatements {
         }
 
         @Override
+        public void write(StringBuilder builder) {
+            writer.start(builder);
+            writer.write(opcode);
+            if (hasLevel) writer.write(level.name());
+            for (String param : params) writer.write(param);
+            writer.end();
+        }
+
+        protected LStatement readTokens(String[] tokens) {
+            int i = 1;
+            if (hasLevel && tokens.length > i) level = Log.LogLevel.valueOf(tokens[i++]);
+            for (int j = 0; j < 10; j++) {
+                if (tokens.length > i) params[j] = tokens[i++];
+            }
+            return this;
+        }
+    }
+
+    private static class ErrorStatement extends MessageStatement {
+        public static final String opcode = "error";
+
+        public ErrorStatement() {
+            super(opcode, "Error", "Runtime error");
+        }
+
+        @Override
         public LExecutor.LInstruction build(LAssembler builder) {
             LVar[] vars = new LVar[10];
             for (int i = 0; i < params.length; i++) vars[i] = builder.var(params[i]);
             return new LogicInstructions.ErrorI(vars);
         }
 
+        public static LStatement read(String[] tokens) {
+            return new ErrorStatement().readTokens(tokens);
+        }
+    }
+
+    private static final Log.LogLevel[] levels = {
+            Log.LogLevel.err,
+            Log.LogLevel.warn,
+            Log.LogLevel.info,
+            Log.LogLevel.debug,
+    };
+
+    private static class LogStatement extends MessageStatement {
+        public static final String opcode = "log";
+
+        public LogStatement() {
+            super(opcode, "Log", "Logging a message");
+        }
+
         @Override
-        public void write(StringBuilder builder) {
-            writer.start(builder);
-            writer.write(opcode);
-            for (String param : params) writer.write(param);
-            writer.end();
+        public LExecutor.LInstruction build(LAssembler builder) {
+            LVar[] vars = new LVar[10];
+            for (int i = 0; i < params.length; i++) vars[i] = builder.var(params[i]);
+            return new LogicInstructions.LogI(level, vars);
         }
 
         public static LStatement read(String[] tokens) {
-            ErrorStatement stmt = new ErrorStatement();
-            int i = 1;
-            for (int j = 0; j < 10; j++) {
-                if (tokens.length > i) stmt.params[i - 1] = tokens[i++];
-            }
-            return stmt;
+            return new LogStatement().readTokens(tokens);
         }
     }
 }
