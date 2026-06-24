@@ -1,5 +1,6 @@
 package cardillan.mlogassertions.logic;
 
+import arc.graphics.Color;
 import arc.util.Log;
 import cardillan.mlogassertions.ui.Assertions;
 import mindustry.gen.Building;
@@ -7,8 +8,6 @@ import mindustry.logic.ConditionOp;
 import mindustry.logic.LExecutor;
 import mindustry.logic.LVar;
 import mindustry.world.blocks.logic.LogicBlock;
-
-import java.util.Arrays;
 
 public class LogicInstructions {
 
@@ -200,25 +199,30 @@ public class LogicInstructions {
         }
 
         for (int i = 1; i < vars.length; i++) {
-            if ((used & (1 << i)) == 0 && nonNull(vars[i])) sbr.append(' ').append(print(vars[i]));
+            if ((used & (1 << i)) == 0 && nonNull(vars[i])) sbr.append(' ').append(print(vars[i], true));
         }
 
         return sbr.toString();
     }
 
     private static boolean nonNull(LVar var) {
-        return !var.isobj || var.objval != null;
+        return !"null".equals(var.name);
     }
 
+    private static final double COLOR_LIMIT = Color.white.toDoubleBits();
+
     private static String print(LVar value) {
+        return print(value, false);
+    }
+
+    private static String print(LVar value, boolean formatString) {
         if (value.isobj) {
-            return LExecutor.PrintI.toString(value.objval);
+            return formatString && value.objval instanceof String str ? '"' + str + '"' : LExecutor.PrintI.toString(value.objval);
+        } else if (value.numval <= COLOR_LIMIT && value.numval > 0) {
+            long color = Double.doubleToLongBits(value.numval) & 0xFFFFFFFFL;
+            return '%' + Integer.toHexString((int) color);
         } else {
-            if (Math.abs(value.numval - Math.round(value.numval)) < 0.00001) {
-                return String.valueOf(Math.round(value.numval));
-            } else {
-                return String.valueOf(value.numval);
-            }
+            return String.valueOf(value.numval);
         }
     }
 }

@@ -51,7 +51,7 @@ The values are compared using the `strictEqual` mlog operator.
 
 ## Instruction `assertflush`
 
-This instruction must be used at the beginning of a block of code which generates text into the text buffer (using any of the printing instructions, `print`, `printchar` or `format`). The `assertprints` instruction is then used to compare the output generted by the program to an expected string. The instruction takes these parameters:
+This instruction must be used at the beginning of a code section which generates text into the text buffer (using any of the printing instructions, `print`, `printchar` or `format`). The `assertprints` instruction is then used to compare the output generted by the program to an expected string. The instruction takes these parameters:
 
 * `position`: output variable receiving the current position in the text buffer.
 
@@ -75,7 +75,7 @@ This instruction displays an error message and stops the program execution. The 
 * `message`: the error message to display.
 * `p1` .. `p9`: additional parameters to display in the error message.
 
-If the message contains placeholders in the form `[[1]` to `[[9]`, they are replaced by the corresponding parameters. If there are other parameters not used by the message, whose value is not `null`, they are appended to the message one by one.
+If the message contains placeholders in the form `[[1]` to `[[9]`, they are replaced by the corresponding parameters. If there are other parameters not used by the message, whose value is not the literal `null`, they are appended to the message one by one. String values are enclosed in quotes in this case. Numeric values in the color range are formatted as color literals (e.g., %e55454ff`).
 
 ## Instruction `log`
 
@@ -85,7 +85,7 @@ This instruction writes a message into the game's log file. It is up to the user
 * `message`: the error message to display.
 * `p1` .. `p9`: additional parameters to display in the error message.
 
-If the message contains placeholders in the form `[[1]` to `[[9]`, they are replaced by the corresponding parameters. If there are other parameters not used by the message, whose value is not `null`, they are appended to the message one by one.
+If the message contains placeholders in the form `[[1]` to `[[9]`, they are replaced by the corresponding parameters. If there are other parameters not used by the message, whose value is not the literal `null`, they are appended to the message one by one. String values are enclosed in quotes in this case. Numeric values in the color range are formatted as color literals (e.g., %e55454ff`).
 
 # Settings
 
@@ -103,4 +103,4 @@ To indicate the stopped and waiting processors, the mod needs to inspect the sta
 
 ## Visual warning
 
-Governs the use of visual effects on the map itself to draw attention to stopped or failed processors. Effects can be turned off completely, performed just once hwen the processor is stopped or failed, or performed periodically with a given interval. 
+Governs the use of visual effects on the map itself to draw attention to stopped or failed processors. Effects can be turned off completely, performed just once when the processor is stopped or failed, or performed periodically with a given interval. 
