@@ -4,9 +4,7 @@ import arc.Core;
 import arc.Events;
 import arc.func.Prov;
 import arc.graphics.Color;
-import arc.graphics.g2d.Draw;
-import arc.graphics.g2d.Font;
-import arc.graphics.g2d.GlyphLayout;
+import arc.graphics.g2d.*;
 import arc.scene.ui.layout.Scl;
 import arc.struct.ObjectMap;
 import arc.struct.Seq;
@@ -194,16 +192,19 @@ public class Assertions {
         }
 
         // This is a wait indication
-        boolean wait = message == WAIT;
+        if (message == WAIT) {
+            drawWait(block);
+            return;
+        };
 
-        if (runWarnEffect && !wait) {
+        if (runWarnEffect) {
             effect(block);
         }
 
         float x = block.getX();
-        float y = block.getY() + (wait ? 0 : block.block.size * tilesize/2f + 1.5f);
+        float y = block.getY() + (block.block.size * tilesize/2f + 1.5f);
 
-        Draw.z(wait ? waitLayer : layer);
+        Draw.z(layer);
         float z = Drawf.text();
 
         Font font = Fonts.outline;
@@ -216,11 +217,37 @@ public class Assertions {
 
         Draw.color();
         font.setColor(color);
-        font.draw(message, x - l.width/2f, y + (wait ? l.height/2f : l.height), textWidth, Align.left, true);
+        font.draw(message, x - l.width/2f, y + l.height, textWidth, Align.left, true);
         font.setUseIntegerPositions(ints);
         font.getData().setScale(1f);
         Draw.z(z);
 
         Pools.free(l);
+    }
+
+    private static void drawWait(LogicBuild block) {
+        int sides = 100;
+        int ix = (int) block.executor.counter.numval;
+        LExecutor.LInstruction[] instructions = block.executor.instructions;
+        if (instructions[ix] instanceof LExecutor.WaitI w) {
+            float total = (float) w.value.num();
+            float current = w.curTime;
+            float arc = current / total;
+
+            float x = block.getX();
+            float y = block.getY();
+
+            Draw.z(waitLayer);
+            float z = Drawf.text();
+            int blockSize = block.tile.block().size;
+            if (arc > 0.01) {
+                Draw.color(Color.white);
+                Fill.arc(x, y, Scl.scl(blockSize * 2.1f - 0.5f), arc, 90 - 360f * arc, (int) (arc * sides));
+            }
+            Draw.color(Color.white);
+            Lines.stroke(Scl.scl((blockSize + 1) * 0.25f));
+            Lines.poly(x, y, sides, Scl.scl(block.tile.block().size * 2.5f));
+            Draw.z(z);
+        }
     }
 }

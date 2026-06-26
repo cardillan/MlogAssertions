@@ -11,7 +11,7 @@ Mod intended to make debugging in Mindustry Logic a bit easier. Provided functio
 * Settings for overriding instruction limit (the limit can be increased up to 2000 instructions). This allows you to insert debugging code (e.g., additional `print` instructions) into your code, even if the original instruction limit is exceeded.
 * Buttons to copy the variables (including their full, unrounded values) and the processor's text buffer to clipboard. The variables can be pasted into a spreadsheet and sorted by name for easier inspection.
 * Custom mlog instructions for performing runtime checks.
-* Indication of failed runtime checks, stopped processors, and processors performing a `wait`.  
+* Indication of stopped processors, processors performing a `wait`, and failed runtime checks.
 
 ![Screenshot of state indicated on processors](processors.png)
 
