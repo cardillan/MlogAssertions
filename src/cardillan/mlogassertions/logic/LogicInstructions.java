@@ -1,8 +1,12 @@
 package cardillan.mlogassertions.logic;
 
+import arc.Core;
 import arc.graphics.Color;
 import arc.util.Log;
 import cardillan.mlogassertions.ui.Assertions;
+import mindustry.Vars;
+import mindustry.content.Fx;
+import mindustry.core.GameState;
 import mindustry.gen.Building;
 import mindustry.logic.ConditionOp;
 import mindustry.logic.LExecutor;
@@ -140,6 +144,35 @@ public class LogicInstructions {
         }
     }
 
+    public static class BreakpointI implements LExecutor.LInstruction, AssertInstruction {
+        public ConditionOp op = ConditionOp.notEqual;
+        public LVar value, compare;
+
+        public BreakpointI(ConditionOp op, LVar value, LVar compare){
+            this.op = op;
+            this.value = value;
+            this.compare = compare;
+        }
+
+        public BreakpointI(){
+        }
+
+        @Override
+        public void run(LExecutor exec){
+            if (op.test(value, compare)) {
+                Vars.state.set(GameState.State.paused);
+                Vars.world.tiles.eachTile(tile -> {
+                    if (tile.build instanceof LogicBlock.LogicBuild logicBuild) {
+                        logicBuild.accumulator = 0f;
+                    }
+                });
+                var build = exec.build;
+                Vars.ui.showInfoToast(Core.bundle.format("breakpoint.message", build.block.name, build.tile.x, build.tile.y), 10);
+                Fx.unitCapKill.at(build.getX(), build.getY(), 10f, Color.crimson);
+            }
+        }
+    }
+
     public static class ErrorI implements LExecutor.LInstruction, AssertInstruction {
         public LVar[] vars;
 
@@ -177,7 +210,6 @@ public class LogicInstructions {
 
         @Override
         public final void run(LExecutor exec) {
-            Building building = exec.thisv.building();
             Log.log(level, buildMessage("[MlogAssertions] ", vars));
         }
     }

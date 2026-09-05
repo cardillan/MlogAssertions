@@ -1,8 +1,11 @@
 package cardillan.mlogassertions.logic;
 
+import arc.Core;
 import arc.func.Cons;
 import arc.func.Func;
 import arc.func.Prov;
+import arc.graphics.Color;
+import arc.scene.ui.Label;
 import arc.scene.ui.layout.Table;
 import arc.util.Log;
 import mindustry.gen.LogicIO;
@@ -21,6 +24,7 @@ public class LogicStatements {
         register(AssertPrintsStatement::new, AssertPrintsStatement.opcode, AssertPrintsStatement::read);
         register(ErrorStatement::new, ErrorStatement.opcode, ErrorStatement::read);
         register(LogStatement::new, LogStatement.opcode, LogStatement::read);
+        register(BreakpointStatement::new, BreakpointStatement.opcode, BreakpointStatement::read);
     }
 
     private static void register(Prov<LStatement> prov, String opcode, Func<String[], LStatement> parser) {
@@ -28,7 +32,7 @@ public class LogicStatements {
         LAssembler.customParsers.put(opcode, parser);
     }
 
-    private static abstract class AssertStatement extends LStatement {
+    public static abstract class AssertStatement extends LStatement {
         final String name;
 
         public AssertStatement(String name) {
@@ -56,7 +60,7 @@ public class LogicStatements {
         }
     }
 
-    private static class AssertBoundsStatement extends AssertStatement {
+    public static class AssertBoundsStatement extends AssertStatement {
         public static final String opcode = "assertBounds";
         public AssertionType type = AssertionType.integer;
         public String multiple = "2";
@@ -169,7 +173,7 @@ public class LogicStatements {
         }
     }
 
-    private static class AssertEqualsStatement extends AssertStatement {
+    public static class AssertEqualsStatement extends AssertStatement {
         public static final String opcode = "assertequals";
         public String expected = "0";
         public String actual = "value";
@@ -219,7 +223,7 @@ public class LogicStatements {
         }
     }
 
-    private static class AssertFlushStatement extends AssertStatement {
+    public static class AssertFlushStatement extends AssertStatement {
         public static final String opcode = "assertflush";
         public String position = "position";
 
@@ -254,7 +258,7 @@ public class LogicStatements {
         }
     }
 
-    private static class AssertPrintsStatement extends AssertStatement {
+    public static class AssertPrintsStatement extends AssertStatement {
         public static final String opcode = "assertprints";
         public String position = "position";
         public String expected = "\"frog\"";
@@ -303,7 +307,7 @@ public class LogicStatements {
         }
     }
 
-    private abstract static class MessageStatement extends AssertStatement {
+    public abstract static class MessageStatement extends AssertStatement {
         private final String opcode;
         private final boolean hasLevel;
         public Log.LogLevel level = Log.LogLevel.info;
@@ -376,7 +380,76 @@ public class LogicStatements {
         }
     }
 
-    private static class ErrorStatement extends MessageStatement {
+    public static class BreakpointStatement extends AssertStatement {
+        public static final String opcode = "breakpoint";
+
+        public ConditionOp op = ConditionOp.always;
+        public String value = "x", compare = "false";
+
+        public BreakpointStatement() {
+            super("Breakpoint");
+        }
+
+        @Override
+        public void build(Table table){
+            table.add("breakpoint").padLeft(4);
+            rebuild(table);
+        }
+
+        void rebuild(Table table){
+            table.clearChildren();
+
+            if (op == ConditionOp.always) {
+                table.add("trigger ").padLeft(10).left();
+            } else {
+                table.add("trigger when ").padLeft(10).left();
+                row(table);
+            }
+
+            addOp(table, op, o -> {
+                op = o;
+                rebuild(table);
+            }, value, str -> value = str, compare, str -> compare = str);
+        }
+
+        public void addOp(Table t, ConditionOp op, Cons<ConditionOp> getter, String comp0, Cons<String> set0, String comp1, Cons<String> set2){
+            if(op != ConditionOp.always) field(t, comp0, set0);
+
+            t.button(b -> {
+                b.add(op.symbol);
+                b.clicked(() -> showSelect(b, ConditionOp.all, op, getter));
+            }, Styles.logict, () -> {
+            }).size(op == ConditionOp.always ? 80f : 48f, 40f).pad(4f).color(t.color);
+
+            if(op != ConditionOp.always) field(t, comp1, set2);
+        }
+
+        @Override
+        public LExecutor.LInstruction build(LAssembler builder){
+            return new LogicInstructions.BreakpointI(op, builder.var(value), builder.var(compare));
+        }
+
+        @Override
+        public void write(StringBuilder builder) {
+            writer.start(builder);
+            writer.write(opcode);
+            writer.write(op.name());
+            writer.write(value);
+            writer.write(compare);
+            writer.end();
+        }
+
+        public static LStatement read(String[] tokens) {
+            BreakpointStatement stmt = new BreakpointStatement();
+            int i = 1;
+            if (tokens.length > i) stmt.op = ConditionOp.valueOf(tokens[i++]);
+            if (tokens.length > i) stmt.value = tokens[i++];
+            if (tokens.length > i) stmt.compare = tokens[i++];
+            return stmt;
+        }
+    }
+
+    public static class ErrorStatement extends MessageStatement {
         public static final String opcode = "error";
 
         public ErrorStatement() {
@@ -402,7 +475,7 @@ public class LogicStatements {
             Log.LogLevel.debug,
     };
 
-    private static class LogStatement extends MessageStatement {
+    public static class LogStatement extends MessageStatement {
         public static final String opcode = "log";
 
         public LogStatement() {

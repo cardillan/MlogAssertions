@@ -226,10 +226,10 @@ public class Assertions {
     }
 
     private static void drawWait(LogicBuild block) {
-        int sides = 100;
+        int sides = 60;
         int ix = (int) block.executor.counter.numval;
         LExecutor.LInstruction[] instructions = block.executor.instructions;
-        if (instructions[ix] instanceof LExecutor.WaitI w) {
+        if (ix >= 0 && ix < instructions.length && instructions[ix] instanceof LExecutor.WaitI w) {
             float total = (float) w.value.num();
             float current = w.curTime;
             float arc = current / total;
@@ -242,7 +242,7 @@ public class Assertions {
             int blockSize = block.tile.block().size;
             if (arc > 0.01) {
                 Draw.color(Color.white);
-                Fill.arc(x, y, Scl.scl(blockSize * 2.1f - 0.5f), arc, 90 - 360f * arc, (int) (arc * sides));
+                Fill.arc(x, y, Scl.scl(blockSize * 2.1f - 0.5f), arc, 90 - 360f * arc, sides);
             }
             Draw.color(Color.white);
             Lines.stroke(Scl.scl((blockSize + 1) * 0.25f));

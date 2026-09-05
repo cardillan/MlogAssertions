@@ -1,23 +1,23 @@
 # MlogAssertions
 
 > [!TIP]
-> This mod supports the latest Mindustry 8 Beta release. There's also a [version](https://github.com/cardillan/MlogAssertions-7) compatible with Mindustry 7, which has fewer features and is no longer being developed.
+> This mod is compatible with Mindustry 8. There's also a [version](https://github.com/cardillan/MlogAssertions-7) compatible with Mindustry 7, which has fewer features and is no longer being maintained.
 
 > [!NOTE]
-> Using this mod on maps with lost of processors may have a negative performance impact on the game.
+> Using this mod on maps with lots of processors may have a negative performance impact on the game.
 
 Mod intended to make debugging in Mindustry Logic a bit easier. Provided functionality:
 
 * Settings for overriding instruction limit (the limit can be increased up to 2000 instructions). This allows you to insert debugging code (e.g., additional `print` instructions) into your code, even if the original instruction limit is exceeded.
 * Buttons to copy the variables (including their full, unrounded values) and the processor's text buffer to clipboard. The variables can be pasted into a spreadsheet and sorted by name for easier inspection.
-* Custom mlog instructions for performing runtime checks.
+* Custom mlog instructions for performing runtime checks, logging messages, and reporting errors.
 * Indication of stopped processors, processors performing a `wait`, and failed runtime checks.
 
 ![Screenshot of state indicated on processors](processors.png)
 
 # Custom instructions
 
-The custom instructions are used by [Mindcode](https://github.com/cardillan/mindcode) to perform runtime checks. They can be used by other compilers too or by a manually written mlog.
+The custom instructions are used by [Mindcode](https://github.com/cardillan/mindcode) to provide debugging support or perform runtime checks. They can be used by other compilers too or by a manually written mlog.
 
 When a runtime check fails, the program execution stops at the given instruction, and an accompanying message is displayed above the processor.
 
@@ -67,6 +67,13 @@ When the instruction finishes, the text buffer is restored to the state of the p
 
 > [!NOTE]
 > The content of the text buffer is not saved into the map file. Therefore, when a map is loaded from a save file, the `asssertprint` instruction may spuriously fail. 
+
+## Instruction `breakpoint`
+
+This isntruction comes with a condition (just like the `jump` instruction). When the condition is `true`, the game is paused in the exact state in which the breakpoint occured. Specifically, no other instructions in the current processor or any other processors are executed after the breakpoint is hit, and all logic variables in all processors and contents of all memory cells should remain unchanged. However, it is possible that units and buildings do change their own state or the state of other units/buildings after the breakpoint hits, but before the game is properly paused.
+
+> [!WARNING]
+> After unpausing the game, the execution continues as usual, except the accumulators of all processors have been reset, and atomic section executions might be compromised. These shortcomings will hopefully be addressed in a future release.    
 
 ## Instruction `error`
 
