@@ -144,6 +144,35 @@ public class LogicInstructions {
         }
     }
 
+    public static class AssertTypeI implements LExecutor.LInstruction, AssertInstruction {
+        public LVar value;
+        public AssertDataType type = AssertDataType.number;
+        public LVar message;
+
+        public AssertTypeI(LVar value, AssertDataType type, LVar message) {
+            this.value = value;
+            this.type = type;
+            this.message = message;
+        }
+
+        public AssertTypeI() {
+        }
+
+        @Override
+        public final void run(LExecutor exec) {
+            Building building = exec.thisv.building();
+
+            if (type.matches(value)) {
+                Assertions.reset((LogicBlock.LogicBuild) building);
+            } else {
+                Assertions.setMessage((LogicBlock.LogicBuild) building,
+                        () -> "Assertion failed: " + print(message) + " (expected " + type.display() + ", got " + AssertDataType.actualType(value) + ")");
+                exec.counter.numval--;
+                exec.yield = true;
+            }
+        }
+    }
+
     public static class BreakpointI implements LExecutor.LInstruction, AssertInstruction {
         public ConditionOp op = ConditionOp.notEqual;
         public LVar value, compare;

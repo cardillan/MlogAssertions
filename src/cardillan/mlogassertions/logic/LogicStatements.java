@@ -22,6 +22,7 @@ public class LogicStatements {
         register(AssertEqualsStatement::new, AssertEqualsStatement.opcode, AssertEqualsStatement::read);
         register(AssertFlushStatement::new, AssertFlushStatement.opcode, AssertFlushStatement::read);
         register(AssertPrintsStatement::new, AssertPrintsStatement.opcode, AssertPrintsStatement::read);
+        register(AssertTypeStatement::new, AssertTypeStatement.opcode, AssertTypeStatement::read);
         register(ErrorStatement::new, ErrorStatement.opcode, ErrorStatement::read);
         register(LogStatement::new, LogStatement.opcode, LogStatement::read);
         register(BreakpointStatement::new, BreakpointStatement.opcode, BreakpointStatement::read);
@@ -302,6 +303,59 @@ public class LogicStatements {
             int i = 1;
             if (tokens.length > i) stmt.position = tokens[i++];
             if (tokens.length > i) stmt.expected = tokens[i++];
+            if (tokens.length > i) stmt.message = tokens[i++];
+            return stmt;
+        }
+    }
+
+    public static class AssertTypeStatement extends AssertStatement {
+        public static final String opcode = "asserttype";
+        public String value = "@unit";
+        public AssertDataType type = AssertDataType.unit;
+        public String message = "\"@unit should be a unit\"";
+
+        public AssertTypeStatement() {
+            super("Assert Type");
+        }
+
+        @Override
+        public void build(Table table) {
+            table.add(" value ").self(this::param);
+            field(table, value, v -> value = v);
+            stretchRow(table);
+            table.button(b -> {
+                b.label(() -> type.display());
+                b.clicked(() -> showSelect(b, AssertDataType.all, type, o -> {
+                    type = o;
+                    build(table);
+                }, 2, cell -> cell.size(110, 50)));
+            }, Styles.logict, () -> {
+            }).size(108, 40).left().pad(4f).color(table.color);
+            stretchRow(table);
+            table.add(" message ").self(this::param);
+            message(table, message, str -> message = str);
+        }
+
+        @Override
+        public LExecutor.LInstruction build(LAssembler builder) {
+            return new LogicInstructions.AssertTypeI(builder.var(value), type, builder.var(message));
+        }
+
+        @Override
+        public void write(StringBuilder builder) {
+            writer.start(builder);
+            writer.write(opcode);
+            writer.write(value);
+            writer.write(type.display());
+            writer.write(message);
+            writer.end();
+        }
+
+        public static LStatement read(String[] tokens) {
+            AssertTypeStatement stmt = new AssertTypeStatement();
+            int i = 1;
+            if (tokens.length > i) stmt.value = tokens[i++];
+            if (tokens.length > i) stmt.type = AssertDataType.parse(tokens[i++]);
             if (tokens.length > i) stmt.message = tokens[i++];
             return stmt;
         }

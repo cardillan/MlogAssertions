@@ -68,6 +68,14 @@ When the instruction finishes, the text buffer is restored to the state of the p
 > [!NOTE]
 > The content of the text buffer is not saved into the map file. Therefore, when a map is loaded from a save file, the `asssertprint` instruction may spuriously fail. 
 
+## Instruction `asserttype` 
+
+This instruction checks the runtime data type of a value and stops the program with a message when the value does not hold the expected type. The failure message automatically includes which type was expected and what the value actually contains. The instruction takes these parameters:
+
+* `value`: the value being tested.
+* `type`: the expected data type. One of `number`, `string`, `content`, `building`, `unit`, `team` or `null` (the variable holds no value).
+* `message`: the error message to display in case the assertion fails.
+
 ## Instruction `breakpoint`
 
 This instruction comes with a condition (just like the `jump` instruction). When the condition is `true`, the game is paused in the exact state in which the breakpoint occured. Specifically, no other instructions in the current processor or any other processors are executed after the breakpoint is hit, and all logic variables in all processors and contents of all memory cells should remain unchanged. However, it is possible that units and buildings do change their own state or the state of other units/buildings after the breakpoint hits, but before the game is properly paused.
