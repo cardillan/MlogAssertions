@@ -82,7 +82,7 @@ public class LogicInstructions {
             if (ConditionOp.strictEqual.test(expected, actual)) {
                 Assertions.reset((LogicBlock.LogicBuild) building);
             } else {
-                Assertions.setMessage((LogicBlock.LogicBuild) building, () -> "Assertion failed: " + print(message));
+                Assertions.setMessage((LogicBlock.LogicBuild) building, () -> Core.bundle.get("assertions.assertionFailed", "Assertion failed:") + " " + print(message));
                 exec.counter.numval--;
                 exec.yield = true;
             }
@@ -125,7 +125,7 @@ public class LogicInstructions {
 
             int flushIndex = this.flushIndex.numi();
             if (flushIndex < 0 || flushIndex > exec.textBuffer.length()) {
-                Assertions.setMessage((LogicBlock.LogicBuild) building, () -> "Invalid flush index");
+                Assertions.setMessage((LogicBlock.LogicBuild) building, () -> Core.bundle.get("assertions.invalidFlushIndex", "Invalid flush index"));
                 exec.counter.numval--;
                 exec.yield = true;
             } else {
@@ -133,7 +133,7 @@ public class LogicInstructions {
 
                 if (!text.equals(expected.obj())) {
                     Assertions.setMessage((LogicBlock.LogicBuild) building,
-                            () -> "Assertion failed: " + print(message));
+                            () -> Core.bundle.get("assertions.assertionFailed", "Assertion failed:") + " " + print(message));
                     exec.counter.numval--;
                     exec.yield = true;
                 } else {
