@@ -70,7 +70,7 @@ When the instruction finishes, the text buffer is restored to the state of the p
 
 ## Instruction `breakpoint`
 
-This isntruction comes with a condition (just like the `jump` instruction). When the condition is `true`, the game is paused in the exact state in which the breakpoint occured. Specifically, no other instructions in the current processor or any other processors are executed after the breakpoint is hit, and all logic variables in all processors and contents of all memory cells should remain unchanged. However, it is possible that units and buildings do change their own state or the state of other units/buildings after the breakpoint hits, but before the game is properly paused.
+This instruction comes with a condition (just like the `jump` instruction). When the condition is `true`, the game is paused in the exact state in which the breakpoint occured. Specifically, no other instructions in the current processor or any other processors are executed after the breakpoint is hit, and all logic variables in all processors and contents of all memory cells should remain unchanged. However, it is possible that units and buildings do change their own state or the state of other units/buildings after the breakpoint hits, but before the game is properly paused.
 
 > [!WARNING]
 > After unpausing the game, the execution continues as usual, except the accumulators of all processors have been reset, and atomic section executions might be compromised. These shortcomings will hopefully be addressed in a future release.    
