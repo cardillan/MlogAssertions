@@ -174,14 +174,13 @@ public class LogicInstructions {
     }
 
     public static class ErrorI implements LExecutor.LInstruction, AssertInstruction {
-        public LVar[] vars;
+        public LVar[] vars = new LVar[10];
 
         public ErrorI(LVar[] vars) {
             this.vars = vars;
         }
 
         public ErrorI() {
-            vars = new LVar[10];
         }
 
         @Override
@@ -195,8 +194,8 @@ public class LogicInstructions {
     }
 
     public static class LogI implements LExecutor.LInstruction, AssertInstruction {
-        Log.LogLevel level;
-        public LVar[] vars;
+        Log.LogLevel level = Log.LogLevel.info;
+        public LVar[] vars = new LVar[10];
 
         public LogI(Log.LogLevel level, LVar[] vars) {
             this.level = level;
@@ -204,8 +203,6 @@ public class LogicInstructions {
         }
 
         public LogI() {
-            Log.LogLevel level = Log.LogLevel.info;
-            vars = new LVar[10];
         }
 
         @Override
