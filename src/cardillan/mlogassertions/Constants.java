@@ -4,6 +4,9 @@ public class Constants {
     public static final String assertionsCategory = "asserts";
 
     // Settings
+    public static final String disableBreakpoints = "disable-breakpoints";
+    public static final String assertsAreBreakpoints = "asserts-are-breakpoints";
+    public static final String freeCameraOnBreakpoint = "free-camera-on-breakpoint";
     public static final String maxInstructions = "max-instructions";
     public static final String minWaitTimeUpdate = "min-wait-time-update";
     public static final String processorUpdatesPerTick = "processor-updates-per-tick";

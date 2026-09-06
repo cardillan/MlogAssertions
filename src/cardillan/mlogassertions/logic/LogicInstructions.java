@@ -3,15 +3,16 @@ package cardillan.mlogassertions.logic;
 import arc.Core;
 import arc.graphics.Color;
 import arc.util.Log;
+import cardillan.mlogassertions.Settings;
 import cardillan.mlogassertions.ui.Assertions;
 import mindustry.Vars;
-import mindustry.content.Fx;
 import mindustry.core.GameState;
-import mindustry.gen.Building;
 import mindustry.logic.ConditionOp;
 import mindustry.logic.LExecutor;
 import mindustry.logic.LVar;
-import mindustry.world.blocks.logic.LogicBlock;
+import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
+
+import static arc.Core.settings;
 
 public class LogicInstructions {
 
@@ -44,15 +45,15 @@ public class LogicInstructions {
 
         @Override
         public final void run(LExecutor exec) {
-            Building building = exec.thisv.building();
+            LogicBuild build = exec.build;
 
             if ((value.isobj ? type.objFunction.get(value.objval) : type.function.get(value.num()))
                     && (type != AssertionType.multiple || (value.num() % multiple.num() == 0))
                     && (opMin.function.get(min.num(), value.num()))
                     && (opMax.function.get(value.num(), max.num()))) {
-                Assertions.reset((LogicBlock.LogicBuild) building);
+                Assertions.reset(build);
             } else {
-                Assertions.setMessage((LogicBlock.LogicBuild) building, () -> print(message));
+                assertion(build, message);
 
                 //skip back to self.
                 exec.counter.numval--;
@@ -77,13 +78,12 @@ public class LogicInstructions {
 
         @Override
         public final void run(LExecutor exec) {
-            Building building = exec.thisv.building();
+            LogicBuild build = exec.build;
 
             if (ConditionOp.strictEqual.test(expected, actual)) {
-                Assertions.reset((LogicBlock.LogicBuild) building);
+                Assertions.reset(build);
             } else {
-                Assertions.setMessage((LogicBlock.LogicBuild) building,
-                        () -> Core.bundle.format("assertions.assertionFailed", print(message)));
+                assertion(build, message);
                 exec.counter.numval--;
                 exec.yield = true;
             }
@@ -122,24 +122,23 @@ public class LogicInstructions {
 
         @Override
         public final void run(LExecutor exec) {
-            Building building = exec.thisv.building();
+            LogicBuild building = exec.build;
 
             int flushIndex = this.flushIndex.numi();
             if (flushIndex < 0 || flushIndex > exec.textBuffer.length()) {
-                Assertions.setMessage((LogicBlock.LogicBuild) building, () -> Core.bundle.get("assertions.invalidFlushIndex"));
+                assertion(building, Core.bundle.get("assertions.invalidFlushIndex"));
                 exec.counter.numval--;
                 exec.yield = true;
             } else {
                 String text = exec.textBuffer.substring(flushIndex);
 
                 if (!text.equals(expected.obj())) {
-                    Assertions.setMessage((LogicBlock.LogicBuild) building,
-                            () -> Core.bundle.get("assertions.assertionFailed", print(message)));
+                    assertion(building, message);
                     exec.counter.numval--;
                     exec.yield = true;
                 } else {
                     exec.textBuffer.setLength(flushIndex);
-                    Assertions.reset((LogicBlock.LogicBuild) building);
+                    Assertions.reset(building);
                 }
             }
         }
@@ -161,15 +160,7 @@ public class LogicInstructions {
         @Override
         public void run(LExecutor exec){
             if (op.test(value, compare)) {
-                Vars.state.set(GameState.State.paused);
-                Vars.world.tiles.eachTile(tile -> {
-                    if (tile.build instanceof LogicBlock.LogicBuild logicBuild) {
-                        logicBuild.accumulator = 0f;
-                    }
-                });
-                var build = exec.build;
-                Vars.ui.showInfoToast(Core.bundle.format("breakpoint.message", build.block.name, build.tile.x, build.tile.y), 10);
-                Fx.unitCapKill.at(build.getX(), build.getY(), 10f, Color.crimson);
+                breakpoint(exec.build, Core.bundle.format("breakpoint.message", exec.counter.numval - 1));
             }
         }
     }
@@ -186,9 +177,9 @@ public class LogicInstructions {
 
         @Override
         public final void run(LExecutor exec) {
-            Building building = exec.thisv.building();
+            LogicBuild building = exec.build;
 
-            Assertions.setMessage((LogicBlock.LogicBuild) building, () -> buildMessage("", vars));
+            Assertions.setMessage(building, () -> buildMessage("", vars));
             exec.counter.numval--;
             exec.yield = true;
         }
@@ -210,6 +201,35 @@ public class LogicInstructions {
         public final void run(LExecutor exec) {
             Log.log(level, buildMessage("[MlogAssertions] ", vars));
         }
+    }
+
+    private static void assertion(LogicBuild build, Object message) {
+        if (Settings.assertsAreBreakpoints()) {
+            if (Settings.disableBreakpoints()) return;  // Avoid unnecessary creation of the message
+            breakpoint(build, Core.bundle.format("assertions.assertionFailed", print(message)));
+        } else {
+            Assertions.setMessage(build, () -> Core.bundle.format("assertions.assertionFailed", print(message)));
+        }
+    }
+
+    private static void breakpoint(LogicBuild build, String message) {
+        if (Settings.disableBreakpoints()) return;
+
+        boolean restoreCamera = false;
+        if (Settings.freeCameraOnBreakpoint()) {
+            restoreCamera = !settings.getBool("detach-camera", false);
+            settings.put("detach-camera", true);
+        }
+        Core.camera.position.set(build.getX(), build.getY());
+
+        Vars.state.set(GameState.State.paused);
+        Vars.world.tiles.eachTile(tile -> {
+            if (tile.build instanceof LogicBuild logicBuild) {
+                logicBuild.accumulator = 0f;
+            }
+        });
+
+        Assertions.setBreakpointProc(build, message, restoreCamera);
     }
 
     private static String buildMessage(String prefix, LVar[] vars) {
@@ -241,8 +261,8 @@ public class LogicInstructions {
 
     private static final double COLOR_LIMIT = Color.white.toDoubleBits();
 
-    private static String print(LVar value) {
-        return print(value, false);
+    private static String print(Object message) {
+        return message instanceof LVar lvar ? print(lvar, false) : String.valueOf(message);
     }
 
     private static String print(LVar value, boolean formatString) {

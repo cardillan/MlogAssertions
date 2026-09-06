@@ -14,6 +14,7 @@ import arc.util.pooling.Pools;
 import cardillan.mlogassertions.logic.LogicInstructions;
 import mindustry.Vars;
 import mindustry.content.Fx;
+import mindustry.core.GameState;
 import mindustry.game.EventType;
 import mindustry.graphics.Drawf;
 import mindustry.graphics.Layer;
@@ -46,6 +47,11 @@ public class Assertions {
     // Invalid blocks
     static final Seq<LogicBuild> invalidBlocks = new Seq<>();
 
+    // The breakpoint context
+    static LogicBuild breakpointProc;
+    static String breakpointMessage;
+    static boolean restoreCamera;
+
     // The next time the effect should be run (game time)
     static double nextWarnEffect = 0;
 
@@ -68,6 +74,13 @@ public class Assertions {
             // Just this once
             if (warnEffectFrequency == 0) effect(block);
         }
+    }
+
+    public static void setBreakpointProc(LogicBuild breakpointProc, String message, boolean restoreCamera) {
+        Assertions.breakpointProc = breakpointProc;
+        Assertions.breakpointMessage = message;
+        Assertions.restoreCamera = restoreCamera;
+        blocks.remove(breakpointProc);
     }
 
     public static void reset(LogicBuild block) {
@@ -113,9 +126,22 @@ public class Assertions {
             }
         });
 
+        Events.on(EventType.StateChangeEvent.class, e -> {
+            if (e.from == GameState.State.paused) {
+                breakpointProc = null;
+                if (restoreCamera) {
+                    Core.settings.put("detach-camera", false);
+                    restoreCamera = false;
+                }
+            }
+        });
+
         Events.run(EventType.Trigger.drawOver, () -> {
             checkBlocks();
             blocks.each(Assertions::draw);
+            if (breakpointProc != null) {
+                draw(breakpointProc, breakpointMessage);
+            }
 
             invalidBlocks.each(blocks::remove);
             allBlocks.removeAll(invalidBlocks);
@@ -195,7 +221,7 @@ public class Assertions {
         if (message == WAIT) {
             drawWait(block);
             return;
-        };
+        }
 
         if (runWarnEffect) {
             effect(block);

@@ -19,32 +19,31 @@ public class Settings {
         );
 
         Vars.ui.settings.addCategory("Mlog Assertions", Icon.warningSmall, t -> {
+            t.checkPref(Constants.disableBreakpoints, false);
+            t.checkPref(Constants.assertsAreBreakpoints, false);
+            t.checkPref(Constants.freeCameraOnBreakpoint, true);
+
             if (canSetInstructions()) {
                 t.sliderPref(Constants.maxInstructions, 1000, 1000, 2000, 100, i -> {
                     LExecutor.maxInstructions = i;
                     return Integer.toString(i);
                 });
-                t.row();
-
             }
 
             t.sliderPref(Constants.minWaitTimeUpdate, 1000, 0, 10000, 500, i -> {
                 Assertions.minWaitTimeUpdate = i;
                 return i == 0 ? "none" : Double.toString(i / 1000.0);
             });
-            t.row();
 
             t.sliderPref(Constants.processorUpdatesPerTick, 50, 5, 200, 5, i -> {
                 Assertions.processorUpdatesPerTick = i;
                 return Integer.toString(i);
             });
-            t.row();
 
             t.sliderPref(Constants.warnEffectFrequency, 0, -5, 60, 5, i -> {
                 Assertions.warnEffectFrequency = i;
                 return i < 0 ? "never" : i == 0 ? "once" : "every " + i + " sec";
             });
-            t.row();
         });
 
         if (canSetInstructions()) {
@@ -53,6 +52,18 @@ public class Settings {
         Assertions.minWaitTimeUpdate = Core.settings.getInt(Constants.minWaitTimeUpdate);
         Assertions.processorUpdatesPerTick = Core.settings.getInt(Constants.processorUpdatesPerTick);
         Assertions.warnEffectFrequency = Core.settings.getInt(Constants.warnEffectFrequency);
+    }
+
+    public static boolean disableBreakpoints() {
+        return Core.settings.getBool(Constants.disableBreakpoints, false);
+    }
+
+    public static boolean assertsAreBreakpoints() {
+        return Core.settings.getBool(Constants.assertsAreBreakpoints, false);
+    }
+
+    public static boolean freeCameraOnBreakpoint() {
+        return Core.settings.getBool(Constants.freeCameraOnBreakpoint, true);
     }
 
     public static boolean canSetInstructions() {
