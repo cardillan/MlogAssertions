@@ -172,7 +172,7 @@ public class Assertions {
                 return;
             }
             if (instruction instanceof LExecutor.StopI) {
-                setMessage(block, () -> Core.bundle.get("assertions.stoppedAt", "Stopped at #") + ix);
+                setMessage(block, () -> Core.bundle.format("assertions.stoppedAt", ix));
                 return;
             }
             if (minWaitTimeUpdate > 0 && instruction instanceof LExecutor.WaitI w && 1000 * w.value.num() >= minWaitTimeUpdate) {
