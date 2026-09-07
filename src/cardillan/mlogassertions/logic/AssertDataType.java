@@ -8,7 +8,7 @@ import mindustry.logic.LVar;
 
 public enum AssertDataType {
     number("number"), string("string"), content("content"), building("building"),
-    unit("unit"), team("team"), none("null"),
+    unit("unit"), team("team"),
     ;
 
     public static final AssertDataType[] all = values();
@@ -25,7 +25,6 @@ public enum AssertDataType {
     }
 
     public boolean matches(LVar var) {
-        if (this == none) return var.isobj && var.objval == null;
         if (this == number) return !var.isobj;
         if (!var.isobj) return false;
         Object o = var.objval;

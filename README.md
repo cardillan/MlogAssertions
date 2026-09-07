@@ -73,7 +73,7 @@ When the instruction finishes, the text buffer is restored to the state of the p
 This instruction checks the runtime data type of a value and stops the program with a message when the value does not hold the expected type. The failure message automatically includes which type was expected and what the value actually contains. The instruction takes these parameters:
 
 * `value`: the value being tested.
-* `type`: the expected data type. One of `number`, `string`, `content`, `building`, `unit`, `team` or `null` (the variable holds no value).
+* `type`: the expected data type. One of `number`, `string`, `content`, `building`, `unit` or `team`.
 * `message`: the error message to display in case the assertion fails.
 
 ## Instruction `breakpoint`

@@ -166,7 +166,7 @@ public class LogicInstructions {
                 Assertions.reset((LogicBlock.LogicBuild) building);
             } else {
                 Assertions.setMessage((LogicBlock.LogicBuild) building,
-                        () -> "Assertion failed: " + print(message) + " (expected " + type.display() + ", got " + AssertDataType.actualType(value) + ")");
+                        () -> Core.bundle.format("asserts.typeMismatch", print(message), type.display(), AssertDataType.actualType(value)));
                 exec.counter.numval--;
                 exec.yield = true;
             }
