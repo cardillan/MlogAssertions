@@ -160,12 +160,12 @@ public class LogicInstructions {
 
         @Override
         public final void run(LExecutor exec) {
-            Building building = exec.thisv.building();
+            LogicBuild building = exec.build;
 
             if (type.matches(value)) {
-                Assertions.reset((LogicBlock.LogicBuild) building);
+                Assertions.reset(building);
             } else {
-                Assertions.setMessage((LogicBlock.LogicBuild) building,
+                Assertions.setMessage(building,
                         () -> Core.bundle.format("asserts.typeMismatch", print(message), type.display(), AssertDataType.actualType(value)));
                 exec.counter.numval--;
                 exec.yield = true;
