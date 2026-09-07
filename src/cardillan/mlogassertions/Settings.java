@@ -62,7 +62,7 @@ public class Settings {
         return Core.settings.getBool(Constants.assertsAreBreakpoints, false);
     }
 
-    public static boolean freeCameraOnBreakpoint() {
+    public static boolean detachCameraOnBreakpoint() {
         return Core.settings.getBool(Constants.freeCameraOnBreakpoint, true);
     }
 

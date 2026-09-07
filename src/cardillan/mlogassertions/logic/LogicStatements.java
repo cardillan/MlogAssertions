@@ -18,9 +18,9 @@ public class LogicStatements {
         register(AssertTypeStatement::new, AssertTypeStatement.opcode, AssertTypeStatement::read);
         register(AssertFlushStatement::new, AssertFlushStatement.opcode, AssertFlushStatement::read);
         register(AssertPrintsStatement::new, AssertPrintsStatement.opcode, AssertPrintsStatement::read);
+        register(BreakpointStatement::new, BreakpointStatement.opcode, BreakpointStatement::read);
         register(ErrorStatement::new, ErrorStatement.opcode, ErrorStatement::read);
         register(LogStatement::new, LogStatement.opcode, LogStatement::read);
-        register(BreakpointStatement::new, BreakpointStatement.opcode, BreakpointStatement::read);
     }
 
     private static void register(Prov<LStatement> prov, String opcode, Func<String[], LStatement> parser) {
@@ -61,7 +61,7 @@ public class LogicStatements {
                 t.color.set(category().color);
                 builder.get(t);
             }).growX();
-        };
+        }
     }
 
     public static class AssertBoundsStatement extends AssertStatement {

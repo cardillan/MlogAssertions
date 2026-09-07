@@ -11,7 +11,7 @@ Mod intended to make debugging in Mindustry Logic a bit easier. Provided functio
 * Settings for overriding instruction limit (the limit can be increased up to 2000 instructions). This allows you to insert debugging code (e.g., additional `print` instructions) into your code, even if the original instruction limit is exceeded.
 * Buttons to copy the variables (including their full, unrounded values) and the processor's text buffer to clipboard. The variables can be pasted into a spreadsheet and sorted by name for easier inspection.
 * Custom mlog instructions for performing runtime checks, logging messages, and reporting errors.
-* Indication of stopped processors, processors performing a `wait`, and failed runtime checks.
+* Indication of stopped processors, processors executing a `wait`, and failed runtime checks.
 
 ![Screenshot of state indicated on processors](processors.png)
 
@@ -19,7 +19,7 @@ Mod intended to make debugging in Mindustry Logic a bit easier. Provided functio
 
 The custom instructions are used by [Mindcode](https://github.com/cardillan/mindcode) to provide debugging support or perform runtime checks. They can be used by other compilers too or by a manually written mlog.
 
-When a runtime check fails, the program execution stops at the given instruction, and an accompanying message is displayed above the processor.
+When an assertion fails, the program execution stops at the given instruction, and an accompanying message is displayed above the processor.
 
 ## Instruction `assertbounds` 
 
@@ -41,13 +41,21 @@ This is a complex instruction, most useful to verify the value of a variable use
 
 ## Instruction `assertequals` 
 
-The instruction compares an actual value to an expected value and displays an error message if they are not equal. The instruction takes these parameters:
+This instruction compares an actual value to an expected value and displays the given message if they are not equal. The instruction takes these parameters:
 
 * `expected`: the expected value.
 * `actual`: the actual value.
 * `message`: the error message to display in case the assertion fails.
 
 The values are compared using the `strictEqual` mlog operator.
+
+## Instruction `asserttype`
+
+This instruction compares the runtime data type to an expected value and displays the given message when the value is not of the expected type. The instruction takes these parameters:
+
+* `value`: the value being tested.
+* `type`: the expected data type. One of `number`, `string`, `content`, `building`, `unit` or `team`.
+* `message`: the error message to display in case the assertion fails.
 
 ## Instruction `assertflush`
 
@@ -68,17 +76,9 @@ When the instruction finishes, the text buffer is restored to the state of the p
 > [!NOTE]
 > The content of the text buffer is not saved into the map file. Therefore, when a map is loaded from a save file, the `asssertprint` instruction may spuriously fail. 
 
-## Instruction `asserttype` 
-
-This instruction checks the runtime data type of a value and stops the program with a message when the value does not hold the expected type. The failure message automatically includes which type was expected and what the value actually contains. The instruction takes these parameters:
-
-* `value`: the value being tested.
-* `type`: the expected data type. One of `number`, `string`, `content`, `building`, `unit` or `team`.
-* `message`: the error message to display in case the assertion fails.
-
 ## Instruction `breakpoint`
 
-This instruction comes with a condition (just like the `jump` instruction). When the condition is `true`, the game is paused in the exact state in which the breakpoint occured. Specifically, no other instructions in the current processor or any other processors are executed after the breakpoint is hit, and all logic variables in all processors and contents of all memory cells should remain unchanged. However, it is possible that units and buildings do change their own state or the state of other units/buildings after the breakpoint hits, but before the game is properly paused.
+This instruction comes with a condition (just like the `jump` instruction). When the condition is met, the game is paused in the exact state in which the breakpoint occurred. Specifically, no other instructions in the current processor or any other processors are executed after the breakpoint is hit, and all logic variables in all processors and contents of all memory cells should remain unchanged. However, it is possible that units and buildings do change their own state or the state of other units/buildings after the breakpoint hits, but before the game is properly paused.
 
 > [!WARNING]
 > After unpausing the game, the execution continues as usual, except the accumulators of all processors have been reset, and atomic section executions might be compromised. These shortcomings will hopefully be addressed in a future release.    

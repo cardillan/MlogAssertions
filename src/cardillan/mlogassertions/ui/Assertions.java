@@ -6,22 +6,27 @@ import arc.func.Prov;
 import arc.graphics.Color;
 import arc.graphics.g2d.*;
 import arc.scene.ui.layout.Scl;
+import arc.struct.FloatSeq;
 import arc.struct.ObjectMap;
 import arc.struct.Seq;
 import arc.util.Align;
 import arc.util.Log;
 import arc.util.pooling.Pools;
+import cardillan.mlogassertions.Constants;
+import cardillan.mlogassertions.Settings;
 import cardillan.mlogassertions.logic.LogicInstructions;
 import mindustry.Vars;
 import mindustry.content.Fx;
 import mindustry.core.GameState;
 import mindustry.game.EventType;
+import mindustry.gen.Groups;
 import mindustry.graphics.Drawf;
 import mindustry.graphics.Layer;
 import mindustry.logic.LExecutor;
 import mindustry.ui.Fonts;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
 
+import static arc.Core.settings;
 import static mindustry.Vars.tilesize;
 
 public class Assertions {
@@ -35,13 +40,13 @@ public class Assertions {
     // wait is a special case, recognized by comparison to this instance
     static final String WAIT = new String("W");
 
-    // Color of the displayed text
+    // Color of the displayed text/warning effect
     static final Color color = Color.coral;
 
     // Active messages
     static final ObjectMap<LogicBuild, String> blocks = new ObjectMap<>();
 
-    // All blocks
+    // All processors
     static final Seq<LogicBuild> allBlocks = new Seq<>();
 
     // Invalid blocks
@@ -50,7 +55,7 @@ public class Assertions {
     // The breakpoint context
     static LogicBuild breakpointProc;
     static String breakpointMessage;
-    static boolean restoreCamera;
+    static final FloatSeq accumulators = new FloatSeq();
 
     // The next time the effect should be run (game time)
     static double nextWarnEffect = 0;
@@ -76,11 +81,32 @@ public class Assertions {
         }
     }
 
-    public static void setBreakpointProc(LogicBuild breakpointProc, String message, boolean restoreCamera) {
-        Assertions.breakpointProc = breakpointProc;
-        Assertions.breakpointMessage = message;
-        Assertions.restoreCamera = restoreCamera;
-        blocks.remove(breakpointProc);
+    public static void breakpoint(LogicBuild processor, String message) {
+        Vars.state.set(GameState.State.paused);
+
+        if (Settings.detachCameraOnBreakpoint()) {
+            settings.put(Constants.reattachCamera, !settings.getBool(Constants.detachCamera, false));
+            settings.put(Constants.detachCamera, true);
+        }
+        Core.camera.position.set(processor.getX(), processor.getY());
+
+        // Clear all accumulators
+        accumulators.clear();
+        allBlocks.forEach(b -> {
+            accumulators.add(b.accumulator);
+            b.accumulator = 0;
+        });
+
+        // Restore all accumulators right after the update has finished
+        Core.app.post(() -> {
+            for (int i = 0; i < accumulators.size; i++) {
+                allBlocks.get(i).accumulator += accumulators.get(i);
+            }
+        });
+
+        breakpointProc = processor;
+        breakpointMessage = message;
+        blocks.remove(processor);
     }
 
     public static void reset(LogicBuild block) {
@@ -101,8 +127,8 @@ public class Assertions {
             invalidBlocks.clear();
             nextWarnEffect = 0;
 
-            Vars.world.tiles.eachTile(tile -> {
-                if (tile.build instanceof LogicBuild build && blocks.put(build, "") == null) {
+            Groups.build.forEach(b -> {
+                if (b instanceof LogicBuild build && blocks.put(build, "") == null) {
                     allBlocks.add(build);
                 }
             });
@@ -129,10 +155,7 @@ public class Assertions {
         Events.on(EventType.StateChangeEvent.class, e -> {
             if (e.from == GameState.State.paused) {
                 breakpointProc = null;
-                if (restoreCamera) {
-                    Core.settings.put("detach-camera", false);
-                    restoreCamera = false;
-                }
+                reattachCamera();
             }
         });
 
@@ -147,6 +170,16 @@ public class Assertions {
             allBlocks.removeAll(invalidBlocks);
             invalidBlocks.clear();
         });
+
+        // Reattach the camera if the game was closed while paused
+        reattachCamera();
+    }
+
+    private static void reattachCamera() {
+        if (Core.settings.getBool(Constants.detachCamera)) {
+            Core.settings.put(Constants.detachCamera, false);
+            Core.settings.put(Constants.reattachCamera, true);
+        }
     }
 
     static int checkIndex;

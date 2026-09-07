@@ -3,7 +3,11 @@ package cardillan.mlogassertions;
 public class Constants {
     public static final String assertionsCategory = "asserts";
 
-    // Settings
+    // Camera state
+    public static final String detachCamera = "detach-camera";
+    public static final String reattachCamera = "reattach-camera";
+
+    // Mod settings
     public static final String disableBreakpoints = "disable-breakpoints";
     public static final String assertsAreBreakpoints = "asserts-are-breakpoints";
     public static final String freeCameraOnBreakpoint = "free-camera-on-breakpoint";
