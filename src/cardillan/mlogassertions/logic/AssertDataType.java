@@ -7,22 +7,9 @@ import mindustry.gen.Unit;
 import mindustry.logic.LVar;
 
 public enum AssertDataType {
-    number("number"), string("string"), content("content"), building("building"),
-    unit("unit"), team("team"),
-    ;
+    number, string, content, building, unit, team;
 
     public static final AssertDataType[] all = values();
-
-    private final String token;
-
-    AssertDataType(String token) {
-        this.token = token;
-    }
-
-    /** The wire format token; also what the type select button shows. */
-    public String display() {
-        return token;
-    }
 
     public boolean matches(LVar var) {
         if (this == number) return !var.isobj;
@@ -48,12 +35,5 @@ public enum AssertDataType {
         if (var.objval instanceof Team) return "team";
         if (var.objval instanceof Enum<?>) return "enum";
         return "unknown";
-    }
-
-    public static AssertDataType parse(String token) {
-        for (AssertDataType type : all) {
-            if (type.token.equals(token)) return type;
-        }
-        throw new IllegalArgumentException("Invalid asserttype data type: '" + token + "'");
     }
 }

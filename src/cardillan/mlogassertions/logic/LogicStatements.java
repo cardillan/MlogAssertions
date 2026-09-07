@@ -1,18 +1,13 @@
 package cardillan.mlogassertions.logic;
 
-import arc.Core;
 import arc.func.Cons;
 import arc.func.Func;
 import arc.func.Prov;
-import arc.graphics.Color;
-import arc.scene.ui.Label;
 import arc.scene.ui.layout.Table;
 import arc.util.Log;
 import mindustry.gen.LogicIO;
 import mindustry.logic.*;
 import mindustry.ui.Styles;
-
-import java.util.Arrays;
 
 public class LogicStatements {
     private static final LogicStatementWriter writer = new LogicStatementWriter();
@@ -20,9 +15,9 @@ public class LogicStatements {
     public static void register() {
         register(AssertBoundsStatement::new, AssertBoundsStatement.opcode, AssertBoundsStatement::read);
         register(AssertEqualsStatement::new, AssertEqualsStatement.opcode, AssertEqualsStatement::read);
+        register(AssertTypeStatement::new, AssertTypeStatement.opcode, AssertTypeStatement::read);
         register(AssertFlushStatement::new, AssertFlushStatement.opcode, AssertFlushStatement::read);
         register(AssertPrintsStatement::new, AssertPrintsStatement.opcode, AssertPrintsStatement::read);
-        register(AssertTypeStatement::new, AssertTypeStatement.opcode, AssertTypeStatement::read);
         register(ErrorStatement::new, ErrorStatement.opcode, ErrorStatement::read);
         register(LogStatement::new, LogStatement.opcode, LogStatement::read);
         register(BreakpointStatement::new, BreakpointStatement.opcode, BreakpointStatement::read);
@@ -56,9 +51,17 @@ public class LogicStatements {
             }
         }
 
-        void message(Table table, String value, Cons<String> setter) {
+        protected void message(Table table, String value, Cons<String> setter) {
             field(table, value, setter).width(LCanvas.useRows() ? 280f : 0f).growX().padRight(3);
         }
+
+        protected void subtable(Table table, Cons<Table> builder) {
+            table.table(t ->{
+                t.left();
+                t.color.set(category().color);
+                builder.get(t);
+            }).growX();
+        };
     }
 
     public static class AssertBoundsStatement extends AssertStatement {
@@ -83,9 +86,7 @@ public class LogicStatements {
             t.left();
             t.add("Value type ").color(category().color).padLeft(4);
             row(t);
-            t.table(table -> {
-                table.left();
-                table.color.set(category().color);
+            subtable(t, table -> {
                 table.add("value of ").padLeft(4);
                 field(table, value, str -> value = str);
                 table.add(" is ").padLeft(4);
@@ -101,20 +102,16 @@ public class LogicStatements {
                     table.add(" of ");
                     numField(table, multiple, str -> multiple = str);
                 }
-                table.add("").growX();
             });
             t.row();
             t.add("Bounds ").color(category().color).padLeft(4);
             row(t);
-            t.table(table -> {
-                table.left();
-                table.color.set(category().color);
+            subtable(t, table -> {
                 numField(table, min, str -> min = str);
                 opButton(t, table, opMin, o -> opMin = o);
                 table.add(" value ");
                 opButton(t, table, opMax, o -> opMax = o);
                 numField(table, max, str -> max = str);
-                table.add("").growX();
             });
             t.row();
             t.add("Message").color(category().color).padLeft(4);
@@ -320,18 +317,34 @@ public class LogicStatements {
 
         @Override
         public void build(Table table) {
-            table.add(" value ").self(this::param);
+            table.defaults().left();
+            table.clearChildren();
+            table.left();
+
+            if(LCanvas.useRows()) {
+                subtable(table, subtable -> createValues(table, subtable));
+                row(table);
+                subtable(table, this::createMessage);
+            } else {
+                createValues(table, table);
+                createMessage(table);
+            }
+        }
+
+        private void createValues(Table root, Table table) {
             field(table, value, v -> value = v);
-            stretchRow(table);
+            table.add(" is ").self(this::param);
             table.button(b -> {
-                b.label(() -> type.display());
+                b.label(() -> type.name());
                 b.clicked(() -> showSelect(b, AssertDataType.all, type, o -> {
                     type = o;
-                    build(table);
+                    build(root);
                 }, 2, cell -> cell.size(110, 50)));
             }, Styles.logict, () -> {
             }).size(108, 40).left().pad(4f).color(table.color);
-            stretchRow(table);
+        }
+
+        private void createMessage(Table table) {
             table.add(" message ").self(this::param);
             message(table, message, str -> message = str);
         }
@@ -346,7 +359,7 @@ public class LogicStatements {
             writer.start(builder);
             writer.write(opcode);
             writer.write(value);
-            writer.write(type.display());
+            writer.write(type.name());
             writer.write(message);
             writer.end();
         }
@@ -355,7 +368,7 @@ public class LogicStatements {
             AssertTypeStatement stmt = new AssertTypeStatement();
             int i = 1;
             if (tokens.length > i) stmt.value = tokens[i++];
-            if (tokens.length > i) stmt.type = AssertDataType.parse(tokens[i++]);
+            if (tokens.length > i) stmt.type = AssertDataType.valueOf(tokens[i++]);
             if (tokens.length > i) stmt.message = tokens[i++];
             return stmt;
         }
@@ -446,7 +459,6 @@ public class LogicStatements {
 
         @Override
         public void build(Table table){
-            table.add("breakpoint").padLeft(4);
             rebuild(table);
         }
 

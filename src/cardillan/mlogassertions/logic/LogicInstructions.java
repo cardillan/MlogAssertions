@@ -45,19 +45,13 @@ public class LogicInstructions {
 
         @Override
         public final void run(LExecutor exec) {
-            LogicBuild build = exec.build;
-
             if ((value.isobj ? type.objFunction.get(value.objval) : type.function.get(value.num()))
                     && (type != AssertionType.multiple || (value.num() % multiple.num() == 0))
                     && (opMin.function.get(min.num(), value.num()))
                     && (opMax.function.get(value.num(), max.num()))) {
-                Assertions.reset(build);
+                Assertions.reset(exec.build);
             } else {
-                assertion(build, message);
-
-                //skip back to self.
-                exec.counter.numval--;
-                exec.yield = true;
+                assertion(exec, message, null, null);
             }
         }
     }
@@ -78,14 +72,10 @@ public class LogicInstructions {
 
         @Override
         public final void run(LExecutor exec) {
-            LogicBuild build = exec.build;
-
             if (ConditionOp.strictEqual.test(expected, actual)) {
-                Assertions.reset(build);
+                Assertions.reset(exec.build);
             } else {
-                assertion(build, message);
-                exec.counter.numval--;
-                exec.yield = true;
+                assertion(exec, message, expected, actual);
             }
         }
     }
@@ -122,23 +112,16 @@ public class LogicInstructions {
 
         @Override
         public final void run(LExecutor exec) {
-            LogicBuild building = exec.build;
-
             int flushIndex = this.flushIndex.numi();
             if (flushIndex < 0 || flushIndex > exec.textBuffer.length()) {
-                assertion(building, Core.bundle.get("assertions.invalidFlushIndex"));
-                exec.counter.numval--;
-                exec.yield = true;
+                assertion(exec, Core.bundle.get("assertions.invalidFlushIndex"), null, null);
             } else {
-                String text = exec.textBuffer.substring(flushIndex);
-
-                if (!text.equals(expected.obj())) {
-                    assertion(building, message);
-                    exec.counter.numval--;
-                    exec.yield = true;
+                String actual = exec.textBuffer.substring(flushIndex);
+                if (!actual.equals(expected.obj())) {
+                    assertion(exec, message, expected, actual);
                 } else {
                     exec.textBuffer.setLength(flushIndex);
-                    Assertions.reset(building);
+                    Assertions.reset(exec.build);
                 }
             }
         }
@@ -160,15 +143,10 @@ public class LogicInstructions {
 
         @Override
         public final void run(LExecutor exec) {
-            LogicBuild building = exec.build;
-
             if (type.matches(value)) {
-                Assertions.reset(building);
+                Assertions.reset(exec.build);
             } else {
-                Assertions.setMessage(building,
-                        () -> Core.bundle.format("asserts.typeMismatch", print(message), type.display(), AssertDataType.actualType(value)));
-                exec.counter.numval--;
-                exec.yield = true;
+                assertion(exec, message, type.name(), AssertDataType.actualType(value));
             }
         }
     }
@@ -232,12 +210,19 @@ public class LogicInstructions {
         }
     }
 
-    private static void assertion(LogicBuild build, Object message) {
+    private static void assertion(LExecutor exec, Object message, Object expected, Object actual) {
         if (Settings.assertsAreBreakpoints()) {
             if (Settings.disableBreakpoints()) return;  // Avoid unnecessary creation of the message
-            breakpoint(build, Core.bundle.format("assertions.assertionFailed", print(message)));
+            breakpoint(exec.build, expected == null && actual == null
+                    ? Core.bundle.format("assertions.assertionFailed", print(message))
+                    : Core.bundle.format("assertions.assertionFailedWithValues", print(message), print(expected), print(actual)));
         } else {
-            Assertions.setMessage(build, () -> Core.bundle.format("assertions.assertionFailed", print(message)));
+            exec.counter.numval--;
+            exec.yield = true;
+
+            Assertions.setMessage(exec.build, expected == null && actual == null
+                    ? () -> Core.bundle.format("assertions.assertionFailed", print(message))
+                    : () -> Core.bundle.format("assertions.assertionFailedWithValues", print(message), print(expected), print(actual)));
         }
     }
 
