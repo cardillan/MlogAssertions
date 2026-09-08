@@ -5,6 +5,7 @@ import arc.Events;
 import arc.func.Prov;
 import arc.graphics.Color;
 import arc.graphics.g2d.*;
+import arc.math.geom.Rect;
 import arc.scene.ui.layout.Scl;
 import arc.struct.FloatSeq;
 import arc.struct.ObjectMap;
@@ -26,6 +27,7 @@ import mindustry.logic.LExecutor;
 import mindustry.ui.Fonts;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
 
+import static arc.Core.camera;
 import static arc.Core.settings;
 import static mindustry.Vars.tilesize;
 
@@ -42,6 +44,11 @@ public class Assertions {
 
     // Color of the displayed text/warning effect
     static final Color color = Color.coral;
+
+    // Camera bounds
+    private static final Rect wideBounds = new Rect();
+    private static final Rect narrowBounds = new Rect();
+    private static final Rect hitbox = new Rect();
 
     // Active messages
     static final ObjectMap<LogicBuild, String> blocks = new ObjectMap<>();
@@ -161,6 +168,12 @@ public class Assertions {
 
         Events.run(EventType.Trigger.drawOver, () -> {
             checkBlocks();
+
+            camera.bounds(narrowBounds);
+            wideBounds.set(narrowBounds);
+            narrowBounds.grow(tilesize * 2f);
+            wideBounds.grow(tilesize * 10f);
+
             blocks.each(Assertions::draw);
             if (breakpointProc != null) {
                 draw(breakpointProc, breakpointMessage);
@@ -188,7 +201,8 @@ public class Assertions {
 
     private static void checkBlocks() {
         // Do not lose fractional values of updates at high FPS
-        totalUpdates += Math.max(Core.graphics.getDeltaTime(), 1.5) * processorUpdatesPerTick;
+        // Throttle down on low FPS
+        totalUpdates += Math.min(Core.graphics.getDeltaTime() * 60, 5) * processorUpdatesPerTick;
         long updates = (long) totalUpdates;
         totalUpdates -= updates;
 
@@ -250,9 +264,15 @@ public class Assertions {
             return;
         }
 
+        // No processing when out of bounds
+        block.hitbox(hitbox);
+        if (!wideBounds.overlaps(hitbox)) return;
+
         // This is a wait indication
         if (message == WAIT) {
-            drawWait(block);
+            if (narrowBounds.overlaps(hitbox)) {
+                drawWait(block);
+            }
             return;
         }
 

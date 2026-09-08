@@ -78,10 +78,10 @@ When the instruction finishes, the text buffer is restored to the state of the p
 
 ## Instruction `breakpoint`
 
-This instruction comes with a condition (just like the `jump` instruction). When the condition is met, the game is paused in the exact state in which the breakpoint occurred. Specifically, no other instructions in the current processor or any other processors are executed after the breakpoint is hit, and all logic variables in all processors and contents of all memory cells should remain unchanged. However, it is possible that units and buildings do change their own state or the state of other units/buildings after the breakpoint hits, but before the game is properly paused.
+This instruction comes with a condition (just like the `jump` instruction). When the condition is met, the game is paused in the exact state in which the breakpoint occurred and the processor with the breakpoint is centered on screen. No other instructions in the current processor or any other processors are executed after the breakpoint is hit, and all logic variables in all processors and contents of all memory cells should remain unchanged. However, it is possible that units and buildings do change their own state or the state of other units/buildings after the breakpoint hits, but before the game is properly paused.
 
 > [!WARNING]
-> After unpausing the game, the execution continues as usual, except the accumulators of all processors have been reset, and atomic section executions might be compromised. These shortcomings will hopefully be addressed in a future release.    
+> After unpausing the game, the execution continues as usual, but the order of instruction execution may be altered due to the processors being manipulated. Schematics depending on two or more processors executing in lockstep (e.g., subframe) may be affected.
 
 ## Instruction `error`
 
@@ -103,6 +103,18 @@ This instruction writes a message into the game's log file. It is up to the user
 If the message contains placeholders in the form `[[1]` to `[[9]`, they are replaced by the corresponding parameters. If there are other parameters not used by the message, whose value is not the literal `null`, they are appended to the message one by one. String values are enclosed in quotes in this case. Numeric values in the color range are formatted as color literals (e.g., %e55454ff`).
 
 # Settings
+
+## Disable breakpoints
+
+Disables breakpoints in processors: the execution continues on the next instruction without pausing.
+
+## Breakpoint on failed assertions
+
+When active, a failed assertion is handled in the same way as a breakpoint and the execution then continues on the next instruction. If breakpoints are disabled, the assertions are completely ignored.
+
+## Detach camera on breakpoint
+
+When a breakpoint hits, the camera is detached so that the processor remains in view. The original state of the camera is restored when the game is unpaused. In case detaching the camera causes some problems, it can be disabled. 
 
 ## Instruction limit
 
