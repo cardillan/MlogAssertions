@@ -151,17 +151,17 @@ public class LogicInstructions {
         public ConditionOp op = ConditionOp.notEqual;
         public LVar value, compare;
 
-        public BreakpointI(ConditionOp op, LVar value, LVar compare){
+        public BreakpointI(ConditionOp op, LVar value, LVar compare) {
             this.op = op;
             this.value = value;
             this.compare = compare;
         }
 
-        public BreakpointI(){
+        public BreakpointI() {
         }
 
         @Override
-        public void run(LExecutor exec){
+        public void run(LExecutor exec) {
             if (op.test(value, compare)) {
                 breakpoint(exec.build, Core.bundle.format("breakpoint.message", exec.counter.numval - 1));
             }

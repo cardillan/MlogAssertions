@@ -24,6 +24,10 @@ public class LogicStatements {
     }
 
     private static void register(Prov<LStatement> prov, String opcode, Func<String[], LStatement> parser) {
+        if (LAssembler.customParsers.containsKey(opcode)) {
+            Log.warn("Logic statement opcode already registered: " + opcode);
+            return;
+        }
         LogicIO.allStatements.add(prov);
         LAssembler.customParsers.put(opcode, parser);
     }
@@ -56,7 +60,7 @@ public class LogicStatements {
         }
 
         protected void subtable(Table table, Cons<Table> builder) {
-            table.table(t ->{
+            table.table(t -> {
                 t.left();
                 t.color.set(category().color);
                 builder.get(t);
@@ -390,11 +394,11 @@ public class LogicStatements {
         }
 
         @Override
-        public void build(Table table){
+        public void build(Table table) {
             rebuild(table);
         }
 
-        void rebuild(Table table){
+        void rebuild(Table table) {
             table.clearChildren();
 
             table.defaults().left();
@@ -458,11 +462,11 @@ public class LogicStatements {
         }
 
         @Override
-        public void build(Table table){
+        public void build(Table table) {
             rebuild(table);
         }
 
-        void rebuild(Table table){
+        void rebuild(Table table) {
             table.clearChildren();
 
             if (op == ConditionOp.always) {
@@ -478,8 +482,8 @@ public class LogicStatements {
             }, value, str -> value = str, compare, str -> compare = str);
         }
 
-        public void addOp(Table t, ConditionOp op, Cons<ConditionOp> getter, String comp0, Cons<String> set0, String comp1, Cons<String> set2){
-            if(op != ConditionOp.always) field(t, comp0, set0);
+        public void addOp(Table t, ConditionOp op, Cons<ConditionOp> getter, String comp0, Cons<String> set0, String comp1, Cons<String> set2) {
+            if (op != ConditionOp.always) field(t, comp0, set0);
 
             t.button(b -> {
                 b.add(op.symbol);
@@ -487,11 +491,11 @@ public class LogicStatements {
             }, Styles.logict, () -> {
             }).size(op == ConditionOp.always ? 80f : 48f, 40f).pad(4f).color(t.color);
 
-            if(op != ConditionOp.always) field(t, comp1, set2);
+            if (op != ConditionOp.always) field(t, comp1, set2);
         }
 
         @Override
-        public LExecutor.LInstruction build(LAssembler builder){
+        public LExecutor.LInstruction build(LAssembler builder) {
             return new LogicInstructions.BreakpointI(op, builder.var(value), builder.var(compare));
         }
 
