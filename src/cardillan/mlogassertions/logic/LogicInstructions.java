@@ -182,7 +182,7 @@ public class LogicInstructions {
         public final void run(LExecutor exec) {
             LogicBuild building = exec.build;
 
-            Assertions.setMessage(building, () -> buildMessage("", vars));
+            Assertions.setMessage(building, () -> buildMessage("", true, (Object[]) vars));
             exec.counter.numval--;
             exec.yield = true;
         }
@@ -202,23 +202,18 @@ public class LogicInstructions {
 
         @Override
         public final void run(LExecutor exec) {
-            Log.log(level, buildMessage("[MlogAssertions] ", vars));
+            Log.log(level, buildMessage("[MlogAssertions] ", true, (Object[]) vars));
         }
     }
 
     private static void assertion(LExecutor exec, Object message, Object expected, Object actual) {
         if (Settings.assertsAreBreakpoints()) {
             if (Settings.disableBreakpoints()) return;  // Avoid unnecessary creation of the message
-            breakpoint(exec.build, expected == null && actual == null
-                    ? Core.bundle.format("assertions.assertionFailed", print(message))
-                    : Core.bundle.format("assertions.assertionFailedWithValues", print(message), print(expected), print(actual)));
+            breakpoint(exec.build, formatAssertionMessage(message, expected, actual));
         } else {
             exec.counter.numval--;
             exec.yield = true;
-
-            Assertions.setMessage(exec.build, expected == null && actual == null
-                    ? () -> Core.bundle.format("assertions.assertionFailed", print(message))
-                    : () -> Core.bundle.format("assertions.assertionFailedWithValues", print(message), print(expected), print(actual)));
+            Assertions.setMessage(exec.build, () -> formatAssertionMessage(message, expected, actual));
         }
     }
 
@@ -227,24 +222,37 @@ public class LogicInstructions {
         Assertions.breakpoint(build, message);
     }
 
-    private static String buildMessage(String prefix, LVar[] vars) {
+    private static String formatAssertionMessage(Object message, Object expected, Object actual) {
+        if (message instanceof String || message instanceof LVar var && var.isobj && var.objval instanceof String str && !str.isEmpty()) {
+            return buildMessage("", false, message, expected, actual);
+        } else {
+            return expected == null && actual == null
+                    ? Core.bundle.get("assertions.assertionFailed")
+                    : Core.bundle.format("assertions.assertionFailedWithValues", print(expected), print(actual));
+        }
+    }
+
+    private static String buildMessage(String prefix, boolean appendUnused, Object... vars) {
         int used = 0;
-        StringBuilder sbr = prefix.isEmpty() ? new StringBuilder(print(vars[0])) : new StringBuilder(prefix).append(print(vars[0]));
-        int pos = sbr.indexOf("[[");
+        StringBuilder sbr = new StringBuilder(50).append(prefix).append(print(vars[0]));
+        int pos = sbr.indexOf("{");
         while (pos >= 0) {
-            if (sbr.charAt(pos + 2) >= '1' && sbr.charAt(pos + 2) <= '9' && sbr.charAt(pos + 3) == ']') {
-                int index = sbr.charAt(pos + 2) - '0';
-                String str = print(vars[index]);
-                sbr.replace(pos, pos + 4, str);
-                pos = sbr.indexOf("[[", pos + str.length());
+            if (sbr.charAt(pos + 1) >= '1' && sbr.charAt(pos + 1) <= '9' && sbr.charAt(pos + 2) == '}') {
+                int index = sbr.charAt(pos + 1) - '0';
+                String str = print(vars[index], true);
+                sbr.replace(pos, pos + 3, str);
+                pos = sbr.indexOf("{", pos + str.length());
                 used |= (1 << index);
             } else {
-                pos = sbr.indexOf("[[", pos + 1);
+                pos = sbr.indexOf("{", pos + 1);
             }
         }
 
-        for (int i = 1; i < vars.length; i++) {
-            if ((used & (1 << i)) == 0 && nonNull(vars[i])) sbr.append(' ').append(print(vars[i], true));
+        if (appendUnused) {
+            for (int i = 1; i < vars.length; i++) {
+                LVar var = (LVar) vars[i];
+                if ((used & (1 << i)) == 0 && nonNull(var)) sbr.append(' ').append(print(var, true));
+            }
         }
 
         return sbr.toString();
@@ -257,17 +265,23 @@ public class LogicInstructions {
     private static final double COLOR_LIMIT = Color.white.toDoubleBits();
 
     private static String print(Object message) {
-        return message instanceof LVar lvar ? print(lvar, false) : String.valueOf(message);
+        return print(message, false);
     }
 
-    private static String print(LVar value, boolean formatString) {
-        if (value.isobj) {
-            return formatString && value.objval instanceof String str ? '"' + str + '"' : LExecutor.PrintI.toString(value.objval);
-        } else if (value.numval <= COLOR_LIMIT && value.numval > 0) {
-            long color = Double.doubleToLongBits(value.numval) & 0xFFFFFFFFL;
+    private static String print(Object message, boolean formatString) {
+        return message instanceof LVar lvar ? print(lvar, formatString) : String.valueOf(message);
+    }
+
+    private static String print(LVar var, boolean formatString) {
+        if (var.isobj) {
+            return formatString && var.objval instanceof String str ? '"' + str + '"' : LExecutor.PrintI.toString(var.objval);
+        } else if (var.numval <= COLOR_LIMIT && var.numval > 0) {
+            long color = Double.doubleToLongBits(var.numval) & 0xFFFFFFFFL;
             return '%' + Integer.toHexString((int) color);
+        } else if ((long) var.numval == var.numval) {
+            return String.valueOf((long) var.numval);
         } else {
-            return String.valueOf(value.numval);
+            return String.valueOf(var.numval);
         }
     }
 }

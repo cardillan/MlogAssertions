@@ -179,7 +179,7 @@ public class LogicStatements {
         public static final String opcode = "assertequals";
         public String expected = "0";
         public String actual = "value";
-        public String message = "\"value should be equal to 0\"";
+        public String message = "null";
 
         public AssertEqualsStatement() {
             super("Assert Equals");
@@ -264,7 +264,7 @@ public class LogicStatements {
         public static final String opcode = "assertprints";
         public String position = "position";
         public String expected = "\"frog\"";
-        public String message = "\"text output should be equal to 'frog'\"";
+        public String message = "null";
 
         public AssertPrintsStatement() {
             super("Assert Prints");
@@ -313,7 +313,7 @@ public class LogicStatements {
         public static final String opcode = "asserttype";
         public String value = "@unit";
         public AssertDataType type = AssertDataType.unit;
-        public String message = "\"@unit should be a unit\"";
+        public String message = "null";
 
         public AssertTypeStatement() {
             super("Assert Type");
@@ -343,9 +343,9 @@ public class LogicStatements {
                 b.clicked(() -> showSelect(b, AssertDataType.all, type, o -> {
                     type = o;
                     build(root);
-                }, 2, cell -> cell.size(110, 50)));
+                }, 1, cell -> cell.size(160, 40)));
             }, Styles.logict, () -> {
-            }).size(108, 40).left().pad(4f).color(table.color);
+            }).size(160, 40).left().pad(4f).color(table.color);
         }
 
         private void createMessage(Table table) {
@@ -388,7 +388,7 @@ public class LogicStatements {
             super(name);
             this.opcode = opcode;
             this.hasLevel = opcode.equals("log");
-            params[0] = "\"" + message + " at #[[1]\"";
+            params[0] = "\"" + message + " at #{1}\"";
             params[1] = "@counter";
             for (int i = 2; i < params.length; i++) params[i] = "null";
         }
