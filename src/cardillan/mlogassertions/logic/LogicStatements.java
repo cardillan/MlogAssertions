@@ -49,14 +49,14 @@ public class LogicStatements {
             return AssertLogic.assertsCategory;
         }
 
-        protected void stretchRow(Table table) {
-            if (LCanvas.isCompact()) {
+        protected void stretchRow(Table table){
+            if(LCanvas.useRows()){
                 table.add("").growX().row();
             }
         }
 
         protected void message(Table table, String value, Cons<String> setter) {
-            field(table, value, setter).width(LCanvas.isCompact() ? 280f : 0f).growX().padRight(3);
+            field(table, value, setter).width(LCanvas.useRows() ? 280f : 0f).growX().padRight(3);
         }
 
         protected void subtable(Table table, Cons<Table> builder) {
@@ -89,7 +89,7 @@ public class LogicStatements {
             t.clearChildren();
             t.left();
             t.add("Value type ").color(category().color).padLeft(4);
-            t.row();
+            row(t);
             subtable(t, table -> {
                 table.add("value of ").padLeft(4);
                 field(table, value, str -> value = str);
@@ -100,17 +100,16 @@ public class LogicStatements {
                         type = o;
                         build(t);
                     }, 2, cell -> cell.size(110, 50)));
-                }, Styles.logict, () -> {
-                }).size(108, 40).left().pad(4f).color(table.color);
+                }, Styles.logict, () -> {}).size(108, 40).left().pad(4f).color(table.color);
                 if (type == AssertionType.multiple) {
-                    table.row();
+                    row(table);
                     table.add(" of ");
                     numField(table, multiple, str -> multiple = str);
                 }
             });
             t.row();
             t.add("Bounds ").color(category().color).padLeft(4);
-            t.row();
+            row(t);
             subtable(t, table -> {
                 numField(table, min, str -> min = str);
                 opButton(t, table, opMin, o -> opMin = o);
@@ -120,7 +119,7 @@ public class LogicStatements {
             });
             t.row();
             t.add("Message").color(category().color).padLeft(4);
-            t.row();
+            row(t);
             field(t, message, str -> message = str).width(0f).growX().padRight(3);
         }
 
@@ -326,9 +325,9 @@ public class LogicStatements {
             table.clearChildren();
             table.left();
 
-            if (LCanvas.isCompact()) {
+            if(LCanvas.useRows()) {
                 subtable(table, subtable -> createValues(table, subtable));
-                table.row();
+                row(table);
                 subtable(table, this::createMessage);
             } else {
                 createValues(table, table);
@@ -424,9 +423,9 @@ public class LogicStatements {
             for (int i = 1; i < params.length; i++) {
                 final int index = i;
                 t2.add(" p" + i + " ").self(this::param);
-                field(t2, params[index], v -> params[index] = v).width(LCanvas.isCompact() ? 150f : 220f);
-                if (LCanvas.isCompact()) {
-                    if (i % 2 == 0) t2.row();
+                field(t2, params[index], v -> params[index] = v).width(LCanvas.useRows() ? 150f : 220f);
+                if (LCanvas.useRows()) {
+                    if (i % 2 == 0) row(t2);
                 } else {
                     if (i % 3 == 0) t2.row();
                 }
@@ -474,7 +473,7 @@ public class LogicStatements {
                 table.add("trigger ").padLeft(10).left();
             } else {
                 table.add("trigger when ").padLeft(10).left();
-                table.row();
+                row(table);
             }
 
             addOp(table, op, o -> {

@@ -19,7 +19,7 @@ description: "Provides new logic instructions and other tools for easier debuggi
 version: 0.8.2
 
 #the minimum game build required to run this mod
-minGameVersion: 160
+minGameVersion: 154.2
 
 #this is a java mod
 java: true
