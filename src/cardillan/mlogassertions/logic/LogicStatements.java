@@ -312,8 +312,8 @@ public class LogicStatements {
 
     public static class AssertTypeStatement extends AssertStatement {
         public static final String opcode = "asserttype";
-        public String value = "@unit";
-        public AssertDataType type = AssertDataType.unit;
+        public AssertionDataType expectedType = AssertionDataType.unit;
+        public String actualValue = "@unit";
         public String message = "null";
 
         public AssertTypeStatement() {
@@ -337,12 +337,12 @@ public class LogicStatements {
         }
 
         private void createValues(Table root, Table table) {
-            field(table, value, v -> value = v);
+            field(table, actualValue, v -> actualValue = v);
             table.add(" is ").self(this::param);
             table.button(b -> {
-                b.label(() -> type.name());
-                b.clicked(() -> showSelect(b, AssertDataType.all, type, o -> {
-                    type = o;
+                b.label(() -> expectedType.name());
+                b.clicked(() -> showSelect(b, AssertionDataType.all, expectedType, o -> {
+                    expectedType = o;
                     build(root);
                 }, 1, cell -> cell.size(160, 40)));
             }, Styles.logict, () -> {
@@ -356,15 +356,15 @@ public class LogicStatements {
 
         @Override
         public LExecutor.LInstruction build(LAssembler builder) {
-            return new LogicInstructions.AssertTypeI(builder.var(value), type, builder.var(message));
+            return new LogicInstructions.AssertTypeI(expectedType, builder.var(actualValue), builder.var(message));
         }
 
         @Override
         public void write(StringBuilder builder) {
             writer.start(builder);
             writer.write(opcode);
-            writer.write(value);
-            writer.write(type.name());
+            writer.write(expectedType.name());
+            writer.write(actualValue);
             writer.write(message);
             writer.end();
         }
@@ -372,8 +372,8 @@ public class LogicStatements {
         public static LStatement read(String[] tokens) {
             AssertTypeStatement stmt = new AssertTypeStatement();
             int i = 1;
-            if (tokens.length > i) stmt.value = tokens[i++];
-            if (tokens.length > i) stmt.type = AssertDataType.valueOf(tokens[i++]);
+            if (tokens.length > i) stmt.expectedType = AssertionDataType.valueOf(tokens[i++]);
+            if (tokens.length > i) stmt.actualValue = tokens[i++];
             if (tokens.length > i) stmt.message = tokens[i++];
             return stmt;
         }

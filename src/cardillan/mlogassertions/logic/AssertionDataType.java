@@ -15,7 +15,7 @@ import mindustry.world.blocks.logic.*;
 import java.util.Arrays;
 import java.util.Comparator;
 
-public enum AssertDataType {
+public enum AssertionDataType {
     // Basic types
     number(0),
     string(0, String.class),
@@ -54,17 +54,17 @@ public enum AssertDataType {
     private final int level;
     private final Class<?> objectClass;
 
-    AssertDataType(int level, Class<?> objectClass) {
+    AssertionDataType(int level, Class<?> objectClass) {
         this.level = level;
         this.objectClass = objectClass;
     }
 
-    AssertDataType(int level) {
+    AssertionDataType(int level) {
         this(level, null);
     }
 
-    public static final AssertDataType[] all = values();
-    public static final AssertDataType[] sorted;
+    public static final AssertionDataType[] all = values();
+    public static final AssertionDataType[] sorted;
 
     static {
         sorted = values();
@@ -82,7 +82,7 @@ public enum AssertDataType {
         if (!var.isobj) return "number";
         if (var.objval == null) return "null";
 
-        for (AssertDataType type: sorted) {
+        for (AssertionDataType type: sorted) {
             if (type.objectClass != null && type.objectClass.isInstance(var.objval)) return type.name();
         }
         return "unknown";

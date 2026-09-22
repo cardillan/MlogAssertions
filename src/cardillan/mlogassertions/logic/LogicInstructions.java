@@ -47,7 +47,7 @@ public class LogicInstructions {
                     && (opMax.function.get(value.num(), max.num()))) {
                 Assertions.reset(exec.build);
             } else {
-                assertion(exec, message, null, null);
+                assertion("boundsAssertionFailedWithValues", exec, message, min, value, max, opMin.symbol, opMax.symbol);
             }
         }
     }
@@ -71,7 +71,7 @@ public class LogicInstructions {
             if (ConditionOp.strictEqual.test(expected, actual)) {
                 Assertions.reset(exec.build);
             } else {
-                assertion(exec, message, expected, actual);
+                assertion("assertionFailedWithValues", exec, message, expected, actual);
             }
         }
     }
@@ -110,11 +110,11 @@ public class LogicInstructions {
         public final void run(LExecutor exec) {
             int flushIndex = this.flushIndex.numi();
             if (flushIndex < 0 || flushIndex > exec.textBuffer.length()) {
-                assertion(exec, Core.bundle.get("assertions.invalidFlushIndex"), null, null);
+                assertion("invalidFlushIndex", exec, "");
             } else {
                 String actual = exec.textBuffer.substring(flushIndex);
                 if (!actual.equals(expected.obj())) {
-                    assertion(exec, message, expected, actual);
+                    assertion("assertionFailedWithValues", exec, message, expected, actual);
                 } else {
                     exec.textBuffer.setLength(flushIndex);
                     Assertions.reset(exec.build);
@@ -124,13 +124,13 @@ public class LogicInstructions {
     }
 
     public static class AssertTypeI implements LExecutor.LInstruction, AssertInstruction {
-        public LVar value;
-        public AssertDataType type = AssertDataType.number;
+        public AssertionDataType expectedType = AssertionDataType.number;
+        public LVar actualValue;
         public LVar message;
 
-        public AssertTypeI(LVar value, AssertDataType type, LVar message) {
-            this.value = value;
-            this.type = type;
+        public AssertTypeI(AssertionDataType expectedType, LVar actuallValue, LVar message) {
+            this.expectedType = expectedType;
+            this.actualValue = actuallValue;
             this.message = message;
         }
 
@@ -139,10 +139,10 @@ public class LogicInstructions {
 
         @Override
         public final void run(LExecutor exec) {
-            if (type.matches(value)) {
+            if (expectedType.matches(actualValue)) {
                 Assertions.reset(exec.build);
             } else {
-                assertion(exec, message, type.name(), AssertDataType.actualType(value));
+                assertion("assertionFailedWithValues", exec, message, expectedType.name(), AssertionDataType.actualType(actualValue));
             }
         }
     }
@@ -182,7 +182,7 @@ public class LogicInstructions {
         public final void run(LExecutor exec) {
             LogicBuild building = exec.build;
 
-            Assertions.setMessage(building, () -> buildMessage("", true, (Object[]) vars));
+            Assertions.setMessage(building, () -> buildMessage("", true, vars[0], vars));
             exec.counter.numval--;
             exec.yield = true;
         }
@@ -202,18 +202,18 @@ public class LogicInstructions {
 
         @Override
         public final void run(LExecutor exec) {
-            Log.log(level, buildMessage("[MlogAssertions] ", true, (Object[]) vars));
+            Log.log(level, buildMessage("[MlogAssertions] ", true, vars[0], vars));
         }
     }
 
-    private static void assertion(LExecutor exec, Object message, Object expected, Object actual) {
+    private static void assertion(String bundleKey, LExecutor exec, Object message, Object... arguments) {
         if (Settings.assertsAreBreakpoints()) {
             if (Settings.disableBreakpoints()) return;  // Avoid unnecessary creation of the message
-            breakpoint(exec.build, formatAssertionMessage(message, expected, actual));
+            breakpoint(exec.build, formatAssertionMessage(bundleKey, message, arguments));
         } else {
             exec.counter.numval--;
             exec.yield = true;
-            Assertions.setMessage(exec.build, () -> formatAssertionMessage(message, expected, actual));
+            Assertions.setMessage(exec.build, () -> formatAssertionMessage(bundleKey, message, arguments));
         }
     }
 
@@ -222,24 +222,26 @@ public class LogicInstructions {
         Assertions.breakpoint(build, message);
     }
 
-    private static String formatAssertionMessage(Object message, Object expected, Object actual) {
+    private static String formatAssertionMessage(String bundleKey, Object message, Object[] arguments) {
         if (message instanceof String || message instanceof LVar var && var.isobj && var.objval instanceof String str && !str.isEmpty()) {
-            return buildMessage("", false, message, expected, actual);
+            return buildMessage("", false, message, arguments);
         } else {
-            return expected == null && actual == null
+            return arguments.length == 0
                     ? Core.bundle.get("assertions.assertionFailed")
-                    : Core.bundle.format("assertions.assertionFailedWithValues", print(expected), print(actual));
+                    : Core.bundle.format("assertions." + bundleKey, printArgs(arguments));
         }
     }
 
-    private static String buildMessage(String prefix, boolean appendUnused, Object... vars) {
+    private static String buildMessage(String prefix, boolean appendUnused, Object message, Object[] arguments) {
         int used = 0;
-        StringBuilder sbr = new StringBuilder(50).append(prefix).append(print(vars[0]));
+        StringBuilder sbr = new StringBuilder(50).append(prefix).append(print(message));
         int pos = sbr.indexOf("{");
+        int offset = message == arguments[0] ? 0 : 1;
         while (pos >= 0) {
             if (sbr.charAt(pos + 1) >= '1' && sbr.charAt(pos + 1) <= '9' && sbr.charAt(pos + 2) == '}') {
-                int index = sbr.charAt(pos + 1) - '0';
-                String str = print(vars[index], true);
+                int index = sbr.charAt(pos + 1) - '0' - offset;
+                String str = index < arguments.length ? print(arguments[index], true)
+                        : Core.bundle.get("assertions.invalidPlaceholder");
                 sbr.replace(pos, pos + 3, str);
                 pos = sbr.indexOf("{", pos + str.length());
                 used |= (1 << index);
@@ -249,8 +251,8 @@ public class LogicInstructions {
         }
 
         if (appendUnused) {
-            for (int i = 1; i < vars.length; i++) {
-                LVar var = (LVar) vars[i];
+            for (int i = 1; i < arguments.length; i++) {
+                LVar var = (LVar) arguments[i];
                 if ((used & (1 << i)) == 0 && nonNull(var)) sbr.append(' ').append(print(var, true));
             }
         }
@@ -283,5 +285,13 @@ public class LogicInstructions {
         } else {
             return String.valueOf(var.numval);
         }
+    }
+
+    private static Object[] printArgs(Object[] args) {
+        Object[] printed = new String[args.length];
+        for (int i = 0; i < args.length; i++) {
+            printed[i] = print(args[i]);
+        }
+        return printed;
     }
 }

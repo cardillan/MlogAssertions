@@ -56,8 +56,7 @@ The values are compared using the `strictEqual` mlog operator.
 
 This instruction compares the runtime data type to an expected value and displays the given message when the value is not of the expected type. The instruction takes these parameters:
 
-* `value`: the value being tested.
-* `type`: the expected data type. Supported data types are:
+* `expectedType`: the expected data type. Supported data types are:
   * `number`
   * `string`
   * `content`
@@ -82,6 +81,7 @@ This instruction compares the runtime data type to an expected value and display
   * `readable`
   * `writable`
   * `senseable`
+* `actualValue`: the value being tested.
 * `message`: the error message to display in case the assertion fails. The message may contain placeholders in the form `{1}` and `{2}` for the expected and actual values. If the message is not a string or is an empty string, a default message is displayed.
 
 > [!NOTE]
