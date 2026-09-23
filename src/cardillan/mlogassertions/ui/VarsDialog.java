@@ -226,12 +226,13 @@ public class VarsDialog extends BaseDialog {
                 p.margin(10f);
                 p.table(Tex.button, t -> {
                     TextButton.TextButtonStyle style = Styles.flatt;
-                    t.defaults().size(350f, 60f).left();
+                    t.defaults().size(360f, 60f).left();
 
                     if (!processor) {
                         t.button("@varsdialog.clearmemory", Icon.cancel, style, () -> {
                             data.clear();
                             Arrays.fill(counter, 100f);
+                            dialog.hide();
                         }).marginLeft(12f).row();
                     }
 
@@ -245,12 +246,14 @@ public class VarsDialog extends BaseDialog {
                                     .append("\n");
                         }
                         Core.app.setClipboardText(sbr.toString());
+                        dialog.hide();
                     }).marginLeft(12f).row();
 
                     if (processor) {
                         t.button("@varsdialog.copyprintbuffer", Icon.copy, style, () -> {
                             String text = "Printbuffer contents:\n" + data.textBuffer();
                             Core.app.setClipboardText(text);
+                            dialog.hide();
                         }).marginLeft(12f).row();
                     }
                 });
@@ -296,7 +299,7 @@ public class VarsDialog extends BaseDialog {
     }
 
     private String pos(float x, float y) {
-        return String.format(" (%.1f, %.1f)", x / Vars.tilesize, y / Vars.tilesize);
+        return String.format(" (%.1f,\u00a0%.1f)", x / Vars.tilesize, y / Vars.tilesize);
     }
 
     public Color typeColor(int index, Color color) {
