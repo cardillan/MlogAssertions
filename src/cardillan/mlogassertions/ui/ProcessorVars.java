@@ -63,9 +63,6 @@ public class ProcessorVars implements VariableValues {
         vars[length++] = executor.counter;
         vars[length++] = executor.unit;
         vars[length++] = executor.ipt;
-        if (executor.privileged) {
-            vars[length++] = executor.queryResult;
-        }
 
         int start = length;
 

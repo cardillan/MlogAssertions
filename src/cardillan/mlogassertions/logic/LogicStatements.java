@@ -145,9 +145,9 @@ public class LogicStatements {
 
         protected static String bundle(Enum<?> value) {
             if (value instanceof AssertOp op) {
-                return selectTranslate(op.symbol);
+                return op.symbol;
             } else {
-                return LStatement.bundle(value);
+                return value.toString();
             }
         }
 
@@ -158,7 +158,7 @@ public class LogicStatements {
                 t.defaults().size(60f, 38f);
 
                 for(T p : values){
-                    String btnText = (p instanceof Enum<?> e) ? bundle(e) : bundle(p.toString());
+                    String btnText = (p instanceof Enum<?> e) ? bundle(e) : p.toString();
                     sizer.get(t.button(btnText, Styles.logicTogglet, () -> {
                         getter.get(p);
                         hide.run();

@@ -8,25 +8,17 @@ import java.util.Arrays;
 
 public class MemoryVars implements VariableValues {
     // Memory block private fields
-    private static Object sentinel;
-    private static Field objectField;
     private static Field numberField;
 
     private final String[] decLabels;
     private final String[] hexLabels;
-    private final Object[] objectMemory;
     private final double[] numberMemory;
     private final int length;
 
     public static void init() {
         try {
             // Memory block private fields
-            Field sentinelField = MemoryBuild.class.getDeclaredField("sentinel");
-            sentinelField.setAccessible(true);
-            sentinel = sentinelField.get(null);
-            objectField = MemoryBuild.class.getDeclaredField("objectMemory");
-            objectField.setAccessible(true);
-            numberField = MemoryBuild.class.getDeclaredField("numberMemory");
+            numberField = MemoryBuild.class.getDeclaredField("memory");
             numberField.setAccessible(true);
         } catch (ReflectiveOperationException e) {
             Log.err("[MlogAssertions] Failed to access MemoryBuild data fields", e);
@@ -46,15 +38,13 @@ public class MemoryVars implements VariableValues {
     }
 
     public MemoryVars(MemoryBuild memory) {
-        if (objectField == null || numberField == null || sentinel == null) {
-            objectMemory = new Object[0];
+        if (numberField == null) {
             numberMemory = new double[0];
         } else {
-            objectMemory = get(memory, objectField, new Object[0]);
             numberMemory = get(memory, numberField, new double[0]);
         }
 
-        length = Math.min(objectMemory.length, numberMemory.length);
+        length = numberMemory.length;
 
         decLabels = new String[length];
         hexLabels = new String[length];
@@ -81,12 +71,12 @@ public class MemoryVars implements VariableValues {
 
     @Override
     public boolean isObj(int index) {
-        return objectMemory[index] != sentinel;
+        return false;
     }
 
     @Override
     public Object obj(int index) {
-        return objectMemory[index];
+        return null;
     }
 
     @Override
@@ -102,7 +92,6 @@ public class MemoryVars implements VariableValues {
     @Override
     public void clear() {
         if (length > 0) {
-            Arrays.fill(objectMemory, sentinel);
             Arrays.fill(numberMemory, 0);
         }
     }
