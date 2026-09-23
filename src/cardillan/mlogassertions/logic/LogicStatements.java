@@ -3,11 +3,16 @@ package cardillan.mlogassertions.logic;
 import arc.func.Cons;
 import arc.func.Func;
 import arc.func.Prov;
+import arc.scene.ui.Button;
+import arc.scene.ui.ButtonGroup;
+import arc.scene.ui.layout.Cell;
 import arc.scene.ui.layout.Table;
 import arc.util.Log;
 import mindustry.gen.LogicIO;
 import mindustry.logic.*;
 import mindustry.ui.Styles;
+
+import static mindustry.logic.LCanvas.tooltip;
 
 public class LogicStatements {
     private static final LogicStatementWriter writer = new LogicStatementWriter();
@@ -137,6 +142,36 @@ public class LogicStatements {
                 }));
             }, Styles.logict, () -> {
             }).size(64f, 40f).left().pad(4f).color(table.color);
+        }
+
+        protected static String bundle(Enum<?> value) {
+            if (value instanceof AssertOp op) {
+                return selectTranslate(op.symbol);
+            } else {
+                return LStatement.bundle(value);
+            }
+        }
+
+        protected <T> void showSelect(Button b, T[] values, T current, Cons<T> getter, int cols, Cons<Cell> sizer){
+            showSelectTable(b, (t, hide) -> {
+                ButtonGroup<Button> group = new ButtonGroup<>();
+                int i = 0;
+                t.defaults().size(60f, 38f);
+
+                for(T p : values){
+                    String btnText = (p instanceof Enum<?> e) ? bundle(e) : bundle(p.toString());
+                    sizer.get(t.button(btnText, Styles.logicTogglet, () -> {
+                        getter.get(p);
+                        hide.run();
+                    }).self(c -> {
+                        if(p instanceof Enum<?> e){
+                            tooltip(c, e);
+                        }
+                    }).checked(current.equals(p)).group(group));
+
+                    if(++i % cols == 0) t.row();
+                }
+            });
         }
 
         @Override
