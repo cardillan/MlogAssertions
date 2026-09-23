@@ -1,6 +1,7 @@
 package cardillan.mlogassertions;
 
 import arc.Core;
+import arc.scene.ui.layout.Table;
 import cardillan.mlogassertions.ui.Assertions;
 import mindustry.Vars;
 import mindustry.gen.Icon;
@@ -11,6 +12,8 @@ import java.lang.reflect.Modifier;
 public class Settings {
     static final int[] UPDATES_PER_TICK = { 1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000 };
 
+    public static Table settingsTable;
+
     public static void init() {
         Core.settings.defaults(
                 Constants.maxInstructions, LExecutor.maxInstructions,
@@ -20,6 +23,8 @@ public class Settings {
         );
 
         Vars.ui.settings.addCategory("Mlog Assertions", Icon.warningSmall, t -> {
+            settingsTable = t;
+
             t.checkPref(Constants.disableBreakpoints, false);
             t.checkPref(Constants.assertsAreBreakpoints, false);
             t.checkPref(Constants.freeCameraOnBreakpoint, true);

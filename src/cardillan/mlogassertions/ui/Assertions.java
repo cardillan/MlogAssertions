@@ -147,7 +147,6 @@ public class Assertions {
 
         Events.on(EventType.BlockBuildEndEvent.class, e -> {
             if (e.tile.build instanceof LogicBuild build) {
-                //Log.info("BlockBuildEndEvent: new processor " + e.tile.build);
                 allBlocks.add(build);
             }
         });
@@ -155,7 +154,6 @@ public class Assertions {
         Events.on(EventType.ConfigEvent.class, e -> {
             if (e.tile instanceof LogicBuild build) {
                 reset(build);
-                //Log.info("ConfigEvent: configured processor " + e.tile);
             }
         });
 
@@ -226,7 +224,6 @@ public class Assertions {
 
     private static void check(LogicBuild block) {
         if (block.tile.build != block) {
-            //Log.info("Removed block " + block);
             invalidBlocks.add(block);
             return;
         } else if (block.executor == null || block.executor.counter == null) {
@@ -259,7 +256,6 @@ public class Assertions {
 
     private static void draw(LogicBuild block, String message) {
         if (block.tile.build != block) {
-            //Log.info("Removed block " + block);
             invalidBlocks.add(block);
             return;
         }
