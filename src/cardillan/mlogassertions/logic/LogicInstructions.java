@@ -5,9 +5,11 @@ import arc.graphics.Color;
 import arc.util.Log;
 import cardillan.mlogassertions.Settings;
 import cardillan.mlogassertions.ui.Assertions;
+import mindustry.Vars;
 import mindustry.logic.ConditionOp;
 import mindustry.logic.LExecutor;
 import mindustry.logic.LVar;
+import mindustry.net.Net;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
 
 public class LogicInstructions {
@@ -219,6 +221,10 @@ public class LogicInstructions {
 
     private static void breakpoint(LogicBuild build, String message) {
         if (Settings.disableBreakpoints()) return;
+        if (Vars.net.active()) {
+            Vars.ui.showInfoToast(Core.bundle.get("breakpoint.multiplayer"), 5);
+            return;
+        }
         Assertions.breakpoint(build, message);
     }
 
