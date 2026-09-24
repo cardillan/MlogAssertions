@@ -197,7 +197,7 @@ public class VarsDialog extends BaseDialog {
                         t.row();
                         ButtonGroup<TextButton> linksGroup = new ButtonGroup<>();
                         t.button("@varsdialog.showlinks", style, () -> {
-                            data.setView(sorted, hideLinks = false, hideLinks);
+                            data.setView(sorted, hideTemps, hideLinks = false);
                             if (data.size() != length) {
                                 setup();
                             } else {
@@ -205,7 +205,7 @@ public class VarsDialog extends BaseDialog {
                             }
                         }).name("showlinks").group(linksGroup).checked(!hideLinks);
                         t.button("@varsdialog.hidelinks", style, () -> {
-                            data.setView(sorted, hideLinks = true, hideLinks);
+                            data.setView(sorted, hideTemps, hideLinks = true);
                             if (data.size() != length) {
                                 setup();
                             } else {
