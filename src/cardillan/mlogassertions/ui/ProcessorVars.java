@@ -38,6 +38,11 @@ public class ProcessorVars implements VariableValues {
     }
 
     @Override
+    public boolean isLink(int index) {
+        return vars[index].constant && vars[index].name.charAt(0) != '@';
+    }
+
+    @Override
     public Object obj(int index) {
         return vars[index].objval;
     }
@@ -58,7 +63,7 @@ public class ProcessorVars implements VariableValues {
     }
 
     @Override
-    public void setView(boolean sorted, boolean hideTemps) {
+    public void setView(boolean sorted, boolean hideTemps, boolean hideLinks) {
         length = 0;
         vars[length++] = executor.counter;
         vars[length++] = executor.unit;
@@ -69,9 +74,11 @@ public class ProcessorVars implements VariableValues {
 
         int start = length;
 
-        for (int i = 1; i < executor.vars.length; i++) {
-            if (hideTemps && isTemp(executor.vars[i].name)) continue;
-            vars[length++] = executor.vars[i];
+        LVar[] v = executor.vars;
+        for (int i = 1; i < v.length; i++) {
+            if (hideTemps && isTemp(v[i].name)) continue;
+            if (hideLinks && v[i].constant && v[i].name.charAt(0) != '@') continue;
+            vars[length++] = v[i];
         }
 
         if (sorted) {

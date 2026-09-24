@@ -6,11 +6,12 @@ public interface VariableValues {
     int size();
     String label(int index, boolean hex);
     boolean isObj(int index);
+    boolean isLink(int index);
     Object obj(int index);
     double num(int index);
 
     String textBuffer();
 
     void clear();
-    void setView(boolean sorted, boolean hideTemps);
+    void setView(boolean sorted, boolean hideTemps, boolean hideLinks);
 }
