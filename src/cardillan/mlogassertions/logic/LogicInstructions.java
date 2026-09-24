@@ -3,11 +3,14 @@ package cardillan.mlogassertions.logic;
 import arc.Core;
 import arc.graphics.Color;
 import arc.util.Log;
+import cardillan.mlogassertions.Constants;
 import cardillan.mlogassertions.Settings;
 import cardillan.mlogassertions.ui.Assertions;
+import mindustry.Vars;
 import mindustry.logic.ConditionOp;
 import mindustry.logic.LExecutor;
 import mindustry.logic.LVar;
+import mindustry.net.Net;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
 
 public class LogicInstructions {
@@ -219,6 +222,10 @@ public class LogicInstructions {
 
     private static void breakpoint(LogicBuild build, String message) {
         if (Settings.disableBreakpoints()) return;
+        if (Vars.net.active()) {
+            Vars.ui.showInfoToast(Core.bundle.get("breakpoint.multiplayer"), 5);
+            return;
+        }
         Assertions.breakpoint(build, message);
     }
 
@@ -264,8 +271,6 @@ public class LogicInstructions {
         return !"null".equals(var.name);
     }
 
-    private static final double COLOR_LIMIT = Color.white.toDoubleBits();
-
     private static String print(Object message) {
         return print(message, false);
     }
@@ -277,7 +282,7 @@ public class LogicInstructions {
     private static String print(LVar var, boolean formatString) {
         if (var.isobj) {
             return formatString && var.objval instanceof String str ? '"' + str + '"' : LExecutor.PrintI.toString(var.objval);
-        } else if (var.numval <= COLOR_LIMIT && var.numval > 0) {
+        } else if (var.numval <= Constants.COLOR_LIMIT && var.numval > 0) {
             long color = Double.doubleToLongBits(var.numval) & 0xFFFFFFFFL;
             return '%' + Integer.toHexString((int) color);
         } else if ((long) var.numval == var.numval) {
