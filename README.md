@@ -1,10 +1,7 @@
 # MlogAssertions
 
-> [!NOTE]
-> A separate release is made for Mindustry Build 160 and Mindustry Build 154.2 or later (up to 159.7). Use the mod browser to install the correct version of the mod for your version of Mindustry.
-
 > [!TIP]
-> This mod is compatible with Mindustry 8. There's also a [version](https://github.com/cardillan/MlogAssertions-7) compatible with Mindustry 7, which has much fewer features and is no longer being maintained.
+> A separate release is made for Mindustry Build 160 and Mindustry Build 154.2 or later (up to 159.7). Use the mod browser to install the correct version of the mod for your version of Mindustry.
 
 > [!NOTE]
 > Using this mod on maps with lots of processors may have a negative performance impact on the game.
@@ -125,6 +122,8 @@ When the instruction finishes, the text buffer is restored to the state of the p
 ## Instruction `breakpoint`
 
 This instruction comes with a condition (just like the `jump` instruction). When the condition is met, the game is paused in the exact state in which the breakpoint occurred and the processor with the breakpoint is centered on screen. No other instructions in the current processor or any other processors are executed after the breakpoint is hit, and all logic variables in all processors and contents of all memory cells should remain unchanged. However, it is possible that units and buildings do change their own state or the state of other units/buildings after the breakpoint hits, but before the game is properly paused.
+
+Breakpoints are ignored in a multiplayer game.
 
 > [!NOTE]
 > After unpausing the game, the execution continues as usual, but the order of instruction execution may be altered due to the processors being manipulated. Schematics depending on two or more processors executing in lockstep (e.g., subframe) may be affected.
