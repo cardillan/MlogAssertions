@@ -27,7 +27,7 @@ The **Vars** screen has been enhanced:
 * Numeric values in the color range are formatted as color literals (e.g., `%e55454ff`), the color itself is presented using a glyph.
 * Option to choose between formatting the numbers in hexadecimal or decimal base (including memory cell addresses).
 * Option to sort variables by name or revert to their original order.
-* Option to hide temporary variables.
+* Option to hide temporary variables and processor links.
 * Commands to copy the variable list or the contents of the text buffer to the clipboard (in previous versions of this mod, these buttons have been included directly on the processor screen).
 
 # Displaying the content of memory blocks

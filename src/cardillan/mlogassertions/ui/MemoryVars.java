@@ -75,6 +75,11 @@ public class MemoryVars implements VariableValues {
     }
 
     @Override
+    public boolean isLink(int index) {
+        return false;
+    }
+
+    @Override
     public Object obj(int index) {
         return null;
     }
@@ -97,7 +102,7 @@ public class MemoryVars implements VariableValues {
     }
 
     @Override
-    public void setView(boolean sorted, boolean hideTemps) {
+    public void setView(boolean sorted, boolean hideTemps, boolean hideLinks) {
         // Do nothing
     }
 }

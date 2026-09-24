@@ -10,7 +10,6 @@ import arc.scene.ui.TextButton;
 import arc.scene.ui.layout.Scl;
 import arc.util.Align;
 import arc.util.Time;
-import cardillan.mlogassertions.Settings;
 import mindustry.Vars;
 import mindustry.ctype.Content;
 import mindustry.ctype.MappableContent;
@@ -22,12 +21,8 @@ import mindustry.gen.Unit;
 import mindustry.graphics.Pal;
 import mindustry.ui.Styles;
 import mindustry.ui.dialogs.BaseDialog;
-import mindustry.ui.dialogs.SettingsMenuDialog;
-import mindustry.world.blocks.logic.LogicBlock;
 
 import java.util.Arrays;
-
-import static mindustry.Vars.ui;
 
 public class VarsDialog extends BaseDialog {
     public static final double COLOR_LIMIT = Color.white.toDoubleBits();
@@ -35,6 +30,7 @@ public class VarsDialog extends BaseDialog {
     static boolean hex = false;
     static boolean sorted = false;
     static boolean hideTemps = false;
+    static boolean hideLinks = false;
 
     private final VariableValues data;
     private final boolean processor;
@@ -49,7 +45,7 @@ public class VarsDialog extends BaseDialog {
 
     public VarsDialog(VariableValues data) {
         super(data.processor() ? "@variables" : "@varsdialog.memory");
-        data.setView(false, false);
+        data.setView(false, false, false);
 
         this.data = data;
         this.processor = data.processor();
@@ -58,7 +54,7 @@ public class VarsDialog extends BaseDialog {
         this.lastObject = new Object[length];
         this.lastMemory = new double[length];
 
-        data.setView(sorted, hideTemps);
+        data.setView(sorted, hideTemps, hideLinks);
 
         onResize(() -> {
             if (cols != cols() || wasPortrait != Core.graphics.isPortrait()) {
@@ -170,33 +166,52 @@ public class VarsDialog extends BaseDialog {
 
                         t.row();
                         ButtonGroup<TextButton> sortedGroup = new ButtonGroup<>();
-                        t.button("@varsdialog.sorted", style, () -> {
-                            data.setView(sorted = true, hideTemps);
-                            Arrays.fill(counter, -1f);
-                        }).name("sorted").group(sortedGroup).checked(sorted);
                         t.button("@varsdialog.unsorted", style, () -> {
-                            data.setView(sorted = false, hideTemps);
+                            data.setView(sorted = false, hideTemps, hideLinks);
                             Arrays.fill(counter, -1f);
                         }).name("unsorted").group(sortedGroup).checked(!sorted);
+                        t.button("@varsdialog.sorted", style, () -> {
+                            data.setView(sorted = true, hideTemps, hideLinks);
+                            Arrays.fill(counter, -1f);
+                        }).name("sorted").group(sortedGroup).checked(sorted);
 
                         t.row();
-                        ButtonGroup<TextButton> filteredGroup = new ButtonGroup<>();
+                        ButtonGroup<TextButton> tempsGroup = new ButtonGroup<>();
                         t.button("@varsdialog.showall", style, () -> {
-                            data.setView(sorted, hideTemps = false);
+                            data.setView(sorted, hideTemps = false, hideLinks);
                             if (data.size() != length) {
                                 setup();
                             } else {
                                 Arrays.fill(counter, -1f);
                             }
-                        }).name("showall").group(filteredGroup).checked(!hideTemps);
+                        }).name("showall").group(tempsGroup).checked(!hideTemps);
                         t.button("@varsdialog.hidetemps", style, () -> {
-                            data.setView(sorted, hideTemps = true);
+                            data.setView(sorted, hideTemps = true, hideLinks);
                             if (data.size() != length) {
                                 setup();
                             } else {
                                 Arrays.fill(counter, -1f);
                             }
-                        }).name("hidetemps").group(filteredGroup).checked(hideTemps);
+                        }).name("hidetemps").group(tempsGroup).checked(hideTemps);
+
+                        t.row();
+                        ButtonGroup<TextButton> linksGroup = new ButtonGroup<>();
+                        t.button("@varsdialog.showlinks", style, () -> {
+                            data.setView(sorted, hideLinks = false, hideLinks);
+                            if (data.size() != length) {
+                                setup();
+                            } else {
+                                Arrays.fill(counter, -1f);
+                            }
+                        }).name("showlinks").group(linksGroup).checked(!hideLinks);
+                        t.button("@varsdialog.hidelinks", style, () -> {
+                            data.setView(sorted, hideLinks = true, hideLinks);
+                            if (data.size() != length) {
+                                setup();
+                            } else {
+                                Arrays.fill(counter, -1f);
+                            }
+                        }).name("hidelinks").group(linksGroup).checked(hideLinks);
 
                         t.row();
                         t.defaults().size(323f, 45f).padTop(25f).padBottom(15f);
@@ -303,13 +318,9 @@ public class VarsDialog extends BaseDialog {
     }
 
     public Color typeColor(int index, Color color) {
-        if (!data.isObj(index)) {
-            double numval = data.num(index);
-            return color.set(
-                    numval <= COLOR_LIMIT && numval > 0 ? Pal.berylShot :
-                    (long) numval == numval ? Pal.tungstenShot :
-                    Pal.place);
-        } else {
+        if (data.isLink(index)) {
+            return color.set(Pal.tungstenShot);
+        } else if (data.isObj(index)) {
             Object objval = data.obj(index);
             return color.set(
                     objval == null ? Color.darkGray :
@@ -320,17 +331,19 @@ public class VarsDialog extends BaseDialog {
                     objval instanceof Team ? Pal.logicUnits :
                     objval instanceof Enum<?> ? Pal.logicIo :
                     Color.white);
+        } else {
+            double numval = data.num(index);
+            return color.set(
+                    numval <= COLOR_LIMIT && numval > 0 ? Pal.berylShot :
+                    (long) numval == numval ? Pal.logicWorld :
+                    Pal.place);
         }
     }
 
     public String typeName(int index) {
-        if (!data.isObj(index)) {
-            double num = data.num(index);
-            return
-                    num <= COLOR_LIMIT && num > 0 ? " color " :
-                    (long) num == num ? " integer " :
-                    " number ";
-        } else {
+        if (data.isLink(index)) {
+            return " link ";
+        } else if (data.isObj(index)) {
             Object objval = data.obj(index);
             return
                     objval == null ? " null " :
@@ -341,6 +354,12 @@ public class VarsDialog extends BaseDialog {
                     objval instanceof Unit ? " unit " :
                     objval instanceof Enum<?> ? " enum " :
                     " unknown ";
+        } else {
+            double num = data.num(index);
+            return
+                    num <= COLOR_LIMIT && num > 0 ? " color " :
+                    (long) num == num ? " integer " :
+                    " number ";
         }
     }
 }

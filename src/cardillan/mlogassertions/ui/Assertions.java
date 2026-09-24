@@ -99,7 +99,7 @@ public class Assertions {
 
         // Clear all accumulators
         accumulators.clear();
-        allBlocks.forEach(b -> {
+        allBlocks.each(b -> {
             accumulators.add(b.accumulator);
             b.accumulator = 0;
         });
@@ -134,7 +134,7 @@ public class Assertions {
             invalidBlocks.clear();
             nextWarnEffect = 0;
 
-            Groups.build.forEach(b -> {
+            Groups.build.each(b -> {
                 if (b instanceof LogicBuild build && blocks.put(build, "") == null) {
                     allBlocks.add(build);
                 }
