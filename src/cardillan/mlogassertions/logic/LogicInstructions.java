@@ -3,6 +3,7 @@ package cardillan.mlogassertions.logic;
 import arc.Core;
 import arc.graphics.Color;
 import arc.util.Log;
+import cardillan.mlogassertions.Constants;
 import cardillan.mlogassertions.Settings;
 import cardillan.mlogassertions.ui.Assertions;
 import mindustry.Vars;
@@ -270,8 +271,6 @@ public class LogicInstructions {
         return !"null".equals(var.name);
     }
 
-    private static final double COLOR_LIMIT = Color.white.toDoubleBits();
-
     private static String print(Object message) {
         return print(message, false);
     }
@@ -283,7 +282,7 @@ public class LogicInstructions {
     private static String print(LVar var, boolean formatString) {
         if (var.isobj) {
             return formatString && var.objval instanceof String str ? '"' + str + '"' : LExecutor.PrintI.toString(var.objval);
-        } else if (var.numval <= COLOR_LIMIT && var.numval > 0) {
+        } else if (var.numval <= Constants.COLOR_LIMIT && var.numval > 0) {
             long color = Double.doubleToLongBits(var.numval) & 0xFFFFFFFFL;
             return '%' + Integer.toHexString((int) color);
         } else if ((long) var.numval == var.numval) {

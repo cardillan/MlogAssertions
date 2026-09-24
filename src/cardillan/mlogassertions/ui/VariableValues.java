@@ -5,6 +5,10 @@ public interface VariableValues {
 
     int size();
     String label(int index, boolean hex);
+    String formatted(int index, boolean hex);
+    String clipboard(int index, boolean hex);
+    ValueType type(int index);
+
     boolean isObj(int index);
     boolean isLink(int index);
     Object obj(int index);

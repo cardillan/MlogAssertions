@@ -1,6 +1,10 @@
 package cardillan.mlogassertions;
 
+import arc.graphics.Color;
+
 public class Constants {
+    public static final double COLOR_LIMIT = Color.white.toDoubleBits();
+
     public static final String assertionsCategory = "asserts";
 
     // Camera state

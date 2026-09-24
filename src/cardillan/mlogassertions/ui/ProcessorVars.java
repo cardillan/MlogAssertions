@@ -6,7 +6,7 @@ import mindustry.logic.LVar;
 import java.util.Arrays;
 import java.util.Comparator;
 
-public class ProcessorVars implements VariableValues {
+public class ProcessorVars extends LogicVariableValues {
     private final LExecutor executor;
     private final LVar[] vars;
     private int length;

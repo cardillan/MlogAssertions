@@ -6,7 +6,7 @@ import mindustry.world.blocks.logic.MemoryBlock.MemoryBuild;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 
-public class MemoryVars implements VariableValues {
+public class MemoryVars extends LogicVariableValues {
     // Memory block private fields
     private static Object sentinel;
     private static Field objectField;

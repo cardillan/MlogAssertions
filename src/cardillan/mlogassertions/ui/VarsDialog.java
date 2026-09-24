@@ -28,7 +28,6 @@ import mindustry.ui.dialogs.BaseDialog;
 import java.util.Arrays;
 
 public class VarsDialog extends BaseDialog {
-    public static final double COLOR_LIMIT = Color.white.toDoubleBits();
     public static final float RESET = 1e10f;
 
     static boolean hex = false;
@@ -113,8 +112,9 @@ public class VarsDialog extends BaseDialog {
                         }).padRight(pad);
                         Label valueLabel = (Label) val.get().getCells().first().get();
 
-                        Image halfShade = t.add(new Image(Tex.whiteui, halfColor(typeColor(index)))).width(stub).get();
-                        Image fullShade = new Image(Tex.whiteui, typeColor(index));
+                        ValueType valueType = data.type(index);
+                        Image halfShade = t.add(new Image(Tex.whiteui, valueType.darkShade)).width(stub).get();
+                        Image fullShade = new Image(Tex.whiteui, valueType.shade);
                         Label typeLabel = new Label("");
                         typeLabel.setAlignment(Align.center);
                         typeLabel.setStyle(Styles.outlineLabel);
@@ -128,13 +128,13 @@ public class VarsDialog extends BaseDialog {
                                     lastObject[index] = objval;
                                     lastMemory[index] = numval;
 
-                                    String text = print(index);
+                                    String text = data.formatted(index, hex);
+                                    ValueType type = data.type(index);
                                     valueLabel.setText(text);
-                                    typeLabel.setText(typeName(index));
+                                    typeLabel.setText(type.paddedTitle);
 
-                                    Color typeColor = typeColor(index);
-                                    halfShade.setColor(halfColor(typeColor));
-                                    fullShade.setColor(typeColor);
+                                    halfShade.setColor(type.darkShade);
+                                    fullShade.setColor(type.shade);
 
                                     updated[index] = counter[index] < RESET;
                                     valueLabel.setColor(updated[index] ? Pal.accent : Color.white);
@@ -264,10 +264,10 @@ public class VarsDialog extends BaseDialog {
                     t.button("@varsdialog.copyvariables", Icon.copy, style, () -> {
                         StringBuilder sbr = new StringBuilder(500);
                         sbr.append("Slot\tType\tValue\n");
-                        for (int i = 0; i < length; i++) {
-                            sbr.append(data.label(i, false))
-                                    .append("\t").append(typeName(i))
-                                    .append("\t").append(data.isObj((i)) && data.obj(i) instanceof String str ? str : print(i))
+                        for (int index = 0; index < length; index++) {
+                            sbr.append(data.label(index, false))
+                                    .append("\t").append(data.type(index).title)
+                                    .append("\t").append(data.clipboard(index, hex))
                                     .append("\n");
                         }
                         Core.app.setClipboardText(sbr.toString());
@@ -290,87 +290,5 @@ public class VarsDialog extends BaseDialog {
 
         wasPortrait = Core.graphics.isPortrait();
         addCloseListener();
-    }
-
-    private String print(int index) {
-        if (data.isObj(index)) {
-            Object obj = data.obj(index);
-            if (obj instanceof String str) {
-                return str.length() > 40 ? str.substring(0, 40).trim() + "[gold]..." : str;
-            } else {
-                return
-                        obj == null ? "null" :
-                        obj instanceof MappableContent content ? content.name :
-                        obj instanceof Content ? "[content]" :
-                        obj instanceof Building build ? build.block.name + pos(build.x(), build.y()) :
-                        obj instanceof Unit unit ? unit.type.name + pos(unit.x(), unit.y()) :
-                        obj instanceof Enum<?> e ? e.name() :
-                        obj instanceof Team team ? team.name :
-                        "[object]";
-            }
-        } else {
-            double num = data.num(index);
-            if (num <= COLOR_LIMIT && num > 0) {
-                long color = Double.doubleToLongBits(num) & 0xFFFFFFFFL;
-                String str = Integer.toHexString((int) color);
-                if (str.length() < 8) str = "0".repeat(8 - str.length()) + str;
-                return '%' + str + " [#" + str.substring(0, 6) + "]\ue86b";
-            } else if ((long) num == num) {
-                return hex ? "0x" + Long.toHexString((long) num).toUpperCase() : Long.toString((long) num);
-            } else {
-                return hex ? Double.toHexString(num).toLowerCase() : Double.toString(num).toLowerCase();
-            }
-        }
-    }
-
-    private String pos(float x, float y) {
-        return String.format(" (%.1f,\u00a0%.1f)", x / Vars.tilesize, y / Vars.tilesize);
-    }
-
-    private static final Color col = new Color();
-    private Color halfColor(Color color) {
-        return col.set(color).mul(0.5f);
-    }
-
-    public Color typeColor(int index) {
-        if (data.isLink(index)) {
-            return Pal.tungstenShot;
-        } else if (data.isObj(index)) {
-            Object objval = data.obj(index);
-            return  objval == null ? Color.darkGray :
-                    objval instanceof String ? Pal.ammo :
-                    objval instanceof Content ? Pal.logicOperations :
-                    objval instanceof Building ? Pal.logicBlocks :
-                    objval instanceof Unit ? Pal.logicUnits :
-                    objval instanceof Team ? Pal.logicControl :
-                    objval instanceof Enum<?> ? Pal.logicIo :
-                    Color.white;
-        } else {
-            double numval = data.num(index);
-            return  numval <= COLOR_LIMIT && numval > 0 ? Pal.berylShot :
-                    (long) numval == numval ? Pal.logicWorld :
-                    Pal.place;
-        }
-    }
-
-    public String typeName(int index) {
-        if (data.isLink(index)) {
-            return " link ";
-        } else if (data.isObj(index)) {
-            Object objval = data.obj(index);
-            return  objval == null ? " null " :
-                    objval instanceof String ? " string " :
-                    objval instanceof Content ? " content " :
-                    objval instanceof Building ? " building " :
-                    objval instanceof Team ? " team " :
-                    objval instanceof Unit ? " unit " :
-                    objval instanceof Enum<?> ? " enum " :
-                    " unknown ";
-        } else {
-            double num = data.num(index);
-            return  num <= COLOR_LIMIT && num > 0 ? " color " :
-                    (long) num == num ? " integer " :
-                    " number ";
-        }
     }
 }
