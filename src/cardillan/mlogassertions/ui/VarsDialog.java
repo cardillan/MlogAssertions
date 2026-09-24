@@ -7,7 +7,10 @@ import arc.scene.ui.ButtonGroup;
 import arc.scene.ui.Image;
 import arc.scene.ui.Label;
 import arc.scene.ui.TextButton;
+import arc.scene.ui.layout.Cell;
 import arc.scene.ui.layout.Scl;
+import arc.scene.ui.layout.Stack;
+import arc.scene.ui.layout.Table;
 import arc.util.Align;
 import arc.util.Time;
 import mindustry.Vars;
@@ -26,6 +29,7 @@ import java.util.Arrays;
 
 public class VarsDialog extends BaseDialog {
     public static final double COLOR_LIMIT = Color.white.toDoubleBits();
+    public static final float RESET = 1e10f;
 
     static boolean hex = false;
     static boolean sorted = false;
@@ -38,6 +42,7 @@ public class VarsDialog extends BaseDialog {
     private final Object[] lastObject;
     private final double[] lastMemory;
     private final float[] counter;
+    private final boolean[] updated;
     private int length;
 
     boolean wasPortrait;
@@ -53,6 +58,7 @@ public class VarsDialog extends BaseDialog {
         this.counter = new float[length];
         this.lastObject = new Object[length];
         this.lastMemory = new double[length];
+        this.updated = new boolean[length];
 
         data.setView(sorted, hideTemps, hideLinks);
 
@@ -72,7 +78,7 @@ public class VarsDialog extends BaseDialog {
     public void setup() {
         buttons.clear();
         cont.clear();
-        Arrays.fill(counter, -1f);
+        Arrays.fill(counter, RESET);
 
         buttons.defaults().size(200f, 64f);
 
@@ -100,41 +106,45 @@ public class VarsDialog extends BaseDialog {
                         }}).padRight(pad);
 
                         t.add(new Image(Tex.whiteui, Pal.gray.cpy().mul(mul))).width(stub);
-                        t.table(Tex.pane, out -> {
+                        Cell<Table> val = t.table(Tex.pane, out -> {
                             Label label = out.add("").style(Styles.outlineLabel).padLeft(4).padRight(4).width(220f).wrap().get();
-                            label.update(() -> {
-                                if (counter[index] < 0 || (counter[index] += Time.delta) >= 15f) {
-                                    Object objval = data.obj(index);
-                                    double numval = data.num(index);
-                                    if (counter[index] < 0 || objval != lastObject[index] || numval != lastMemory[index]) {
-                                        lastObject[index] = objval;
-                                        lastMemory[index] = numval;
-
-                                        String text = print(index);
-                                        label.setAlignment(Align.right);
-                                        label.setText(text);
-                                        if (counter[index] >= 0f) {
-                                            label.actions(Actions.color(Pal.accent), Actions.color(Color.white, 0.25f));
-                                        }
-                                    }
-                                    counter[index] = 0f;
-                                }
-                            });
+                            label.setAlignment(Align.right);
                             label.act(1f);
                         }).padRight(pad);
+                        Label valueLabel = (Label) val.get().getCells().first().get();
 
-                        t.add(new Image(Tex.whiteui, typeColor(index, new Color()).mul(mul))).update(c -> {
-                            if (counter[index] < 0 || (counter[index] += Time.delta) >= 15f) c.setColor(typeColor(index, c.color).mul(mul));
-                        }).width(stub);
+                        Image halfShade = t.add(new Image(Tex.whiteui, halfColor(typeColor(index)))).width(stub).get();
+                        Image fullShade = new Image(Tex.whiteui, typeColor(index));
+                        Label typeLabel = new Label("");
+                        typeLabel.setAlignment(Align.center);
+                        typeLabel.setStyle(Styles.outlineLabel);
+                        t.stack(fullShade, typeLabel).minWidth(120f).get();
 
-                        t.stack(new Image(Tex.whiteui, typeColor(index, new Color())) {{
-                            update(() -> {
-                                if (counter[index] < 0 || (counter[index] += Time.delta) >= 15f) setColor(typeColor(index, color));
-                            });
-                        }}, new Label(() -> typeName(index)) {{
-                            setAlignment(Align.center);
-                            setStyle(Styles.outlineLabel);
-                        }}).minWidth(120f);
+                        valueLabel.update(() -> {
+                            if ((counter[index] += Time.delta) >= 15f) {
+                                Object objval = data.obj(index);
+                                double numval = data.num(index);
+                                if (counter[index] >= RESET || objval != lastObject[index] || numval != lastMemory[index]) {
+                                    lastObject[index] = objval;
+                                    lastMemory[index] = numval;
+
+                                    String text = print(index);
+                                    valueLabel.setText(text);
+                                    typeLabel.setText(typeName(index));
+
+                                    Color typeColor = typeColor(index);
+                                    halfShade.setColor(halfColor(typeColor));
+                                    fullShade.setColor(typeColor);
+
+                                    updated[index] = counter[index] < RESET;
+                                    valueLabel.setColor(updated[index] ? Pal.accent : Color.white);
+                                } else {
+                                    updated[index] = false;
+                                    valueLabel.setColor(Color.white);
+                                }
+                                counter[index] = 0f;
+                            }
+                        });
                     }
                     t.row();
                     t.add().growX().colspan(6).height(4).row();
@@ -156,11 +166,11 @@ public class VarsDialog extends BaseDialog {
                         ButtonGroup<TextButton> hexGroup = new ButtonGroup<>();
                         t.button("@varsdialog.dec", style, () -> {
                             hex = false;
-                            Arrays.fill(counter, -1f);
+                            Arrays.fill(counter, RESET);
                         }).name("dec").group(hexGroup).checked(!hex);
                         t.button("@varsdialog.hex", style, () -> {
                             hex = true;
-                            Arrays.fill(counter, -1f);
+                            Arrays.fill(counter, RESET);
                         }).name("hex").group(hexGroup).checked(hex);
                         t.row();
 
@@ -168,11 +178,11 @@ public class VarsDialog extends BaseDialog {
                         ButtonGroup<TextButton> sortedGroup = new ButtonGroup<>();
                         t.button("@varsdialog.unsorted", style, () -> {
                             data.setView(sorted = false, hideTemps, hideLinks);
-                            Arrays.fill(counter, -1f);
+                            Arrays.fill(counter, RESET);
                         }).name("unsorted").group(sortedGroup).checked(!sorted);
                         t.button("@varsdialog.sorted", style, () -> {
                             data.setView(sorted = true, hideTemps, hideLinks);
-                            Arrays.fill(counter, -1f);
+                            Arrays.fill(counter, RESET);
                         }).name("sorted").group(sortedGroup).checked(sorted);
 
                         t.row();
@@ -182,7 +192,7 @@ public class VarsDialog extends BaseDialog {
                             if (data.size() != length) {
                                 setup();
                             } else {
-                                Arrays.fill(counter, -1f);
+                                Arrays.fill(counter, RESET);
                             }
                         }).name("showall").group(tempsGroup).checked(!hideTemps);
                         t.button("@varsdialog.hidetemps", style, () -> {
@@ -190,7 +200,7 @@ public class VarsDialog extends BaseDialog {
                             if (data.size() != length) {
                                 setup();
                             } else {
-                                Arrays.fill(counter, -1f);
+                                Arrays.fill(counter, RESET);
                             }
                         }).name("hidetemps").group(tempsGroup).checked(hideTemps);
 
@@ -201,7 +211,7 @@ public class VarsDialog extends BaseDialog {
                             if (data.size() != length) {
                                 setup();
                             } else {
-                                Arrays.fill(counter, -1f);
+                                Arrays.fill(counter, RESET);
                             }
                         }).name("showlinks").group(linksGroup).checked(!hideLinks);
                         t.button("@varsdialog.hidelinks", style, () -> {
@@ -209,7 +219,7 @@ public class VarsDialog extends BaseDialog {
                             if (data.size() != length) {
                                 setup();
                             } else {
-                                Arrays.fill(counter, -1f);
+                                Arrays.fill(counter, RESET);
                             }
                         }).name("hidelinks").group(linksGroup).checked(hideLinks);
 
@@ -246,7 +256,7 @@ public class VarsDialog extends BaseDialog {
                     if (!processor) {
                         t.button("@varsdialog.clearmemory", Icon.cancel, style, () -> {
                             data.clear();
-                            Arrays.fill(counter, 100f);
+                            Arrays.fill(counter, RESET / 2);
                             dialog.hide();
                         }).marginLeft(12f).row();
                     }
@@ -317,26 +327,29 @@ public class VarsDialog extends BaseDialog {
         return String.format(" (%.1f,\u00a0%.1f)", x / Vars.tilesize, y / Vars.tilesize);
     }
 
-    public Color typeColor(int index, Color color) {
+    private static final Color col = new Color();
+    private Color halfColor(Color color) {
+        return col.set(color).mul(0.5f);
+    }
+
+    public Color typeColor(int index) {
         if (data.isLink(index)) {
-            return color.set(Pal.tungstenShot);
+            return Pal.tungstenShot;
         } else if (data.isObj(index)) {
             Object objval = data.obj(index);
-            return color.set(
-                    objval == null ? Color.darkGray :
+            return  objval == null ? Color.darkGray :
                     objval instanceof String ? Pal.ammo :
                     objval instanceof Content ? Pal.logicOperations :
                     objval instanceof Building ? Pal.logicBlocks :
                     objval instanceof Unit ? Pal.logicUnits :
-                    objval instanceof Team ? Pal.logicUnits :
+                    objval instanceof Team ? Pal.logicControl :
                     objval instanceof Enum<?> ? Pal.logicIo :
-                    Color.white);
+                    Color.white;
         } else {
             double numval = data.num(index);
-            return color.set(
-                    numval <= COLOR_LIMIT && numval > 0 ? Pal.berylShot :
+            return  numval <= COLOR_LIMIT && numval > 0 ? Pal.berylShot :
                     (long) numval == numval ? Pal.logicWorld :
-                    Pal.place);
+                    Pal.place;
         }
     }
 
@@ -345,8 +358,7 @@ public class VarsDialog extends BaseDialog {
             return " link ";
         } else if (data.isObj(index)) {
             Object objval = data.obj(index);
-            return
-                    objval == null ? " null " :
+            return  objval == null ? " null " :
                     objval instanceof String ? " string " :
                     objval instanceof Content ? " content " :
                     objval instanceof Building ? " building " :
@@ -356,8 +368,7 @@ public class VarsDialog extends BaseDialog {
                     " unknown ";
         } else {
             double num = data.num(index);
-            return
-                    num <= COLOR_LIMIT && num > 0 ? " color " :
+            return  num <= COLOR_LIMIT && num > 0 ? " color " :
                     (long) num == num ? " integer " :
                     " number ";
         }

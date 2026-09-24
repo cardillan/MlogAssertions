@@ -23,3 +23,6 @@ minGameVersion: 160.5
 
 #this is a java mod
 java: true
+
+#the mod doesn't add new content
+hidden: true

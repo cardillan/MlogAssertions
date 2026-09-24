@@ -68,7 +68,7 @@ public enum AssertionDataType {
 
     static {
         sorted = values();
-        Arrays.sort(sorted, Comparator.comparingInt(a -> -a.level));
+        Arrays.sort(sorted, (a, b) -> Integer.compare(-a.level, -b.level));
     }
 
     public boolean matches(LVar var) {

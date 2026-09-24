@@ -82,7 +82,7 @@ public class ProcessorVars implements VariableValues {
         }
 
         if (sorted) {
-            Arrays.sort(vars, start, length, Comparator.comparing(a -> a.name, mindcodeOrder));
+            Arrays.sort(vars, start, length, mindcodeOrder);
         }
     }
 
@@ -106,11 +106,12 @@ public class ProcessorVars implements VariableValues {
         return name.startsWith("*tmp");
     }
 
-    private static final Comparator<String> mindcodeOrder = (a, b) -> {
+    private static final Comparator<LVar> mindcodeOrder = (la, lb) -> {
+        String a = la.name, b = lb.name;
+
         if (a.isEmpty() || b.isEmpty()) return Integer.compare(a.length(), b.length());
 
-        VariableClass va = variableClass(a);
-        VariableClass vb = variableClass(b);
+        VariableClass va = variableClass(a), vb = variableClass(b);
         if (va != vb) return va.compareTo(vb);
 
         int ia = 0;
