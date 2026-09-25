@@ -14,13 +14,8 @@ import arc.scene.ui.layout.Table;
 import arc.util.Align;
 import arc.util.Time;
 import mindustry.Vars;
-import mindustry.ctype.Content;
-import mindustry.ctype.MappableContent;
-import mindustry.game.Team;
-import mindustry.gen.Building;
 import mindustry.gen.Icon;
 import mindustry.gen.Tex;
-import mindustry.gen.Unit;
 import mindustry.graphics.Pal;
 import mindustry.ui.Styles;
 import mindustry.ui.dialogs.BaseDialog;
@@ -262,17 +257,25 @@ public class VarsDialog extends BaseDialog {
                     }
 
                     t.button("@varsdialog.copyvariables", Icon.copy, style, () -> {
-                        StringBuilder sbr = new StringBuilder(500);
-                        sbr.append("Slot\tType\tValue\n");
-                        for (int index = 0; index < length; index++) {
-                            sbr.append(data.label(index, false))
-                                    .append("\t").append(data.type(index).title)
-                                    .append("\t").append(data.clipboard(index, hex))
-                                    .append("\n");
-                        }
-                        Core.app.setClipboardText(sbr.toString());
+                        Core.app.setClipboardText(MemoryText.write(data, hex));
                         dialog.hide();
                     }).marginLeft(12f).row();
+
+                    if (!processor) {
+                        t.button("@varsdialog.importvariables", Icon.upload, style, () -> {
+                            String text = Core.app.getClipboardText();
+                            String error = MemoryText.validate(text, length);
+                            if (error == null) error = MemoryText.read(text, length, data);
+
+                            if (error != null) {
+                                Vars.ui.showInfoFade(Core.bundle.format("varsdialog.importfailed", error));
+                                return;
+                            }
+
+                            Arrays.fill(counter, RESET / 2);
+                            dialog.hide();
+                        }).marginLeft(12f).row();
+                    }
 
                     if (processor) {
                         t.button("@varsdialog.copyprintbuffer", Icon.copy, style, () -> {

@@ -18,4 +18,13 @@ public interface VariableValues {
 
     void clear();
     void setView(boolean sorted, boolean hideTemps, boolean hideLinks);
+
+    /** Stores a number into the given slot. Values of sources which cannot be modified are ignored. */
+    default void set(int index, double value) {
+    }
+
+    /** Stores an object (a String or null) into the given slot. Values of sources which
+     * cannot be modified are ignored. */
+    default void set(int index, Object value) {
+    }
 }
