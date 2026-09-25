@@ -113,6 +113,21 @@ public class MemoryVars extends LogicVariableValues {
     }
 
     @Override
+    public void set(int index, double value) {
+        if (index < 0 || index >= length || sentinel == null) return;
+
+        objectMemory[index] = sentinel;
+        numberMemory[index] = value;
+    }
+
+    @Override
+    public void set(int index, Object value) {
+        if (index < 0 || index >= length || sentinel == null) return;
+
+        objectMemory[index] = value;
+    }
+
+    @Override
     public void setView(boolean sorted, boolean hideTemps, boolean hideLinks) {
         // Do nothing
     }

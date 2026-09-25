@@ -29,7 +29,9 @@ The **Vars** screen has been enhanced:
 
 # Displaying the content of memory blocks
 
-By tapping a memory block, a configuration button is now displayed. The button opens a **Memory** screen, similar to the **Vars** screen described above. All options relevant to the specifics of memory blocks are available. Furthermore, it is possible to clear the contents of memory blocks using the **Edit** button.  
+By tapping a memory block, a configuration button is now displayed. The button opens a **Memory** screen, similar to the **Vars** screen described above. All options relevant to the specifics of memory blocks are available. Furthermore, the **Edit** button allows you to clear the contents of memory blocks, copy them to the clipboard, and import them back.
+
+The table kept on the clipboard may be modified (for example in a spreadsheet) and imported back into the memory block. The columns of the table are separated by tabs, and the address of a cell is always given in decimal. Strings are written as literals enclosed in quotes, with the characters which would either be lost or break the table encoded using escape sequences (`\n`, `\"`, `\\`, `\uXXXX`). Numbers may be entered in the decimal, color, hexadecimal or binary form, and values which are not finite are written and imported as `null`, as they are not representable in memory blocks. Lines which cannot be parsed are reported and skipped, and the memory block is only changed once the whole table has been parsed. Values having no representation in the text form (references to units, buildings and contents) are exported as well, but cannot be restored.
 
 # Custom instructions
 
