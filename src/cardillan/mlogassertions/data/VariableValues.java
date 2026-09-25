@@ -1,6 +1,9 @@
-package cardillan.mlogassertions.ui;
+package cardillan.mlogassertions.data;
+
+import mindustry.gen.Building;
 
 public interface VariableValues {
+    Building building();
     boolean processor();
 
     int size();

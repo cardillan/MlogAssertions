@@ -6,6 +6,7 @@ import arc.scene.actions.Actions;
 import arc.scene.ui.layout.Table;
 import arc.util.Align;
 import arc.util.Log;
+import cardillan.mlogassertions.data.*;
 import mindustry.Vars;
 import mindustry.content.Blocks;
 import mindustry.gen.Building;
@@ -13,6 +14,7 @@ import mindustry.gen.Icon;
 import mindustry.input.InputHandler;
 import mindustry.ui.Styles;
 import mindustry.ui.fragments.BlockConfigFragment;
+import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
 import mindustry.world.blocks.logic.MemoryBlock;
 import mindustry.world.blocks.logic.MemoryBlock.MemoryBuild;
 
@@ -20,7 +22,7 @@ import java.lang.reflect.Field;
 
 import static mindustry.Vars.player;
 
-public class MemoryConfiguration {
+public class LogicConfiguration {
 
     // BlockConfigFragment private fields
     private static Field configTable;
@@ -90,7 +92,7 @@ public class MemoryConfiguration {
 
         @Override
         public void showConfig(Building tile) {
-            if (tile instanceof MemoryBuild memory) {
+            if (tile instanceof MemoryBuild || tile instanceof LogicBuild) {
                 try {
                     if (configSelected.get(delegate) instanceof Building bld) {
                         bld.onConfigureClosed();
@@ -101,7 +103,14 @@ public class MemoryConfiguration {
                         table.visible = true;
                         table.clear();
                         table.background(null);
-                        table.button(Icon.zoom, Styles.cleari, () -> new VarsDialog(new MemoryVars(memory)).show()).size(40);
+                        if (tile instanceof MemoryBuild build) {
+                            table.button(Icon.box, Styles.cleari, () -> Snapshots.create(build, "User snapshot")).size(40);
+                            table.button(Icon.zoom, Styles.cleari, () -> new VarsDialog(Snapshots.liveView(build)).show()).size(40);
+                        } else if (tile instanceof LogicBuild build) {
+                            table.button(Icon.box, Styles.cleari, () -> Snapshots.create(build, "User snapshot")).size(40);
+                            table.button(Icon.pencil, Styles.cleari, build::showEditDialog).size(40);
+                            table.button(Icon.menu, Styles.cleari, () -> new VarsDialog(Snapshots.liveView(build)).show()).size(40);
+                        }
                         table.pack();
                         table.setTransform(true);
                         table.actions(Actions.scaleTo(0f, 1f), Actions.visible(true),

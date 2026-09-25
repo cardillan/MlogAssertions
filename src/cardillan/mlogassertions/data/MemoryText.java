@@ -1,4 +1,4 @@
-package cardillan.mlogassertions.ui;
+package cardillan.mlogassertions.data;
 
 import arc.util.Strings;
 

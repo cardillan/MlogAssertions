@@ -1,4 +1,4 @@
-package cardillan.mlogassertions.ui;
+package cardillan.mlogassertions.data;
 
 import arc.graphics.Color;
 import mindustry.graphics.Pal;

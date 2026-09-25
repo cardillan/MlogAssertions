@@ -1,20 +1,51 @@
-package cardillan.mlogassertions.ui;
+package cardillan.mlogassertions.data;
 
+import mindustry.gen.Building;
 import mindustry.logic.LExecutor;
 import mindustry.logic.LVar;
+import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
 
 import java.util.Arrays;
 import java.util.Comparator;
 
 public class ProcessorVars extends LogicVariableValues {
-    private final LExecutor executor;
-    private final LVar[] vars;
-    private int length;
+    public final LogicBuild build;
+    public final LExecutor executor;
+    public final LVar[] data;
+    public final LVar[] view;
+    public final int start;
+    public int length;
 
-    public ProcessorVars(LExecutor executor) {
-        this.executor = executor;
-        this.vars = new LVar[executor.vars.length + 2 + (executor.privileged ? 1 : 0)];
-        this.length = 0;
+    public ProcessorVars(LogicBuild build) {
+        this.build = build;
+        this.executor = build.executor;
+        this.data = new LVar[executor.vars.length + 2 + (executor.privileged ? 1 : 0)];
+        int length = 0;
+
+        // Copy the original dat
+        data[length++] = get(executor.counter);
+        data[length++] = get(executor.unit);
+        data[length++] = get(executor.ipt);
+        if (executor.privileged) {
+            data[length++] = get(executor.queryResult);
+        }
+
+        start = length;
+
+        for (int i = 1; i < executor.vars.length; i++) {
+            data[length++] = get(executor.vars[i]);
+        }
+
+        view = Arrays.copyOf(data, length);
+    }
+
+    protected LVar get(LVar var) {
+        return var;
+    }
+
+    @Override
+    public Building building() {
+        return build;
     }
 
     @Override
@@ -29,27 +60,27 @@ public class ProcessorVars extends LogicVariableValues {
 
     @Override
     public String label(int index, boolean hex) {
-        return vars[index].name;
+        return view[index].name;
     }
 
     @Override
     public boolean isObj(int index) {
-        return vars[index].isobj;
+        return view[index].isobj;
     }
 
     @Override
     public boolean isLink(int index) {
-        return vars[index].constant && vars[index].name.charAt(0) != '@';
+        return view[index].constant && view[index].name.charAt(0) != '@';
     }
 
     @Override
     public Object obj(int index) {
-        return vars[index].objval;
+        return view[index].objval;
     }
 
     @Override
     public double num(int index) {
-        return vars[index].numval;
+        return view[index].numval;
     }
 
     @Override
@@ -65,24 +96,14 @@ public class ProcessorVars extends LogicVariableValues {
     @Override
     public void setView(boolean sorted, boolean hideTemps, boolean hideLinks) {
         length = 0;
-        vars[length++] = executor.counter;
-        vars[length++] = executor.unit;
-        vars[length++] = executor.ipt;
-        if (executor.privileged) {
-            vars[length++] = executor.queryResult;
-        }
-
-        int start = length;
-
-        LVar[] v = executor.vars;
-        for (int i = 1; i < v.length; i++) {
-            if (hideTemps && isTemp(v[i].name)) continue;
-            if (hideLinks && v[i].constant && v[i].name.charAt(0) != '@') continue;
-            vars[length++] = v[i];
+        for (int i = 0; i < data.length; i++) {
+            if (hideTemps && isTemp(data[i].name)) continue;
+            if (hideLinks && data[i].constant && data[i].name.charAt(0) != '@') continue;
+            view[length++] = data[i];
         }
 
         if (sorted) {
-            Arrays.sort(vars, start, length, mindcodeOrder);
+            Arrays.sort(view, start, length, mindcodeOrder);
         }
     }
 

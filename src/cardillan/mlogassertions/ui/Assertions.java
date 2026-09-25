@@ -67,8 +67,82 @@ public class Assertions {
     // The next time the effect should be run (game time)
     static double nextWarnEffect = 0;
 
-    private static void effect(LogicBuild block) {
-        Fx.unitCapKill.at(block.getX(), block.getY(), 10f, color);
+    public static void init() {
+        Events.on(EventType.ResetEvent.class, e -> {
+            blocks.clear();
+            allBlocks.clear();
+            invalidBlocks.clear();
+            nextWarnEffect = 0;
+        });
+
+        Events.on(EventType.WorldLoadEndEvent.class, e -> {
+            blocks.clear();
+            allBlocks.clear();
+            invalidBlocks.clear();
+            nextWarnEffect = 0;
+
+            Groups.build.each(b -> {
+                if (b instanceof LogicBuild build && blocks.put(build, "") == null) {
+                    allBlocks.add(build);
+                }
+            });
+
+            blocks.clear(32);
+
+            Log.info("WorldLoadEndEvent: found " + allBlocks.size + " processors on the map.");
+        });
+
+        Events.on(EventType.BlockBuildEndEvent.class, e -> {
+            if (e.tile.build instanceof LogicBuild build) {
+                if (e.breaking) {
+                    blocks.remove(build);
+                    allBlocks.remove(build);
+                } else {
+                    allBlocks.add(build);
+                }
+            }
+        });
+
+        Events.on(EventType.ConfigEvent.class, e -> {
+            if (e.tile instanceof LogicBuild build) {
+                reset(build);
+            }
+        });
+
+        Events.on(EventType.StateChangeEvent.class, e -> {
+            if (e.from == GameState.State.paused) {
+                breakpointProc = null;
+                reattachCamera();
+            }
+        });
+
+        Events.run(EventType.Trigger.drawOver, () -> {
+            checkBlocks();
+
+            camera.bounds(narrowBounds);
+            wideBounds.set(narrowBounds);
+            narrowBounds.grow(tilesize * 2f);
+            wideBounds.grow(tilesize * 10f);
+
+            blocks.each(Assertions::draw);
+            if (breakpointProc != null) {
+                draw(breakpointProc, breakpointMessage);
+            }
+
+            invalidBlocks.each(blocks::remove);
+            allBlocks.removeAll(invalidBlocks);
+            invalidBlocks.clear();
+        });
+
+        // Reattach the camera if the game was closed while paused
+        reattachCamera();
+    }
+
+    private static void reattachCamera() {
+        if (Core.settings.getBool(Constants.detachCamera)) {
+            Core.settings.put(Constants.detachCamera, false);
+            Core.settings.put(Constants.reattachCamera, true);
+        }
     }
 
     public static void setWait(LogicBuild block) {
@@ -120,77 +194,8 @@ public class Assertions {
         blocks.remove(block);
     }
 
-    public static void init() {
-        Events.on(EventType.ResetEvent.class, e -> {
-            blocks.clear();
-            allBlocks.clear();
-            invalidBlocks.clear();
-            nextWarnEffect = 0;
-        });
-
-        Events.on(EventType.WorldLoadEndEvent.class, e -> {
-            blocks.clear();
-            allBlocks.clear();
-            invalidBlocks.clear();
-            nextWarnEffect = 0;
-
-            Groups.build.each(b -> {
-                if (b instanceof LogicBuild build && blocks.put(build, "") == null) {
-                    allBlocks.add(build);
-                }
-            });
-
-            blocks.clear(32);
-
-            Log.info("WorldLoadEndEvent: found " + allBlocks.size + " processors on the map.");
-        });
-
-        Events.on(EventType.BlockBuildEndEvent.class, e -> {
-            if (e.tile.build instanceof LogicBuild build) {
-                allBlocks.add(build);
-            }
-        });
-
-        Events.on(EventType.ConfigEvent.class, e -> {
-            if (e.tile instanceof LogicBuild build) {
-                reset(build);
-            }
-        });
-
-        Events.on(EventType.StateChangeEvent.class, e -> {
-            if (e.from == GameState.State.paused) {
-                breakpointProc = null;
-                reattachCamera();
-            }
-        });
-
-        Events.run(EventType.Trigger.drawOver, () -> {
-            checkBlocks();
-
-            camera.bounds(narrowBounds);
-            wideBounds.set(narrowBounds);
-            narrowBounds.grow(tilesize * 2f);
-            wideBounds.grow(tilesize * 10f);
-
-            blocks.each(Assertions::draw);
-            if (breakpointProc != null) {
-                draw(breakpointProc, breakpointMessage);
-            }
-
-            invalidBlocks.each(blocks::remove);
-            allBlocks.removeAll(invalidBlocks);
-            invalidBlocks.clear();
-        });
-
-        // Reattach the camera if the game was closed while paused
-        reattachCamera();
-    }
-
-    private static void reattachCamera() {
-        if (Core.settings.getBool(Constants.detachCamera)) {
-            Core.settings.put(Constants.detachCamera, false);
-            Core.settings.put(Constants.reattachCamera, true);
-        }
+    private static void effect(LogicBuild block) {
+        Fx.unitCapKill.at(block.getX(), block.getY(), 10f, color);
     }
 
     static int checkIndex;

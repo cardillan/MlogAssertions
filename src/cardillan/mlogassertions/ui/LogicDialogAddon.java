@@ -2,11 +2,10 @@ package cardillan.mlogassertions.ui;
 
 import arc.Core;
 import arc.Events;
-import arc.scene.style.Drawable;
 import arc.scene.ui.TextButton;
-import arc.scene.ui.layout.Cell;
 import arc.scene.ui.layout.Table;
 import arc.util.Log;
+import cardillan.mlogassertions.data.ProcessorVars;
 import mindustry.Vars;
 import mindustry.core.GameState;
 import mindustry.game.EventType;
@@ -53,12 +52,6 @@ public class LogicDialogAddon {
         });
     }
 
-    private static class HookTable extends Table {
-        public Cell<TextButton> button(String text, Drawable image, Runnable clicked) {
-            return super.button(text, image, "@variables".equals(text) ? () -> Vars.ui.showInfo("Hooray") : clicked);
-        }
-    }
-
     private static void setupLogicDialog() {
         LogicDialog logicDialog = Vars.ui.logic;
         Table buttons = logicDialog.buttons;
@@ -92,7 +85,7 @@ public class LogicDialogAddon {
                         return;
                     }
 
-                    VarsDialog dialog = new VarsDialog(new ProcessorVars(executor));
+                    VarsDialog dialog = new VarsDialog(new ProcessorVars(executor.build));
 
                     dialog.hidden(() -> {
                         if (!wasPaused && !net.active() && !state.isMenu()) {

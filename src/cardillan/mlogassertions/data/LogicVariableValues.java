@@ -1,6 +1,5 @@
-package cardillan.mlogassertions.ui;
+package cardillan.mlogassertions.data;
 
-import cardillan.mlogassertions.Constants;
 import mindustry.Vars;
 import mindustry.ctype.Content;
 import mindustry.ctype.MappableContent;

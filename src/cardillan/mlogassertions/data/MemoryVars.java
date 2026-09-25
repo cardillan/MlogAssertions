@@ -1,22 +1,26 @@
-package cardillan.mlogassertions.ui;
+package cardillan.mlogassertions.data;
 
 import arc.util.Log;
+import mindustry.gen.Building;
 import mindustry.world.blocks.logic.MemoryBlock.MemoryBuild;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
 
 public class MemoryVars extends LogicVariableValues {
+    // Share cell labels across all instances
+    public static String[] decLabels = new String[0];
+    public static String[] hexLabels = new String[0];
+
     // Memory block private fields
     private static Object sentinel;
     private static Field objectField;
     private static Field numberField;
 
-    private final String[] decLabels;
-    private final String[] hexLabels;
-    private final Object[] objectMemory;
-    private final double[] numberMemory;
-    private final int length;
+    public final MemoryBuild build;
+    public final Object[] objectMemory;
+    public final double[] numberMemory;
+    public final int length;
 
     public static void init() {
         try {
@@ -33,8 +37,31 @@ public class MemoryVars extends LogicVariableValues {
         }
     }
 
+    public MemoryVars(MemoryBuild build) {
+        this(build, true);
+    }
+
+    protected MemoryVars(MemoryBuild build, boolean live) {
+        Object[] objectMemory = get(build, objectField, new Object[0]);
+        double[] numberMemory = get(build, numberField, new double[0]);
+
+        length = Math.min(objectMemory.length, numberMemory.length);
+        this.build = build;
+        this.objectMemory = live ? objectMemory : Arrays.copyOf(objectMemory, length);
+        this.numberMemory = live ? numberMemory : Arrays.copyOf(numberMemory, length);
+
+        if (length > decLabels.length) {
+            decLabels = new String[length];
+            hexLabels = new String[length];
+            for (int i = 0; i < length; i++) {
+                decLabels[i] = " " + i + " ";
+                hexLabels[i] = " " + Integer.toHexString(i).toUpperCase() + " ";
+            }
+        }
+    }
+
     private static <T> T get(Object instance, Field field, T defaultValue) {
-        if (field == null) return defaultValue;
+        if (objectField == null || numberField == null || sentinel == null) return defaultValue;
 
         try {
             //noinspection unchecked
@@ -45,23 +72,9 @@ public class MemoryVars extends LogicVariableValues {
         }
     }
 
-    public MemoryVars(MemoryBuild memory) {
-        if (objectField == null || numberField == null || sentinel == null) {
-            objectMemory = new Object[0];
-            numberMemory = new double[0];
-        } else {
-            objectMemory = get(memory, objectField, new Object[0]);
-            numberMemory = get(memory, numberField, new double[0]);
-        }
-
-        length = Math.min(objectMemory.length, numberMemory.length);
-
-        decLabels = new String[length];
-        hexLabels = new String[length];
-        for (int i = 0; i < length; i++) {
-            decLabels[i] = " " + i + " ";
-            hexLabels[i] = " " + Integer.toHexString(i).toUpperCase() + " ";
-        }
+    @Override
+    public Building building() {
+        return build;
     }
 
     @Override
