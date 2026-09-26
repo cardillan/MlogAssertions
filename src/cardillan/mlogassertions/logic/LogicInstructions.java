@@ -1,16 +1,15 @@
 package cardillan.mlogassertions.logic;
 
 import arc.Core;
-import arc.graphics.Color;
 import arc.util.Log;
 import cardillan.mlogassertions.Constants;
 import cardillan.mlogassertions.Settings;
+import cardillan.mlogassertions.data.Snapshots;
 import cardillan.mlogassertions.ui.Assertions;
 import mindustry.Vars;
 import mindustry.logic.ConditionOp;
 import mindustry.logic.LExecutor;
 import mindustry.logic.LVar;
-import mindustry.net.Net;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
 
 public class LogicInstructions {
@@ -22,13 +21,13 @@ public class LogicInstructions {
         public AssertionType type = AssertionType.any;
         public LVar multiple;
         public LVar min;
-        public AssertOp opMin = AssertOp.lessThanEq;
+        public ConditionOp opMin = ConditionOp.lessThanEq;
         public LVar value;
-        public AssertOp opMax = AssertOp.lessThanEq;
+        public ConditionOp opMax = ConditionOp.lessThanEq;
         public LVar max;
         public LVar message;
 
-        public AssertBoundsI(AssertionType type, LVar multiple, LVar min, AssertOp opMin, LVar value, AssertOp opMax, LVar max, LVar message) {
+        public AssertBoundsI(AssertionType type, LVar multiple, LVar min, ConditionOp opMin, LVar value, ConditionOp opMax, LVar max, LVar message) {
             this.type = type;
             this.multiple = multiple;
             this.min = min;
@@ -46,11 +45,19 @@ public class LogicInstructions {
         public final void run(LExecutor exec) {
             if ((value.isobj ? type.objFunction.get(value.objval) : type.function.get(value.num()))
                     && (type != AssertionType.multiple || (value.num() % multiple.num() == 0))
-                    && (opMin.function.get(min.num(), value.num()))
-                    && (opMax.function.get(value.num(), max.num()))) {
+                    && (test(opMin, min.num(), value.num()))
+                    && (test(opMax, value.num(), max.num()))) {
                 Assertions.reset(exec.build);
             } else {
-                assertion("boundsAssertionFailedWithValues", exec, message, min, value, max, opMin.symbol, opMax.symbol);
+                assertion(exec, "boundsAssertionFailedWithValues", message, min, value, max, opMin.symbol, opMax.symbol);
+            }
+        }
+
+        private boolean test(ConditionOp op, double a, double b) {
+            switch (op) {
+                case lessThan: return a < b;
+                case lessThanEq: return a <= b;
+                default: return false;
             }
         }
     }
@@ -74,7 +81,7 @@ public class LogicInstructions {
             if (ConditionOp.strictEqual.test(expected, actual)) {
                 Assertions.reset(exec.build);
             } else {
-                assertion("assertionFailedWithValues", exec, message, expected, actual);
+                assertion(exec, "assertionFailedWithValues", message, expected, actual);
             }
         }
     }
@@ -113,13 +120,14 @@ public class LogicInstructions {
         public final void run(LExecutor exec) {
             int flushIndex = this.flushIndex.numi();
             if (flushIndex < 0 || flushIndex > exec.textBuffer.length()) {
-                assertion("invalidFlushIndex", exec, "");
+                assertion(exec, "invalidFlushIndex", "");
             } else {
                 String actual = exec.textBuffer.substring(flushIndex);
+                exec.textBuffer.setLength(flushIndex);
+
                 if (!actual.equals(expected.obj())) {
-                    assertion("assertionFailedWithValues", exec, message, expected, actual);
+                    assertion(exec, "assertionFailedWithValues", message, expected, actual);
                 } else {
-                    exec.textBuffer.setLength(flushIndex);
                     Assertions.reset(exec.build);
                 }
             }
@@ -145,7 +153,7 @@ public class LogicInstructions {
             if (expectedType.matches(actualValue)) {
                 Assertions.reset(exec.build);
             } else {
-                assertion("assertionFailedWithValues", exec, message, expectedType.name(), AssertionDataType.actualType(actualValue));
+                assertion(exec, "assertionFailedWithValues", message, expectedType.name(), AssertionDataType.actualType(actualValue));
             }
         }
     }
@@ -185,7 +193,7 @@ public class LogicInstructions {
         public final void run(LExecutor exec) {
             LogicBuild building = exec.build;
 
-            Assertions.setMessage(building, () -> buildMessage("", true, vars[0], vars));
+            Assertions.setMessage(building, () -> buildMessage(exec, "", true, vars[0], vars));
             exec.counter.numval--;
             exec.yield = true;
         }
@@ -205,18 +213,60 @@ public class LogicInstructions {
 
         @Override
         public final void run(LExecutor exec) {
-            Log.log(level, buildMessage("[MlogAssertions] ", true, vars[0], vars));
+            Log.log(level, buildMessage(exec, "[MlogAssertions] ", true, vars[0], vars));
         }
     }
 
-    private static void assertion(String bundleKey, LExecutor exec, Object message, Object... arguments) {
+    public static class SnapshotI implements LExecutor.LInstruction, AssertInstruction {
+        public SnapshotType type = SnapshotType.isolated;
+        public LVar block, message;
+
+        public SnapshotI(SnapshotType type, LVar block, LVar message) {
+            this.type = type;
+            this.block = block;
+            this.message = message;
+        }
+
+        public SnapshotI() {
+        }
+
+        @Override
+        public void run(LExecutor exec) {
+            Snapshots.add(exec.build, buildMessage(exec, type + " snapshot: ", false, message, new Object[0]));
+        }
+
+        private String message(LExecutor exec) {
+            if (message.obj() instanceof String str) {
+                int pos = str.indexOf("{");
+                if (pos < 0) return str;
+
+                StringBuilder sbr = new StringBuilder(str);
+                while (pos >= 0) {
+                    int end = sbr.indexOf("}", pos);
+                    if (end < 0) break;
+                    LVar var = exec.optionalVar(sbr.substring(pos + 1, end));
+                    if (var != null) {
+                        String replacement = print(var);
+                        sbr.replace(pos, end + 1, replacement);
+                        end = pos + replacement.length();
+                    }
+                    pos = end < sbr.length() ? sbr.indexOf("{", end) : -1;
+                }
+                return sbr.toString();
+            } else {
+                return print(message);
+            }
+        }
+    }
+
+    private static void assertion(LExecutor exec, String bundleKey, Object message, Object... arguments) {
         if (Settings.assertsAreBreakpoints()) {
             if (Settings.disableBreakpoints()) return;  // Avoid unnecessary creation of the message
-            breakpoint(exec.build, formatAssertionMessage(bundleKey, message, arguments));
+            breakpoint(exec.build, formatAssertionMessage(exec, bundleKey, message, arguments));
         } else {
+            Assertions.setMessage(exec.build, () -> formatAssertionMessage(exec, bundleKey, message, arguments));
             exec.counter.numval--;
             exec.yield = true;
-            Assertions.setMessage(exec.build, () -> formatAssertionMessage(bundleKey, message, arguments));
         }
     }
 
@@ -229,9 +279,9 @@ public class LogicInstructions {
         Assertions.breakpoint(build, message);
     }
 
-    private static String formatAssertionMessage(String bundleKey, Object message, Object[] arguments) {
+    private static String formatAssertionMessage(LExecutor exec, String bundleKey, Object message, Object[] arguments) {
         if (message instanceof String || message instanceof LVar var && var.isobj && var.objval instanceof String str && !str.isEmpty()) {
-            return buildMessage("", false, message, arguments);
+            return buildMessage(exec, "", false, message, arguments);
         } else {
             return arguments.length == 0
                     ? Core.bundle.get("assertions.assertionFailed")
@@ -239,22 +289,32 @@ public class LogicInstructions {
         }
     }
 
-    private static String buildMessage(String prefix, boolean appendUnused, Object message, Object[] arguments) {
+    private static String buildMessage(LExecutor exec, String prefix, boolean appendUnused, Object message, Object[] arguments) {
         int used = 0;
         StringBuilder sbr = new StringBuilder(50).append(prefix).append(print(message));
+        // When the first argument is the message, shift the placeholder positions
+        int offset = arguments.length > 0 && message == arguments[0] ? 1 : 0;
+
         int pos = sbr.indexOf("{");
-        int offset = message == arguments[0] ? 0 : 1;
         while (pos >= 0) {
-            if (sbr.charAt(pos + 1) >= '1' && sbr.charAt(pos + 1) <= '9' && sbr.charAt(pos + 2) == '}') {
-                int index = sbr.charAt(pos + 1) - '0' - offset;
-                String str = index < arguments.length ? print(arguments[index], true)
-                        : Core.bundle.get("assertions.invalidPlaceholder");
-                sbr.replace(pos, pos + 3, str);
-                pos = sbr.indexOf("{", pos + str.length());
+            int end = sbr.indexOf("}", pos);
+            if (end < 0) break;
+
+            String str;
+            if (end == pos + 2 && sbr.charAt(pos + 1) >= '1' && sbr.charAt(pos + 1) <= '9') {
+                int index = sbr.charAt(pos + 1) - '1' + offset;
+                str = index < arguments.length ? print(arguments[index], true) : null;
                 used |= (1 << index);
             } else {
-                pos = sbr.indexOf("{", pos + 1);
+                LVar var = exec.optionalVar(sbr.substring(pos + 1, end));
+                str = var == null ? null : var.name.equals("@counter") ? String.valueOf(var.numval - 1) : print(var);
             }
+            if (str != null) {
+                sbr.replace(pos, end + 1, str);
+                end = pos + str.length();
+                if (end >= sbr.length()) break;
+            }
+            pos = sbr.indexOf("{", end);
         }
 
         if (appendUnused) {

@@ -3,6 +3,7 @@ package cardillan.mlogassertions.ui;
 import arc.Core;
 import arc.graphics.Color;
 import arc.scene.ui.layout.Scl;
+import arc.struct.Queue;
 import arc.struct.Seq;
 import cardillan.mlogassertions.data.MemoryVars;
 import cardillan.mlogassertions.data.ProcessorVars;
@@ -23,9 +24,9 @@ public class SnapshotsDialog extends BaseDialog {
     static final DateFormat dateFormat = SimpleDateFormat.getTimeInstance();
 
     VarsDialog vars;
-    Seq<Snapshot> snapshots;
+    Queue<Snapshot> snapshots;
 
-    public SnapshotsDialog(VarsDialog vars, Seq<Snapshot> snapshots) {
+    public SnapshotsDialog(VarsDialog vars, Queue<Snapshot> snapshots) {
         super("Snapshots");
         this.vars = vars;
         this.snapshots = snapshots;
@@ -45,7 +46,7 @@ public class SnapshotsDialog extends BaseDialog {
             cont.clear();
             cont.pane(p -> {
                 p.table(t -> {
-                    for (int i = snapshots.size - 1; i >= 0; i--) {
+                    for (int i = 0; i < snapshots.size; i++) {
                         Snapshot snapshot = snapshots.get(i);
                         int index = i;
                         t.button(b -> {

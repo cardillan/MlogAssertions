@@ -3,13 +3,14 @@ package cardillan.mlogassertions.logic;
 import arc.func.Cons;
 import arc.func.Func;
 import arc.func.Prov;
-import arc.scene.ui.Button;
-import arc.scene.ui.ButtonGroup;
-import arc.scene.ui.layout.Cell;
+import arc.graphics.Color;
+import arc.scene.ui.layout.Scl;
 import arc.scene.ui.layout.Table;
 import arc.util.Log;
+import mindustry.gen.Icon;
 import mindustry.gen.LogicIO;
 import mindustry.logic.*;
+import mindustry.logic.LStatements.JumpStatement;
 import mindustry.ui.Styles;
 
 import static mindustry.logic.LCanvas.tooltip;
@@ -20,12 +21,13 @@ public class LogicStatements {
     public static void register() {
         register(AssertBoundsStatement::new, AssertBoundsStatement.opcode, AssertBoundsStatement::read);
         register(AssertEqualsStatement::new, AssertEqualsStatement.opcode, AssertEqualsStatement::read);
-        register(AssertTypeStatement::new, AssertTypeStatement.opcode, AssertTypeStatement::read);
         register(AssertFlushStatement::new, AssertFlushStatement.opcode, AssertFlushStatement::read);
         register(AssertPrintsStatement::new, AssertPrintsStatement.opcode, AssertPrintsStatement::read);
+        register(AssertTypeStatement::new, AssertTypeStatement.opcode, AssertTypeStatement::read);
         register(BreakpointStatement::new, BreakpointStatement.opcode, BreakpointStatement::read);
         register(ErrorStatement::new, ErrorStatement.opcode, ErrorStatement::read);
         register(LogStatement::new, LogStatement.opcode, LogStatement::read);
+        register(SnapshotStatement::new, SnapshotStatement.opcode, SnapshotStatement::read);
     }
 
     private static void register(Prov<LStatement> prov, String opcode, Func<String[], LStatement> parser) {
@@ -37,10 +39,14 @@ public class LogicStatements {
         LAssembler.customParsers.put(opcode, parser);
     }
 
-    public static abstract class AssertStatement extends LStatement {
+    public static abstract class AbstractAssertStatement extends LStatement {
         final String name;
 
-        public AssertStatement(String name) {
+        // This is the optional (expandable) message field. Child classes need to use it for optional messages.
+        protected String message = "null";
+        boolean expanded = false;
+
+        public AbstractAssertStatement(String name) {
             this.name = name;
         }
 
@@ -54,124 +60,163 @@ public class LogicStatements {
             return AssertLogic.assertsCategory;
         }
 
-        protected void stretchRow(Table table) {
-            if (LCanvas.isCompact()) {
-                table.add("").growX().row();
+        protected boolean expanded() {
+            return !message.equals("null");
+        }
+
+        protected abstract void rebuild(Table t);
+
+        @Override
+        public final void build(Table table) {
+            expanded = expanded();
+            rebuild(table);
+        }
+
+        // Expandlable message field
+        protected void message(Table t, String label, String defaultMessage) {
+            if (!expanded) {
+                t.button(b -> {
+                    b.add("add " + label).color(Color.gray);
+                    b.clicked(() -> {
+                        expanded = true;
+                        message = '"' + defaultMessage + '"';
+                        rebuild(t);
+                    });
+                }, Styles.logict, () -> {
+                }).size(180f, 40f).left().pad(4f).color(t.color);
+
+            } else {
+                t.add(label).padLeft(10);
+                // Convert various representations of empty messages to null
+                field(t, message, str -> message = str == null || str.isEmpty() || str.equals("\"\"") || !str.equals("\"") ? "null" : str)
+                        .width(LCanvas.getTargetWidth() - Scl.scl(20f)).padRight(3);
+                if (false) {
+                    // A delete button - could be activated inadvertently
+                    t.button(b -> {
+                        b.image(Icon.trashSmall, t.color);
+                        b.clicked(() -> {
+                            message = "null";
+                            expanded = false;
+                            rebuild(t);
+                        });
+                    }, Styles.logict, () -> {
+                    }).size(40f).padLeft(-1).color(t.color);
+                }
             }
         }
 
-        protected void message(Table table, String value, Cons<String> setter) {
-            field(table, value, setter).width(LCanvas.isCompact() ? 280f : 0f).growX().padRight(3);
-        }
+        // Select field with optional label
+        protected <T extends Enum<?>> void select(Table table, String label, T[] values, T current, Cons<T> getter, int cols, float width) {
+            Table sub = new Table();
+            sub.setColor(table.color);
+            table.add(sub);
 
-        protected void subtable(Table table, Cons<Table> builder) {
-            table.table(t -> {
-                t.left();
-                t.color.set(category().color);
-                builder.get(t);
-            }).growX();
+            if (!label.isEmpty()) sub.add(label).padLeft(10);
+            table.button(b -> {
+                b.add(bundle(current));
+                b.clicked(() -> showSelect(b, values, current, o -> { getter.get(o); rebuild(table); }, cols, c -> c.width(width)));
+            }, Styles.logict, () -> {
+            }).size(width, 40f).left().pad(4f).color(table.color);
         }
     }
 
-    public static class AssertBoundsStatement extends AssertStatement {
+    public abstract static class AbstractMessageStatement extends AbstractAssertStatement {
+        private final String opcode;
+        private final boolean hasLevel;
+        public Log.LogLevel level = Log.LogLevel.info;
+        public String[] params = new String[10];
+
+        public AbstractMessageStatement(String opcode, String name, String message) {
+            super(name);
+            this.opcode = opcode;
+            this.hasLevel = opcode.equals("log");
+            params[0] = "\"" + message + " at #{@counter}.\"";
+            for (int i = 1; i < params.length; i++) params[i] = "null";
+        }
+
+        @Override
+        protected boolean expanded() {
+            for (int i = 1; i < params.length; i++) {
+                if (!params[i].isEmpty() && !"null".equals(params[i])) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        protected void rebuild(Table t) {
+            t.clearChildren();
+            t.left();
+
+            if (hasLevel) {
+                select(t, "level", levels, level, o -> level = o, 1, 80f);
+            }
+
+            field(t, params[0], str -> params[0] = str).width(LCanvas.getTargetWidth() - Scl.scl(20f)).padRight(3);
+
+            if (expanded) {
+                for (int i = 1; i < params.length; i++) {
+                    final int index = i;
+                    fields(t, "p" + i, false, params[index], v -> params[index] = v);
+                }
+            } else {
+                t.button(b -> {
+                    b.add("add parameters").color(Color.gray);
+                    b.clicked(() -> { expanded = true; rebuild(t); });
+                }, Styles.logict, () -> {}).size(180f, 40f).left().pad(4f).color(t.color);
+            }
+        }
+
+        @Override
+        public void write(StringBuilder builder) {
+            writer.start(builder);
+            writer.write(opcode);
+            if (hasLevel) writer.write(level.name());
+            for (String param : params) writer.write(param.isEmpty() ? "null" : param);
+            writer.end();
+        }
+
+        protected LStatement readTokens(String[] tokens) {
+            int i = 1;
+            if (hasLevel && tokens.length > i) level = Log.LogLevel.valueOf(tokens[i++]);
+            for (int j = 0; j < 10; j++) {
+                if (tokens.length > i) params[j] = tokens[i++];
+            }
+            return this;
+        }
+    }
+
+    public static class AssertBoundsStatement extends AbstractAssertStatement {
+        private static final ConditionOp[] ops = {ConditionOp.lessThan, ConditionOp.lessThanEq};
         public static final String opcode = "assertBounds";
         public AssertionType type = AssertionType.integer;
         public String multiple = "2";
         public String min = "0";
-        public AssertOp opMin = AssertOp.lessThanEq;
+        public ConditionOp opMin = ConditionOp.lessThanEq;
         public String value = "index";
-        public AssertOp opMax = AssertOp.lessThanEq;
+        public ConditionOp opMax = ConditionOp.lessThanEq;
         public String max = "10";
-        public String message = "\"Index out of bounds (0 to 10).\"";
 
         public AssertBoundsStatement() {
             super("Assert Bounds");
         }
 
         @Override
-        public void build(Table t) {
-            t.defaults().left();
-            t.clearChildren();
-            t.left();
-            t.add("Value type ").color(category().color).padLeft(4);
-            t.row();
-            subtable(t, table -> {
-                table.add("value of ").padLeft(4);
-                field(table, value, str -> value = str);
-                table.add(" is ").padLeft(4);
-                table.button(b -> {
-                    b.label(() -> type.name());
-                    b.clicked(() -> showSelect(b, AssertionType.all, type, o -> {
-                        type = o;
-                        build(t);
-                    }, 2, cell -> cell.size(110, 50)));
-                }, Styles.logict, () -> {
-                }).size(108, 40).left().pad(4f).color(table.color);
-                if (type == AssertionType.multiple) {
-                    table.row();
-                    table.add(" of ");
-                    numField(table, multiple, str -> multiple = str);
-                }
-            });
-            t.row();
-            t.add("Bounds ").color(category().color).padLeft(4);
-            t.row();
-            subtable(t, table -> {
-                numField(table, min, str -> min = str);
-                opButton(t, table, opMin, o -> opMin = o);
-                table.add(" value ");
-                opButton(t, table, opMax, o -> opMax = o);
-                numField(table, max, str -> max = str);
-            });
-            t.row();
-            t.add("Message").color(category().color).padLeft(4);
-            t.row();
-            field(t, message, str -> message = str).width(0f).growX().padRight(3);
-        }
+        protected void rebuild(Table table) {
+            table.clearChildren();
+            table.left();
 
-        void numField(Table table, String value, Cons<String> setter) {
-            field(table, value, setter).width(84f).left();
-        }
-
-        void opButton(Table parent, Table table, AssertOp op, Cons<AssertOp> getter) {
-            table.button(b -> {
-                b.label(() -> op.symbol);
-                b.clicked(() -> showSelect(b, AssertOp.all, op, o -> {
-                    getter.get(o);
-                    build(parent);
-                }));
-            }, Styles.logict, () -> {
-            }).size(64f, 40f).left().pad(4f).color(table.color);
-        }
-
-        protected static String bundle(Enum<?> value) {
-            if (value instanceof AssertOp op) {
-                return selectTranslate(op.symbol);
-            } else {
-                return LStatement.bundle(value);
+            field(table, value, str -> value = str);
+            select(table, "is", AssertionType.all, type, o -> type = o, 2, 110f);
+            if (type == AssertionType.multiple) {
+                fields(table, "of", false, multiple, str -> multiple = str);
             }
-        }
-
-        protected <T> void showSelect(Button b, T[] values, T current, Cons<T> getter, int cols, Cons<Cell> sizer){
-            showSelectTable(b, (t, hide) -> {
-                ButtonGroup<Button> group = new ButtonGroup<>();
-                int i = 0;
-                t.defaults().size(60f, 38f);
-
-                for(T p : values){
-                    String btnText = (p instanceof Enum<?> e) ? bundle(e) : bundle(p.toString());
-                    sizer.get(t.button(btnText, Styles.logicTogglet, () -> {
-                        getter.get(p);
-                        hide.run();
-                    }).self(c -> {
-                        if(p instanceof Enum<?> e){
-                            tooltip(c, e);
-                        }
-                    }).checked(current.equals(p)).group(group));
-
-                    if(++i % cols == 0) t.row();
-                }
-            });
+            fields(table, "where", false, min, str -> min = str);
+            select(table, "", ops, opMin, o -> opMin = o, 2, 64f);
+            table.add("value").padLeft(10);
+            select(table, "", ops, opMax, o -> opMax = o, 2, 64f);
+            fields(table, min, str -> min = str);
+            message(table, "message", "Index out of bounds: {1}{4}{2}{5}{3}.");
         }
 
         @Override
@@ -202,37 +247,40 @@ public class LogicStatements {
             if (tokens.length > i) stmt.type = AssertionType.valueOf(tokens[i++]);
             if (tokens.length > i) stmt.multiple = tokens[i++];
             if (tokens.length > i) stmt.min = tokens[i++];
-            if (tokens.length > i) stmt.opMin = AssertOp.valueOf(tokens[i++]);
+            if (tokens.length > i) stmt.opMin = conditionOp(tokens[i++]);
             if (tokens.length > i) stmt.value = tokens[i++];
-            if (tokens.length > i) stmt.opMax = AssertOp.valueOf(tokens[i++]);
+            if (tokens.length > i) stmt.opMax = conditionOp(tokens[i++]);
             if (tokens.length > i) stmt.max = tokens[i++];
             if (tokens.length > i) stmt.message = tokens[i++];
             return stmt;
         }
+
+        private static ConditionOp conditionOp(String name) {
+            ConditionOp op = ConditionOp.valueOf(name);
+            if (op != ConditionOp.lessThan && op != ConditionOp.lessThanEq) {
+                throw new IllegalArgumentException("Unsupported condition op: " + name);
+            }
+            return op;
+        }
     }
 
-    public static class AssertEqualsStatement extends AssertStatement {
+    public static class AssertEqualsStatement extends AbstractAssertStatement {
         public static final String opcode = "assertequals";
         public String expected = "0";
         public String actual = "value";
-        public String message = "null";
 
         public AssertEqualsStatement() {
             super("Assert Equals");
         }
 
-        @Override
-        public void build(Table table) {
-            table.defaults().left();
 
-            table.add(" expected ").self(this::param);
-            field(table, expected, v -> expected = v);
-            stretchRow(table);
-            table.add(" actual ").self(this::param);
-            field(table, actual, v -> actual = v);
-            stretchRow(table);
-            table.add(" message ").self(this::param);
-            message(table, message, str -> message = str);
+        @Override
+        protected void rebuild(Table t) {
+            t.clearChildren();
+            t.left();
+            fields(t, "expected", false, expected, v -> expected = v);
+            fields(t, "actual", false, actual, v -> actual = v);
+            message(t, "message", "Assertion failed: expected [gold]{1}[], got [gold]{2}[].");
         }
 
         @Override
@@ -261,7 +309,7 @@ public class LogicStatements {
         }
     }
 
-    public static class AssertFlushStatement extends AssertStatement {
+    public static class AssertFlushStatement extends AbstractAssertStatement {
         public static final String opcode = "assertflush";
         public String position = "position";
 
@@ -270,9 +318,10 @@ public class LogicStatements {
         }
 
         @Override
-        public void build(Table table) {
-            table.add(" position ").self(this::param);
-            field(table, position, v -> position = v);
+        protected void rebuild(Table t) {
+            t.clearChildren();
+            t.left();
+            fields(t, "position", false, position, v -> position = v);
         }
 
         @Override
@@ -296,27 +345,22 @@ public class LogicStatements {
         }
     }
 
-    public static class AssertPrintsStatement extends AssertStatement {
+    public static class AssertPrintsStatement extends AbstractAssertStatement {
         public static final String opcode = "assertprints";
         public String position = "position";
         public String expected = "\"frog\"";
-        public String message = "null";
 
         public AssertPrintsStatement() {
             super("Assert Prints");
         }
 
         @Override
-        public void build(Table table) {
-            table.defaults().left();
-            table.add(" position ").self(this::param);
-            field(table, position, v -> position = v);
-            stretchRow(table);
-            table.add(" expected ").self(this::param);
-            field(table, expected, v -> expected = v);
-            stretchRow(table);
-            table.add(" message ").self(this::param);
-            message(table, message, str -> message = str);
+        protected void rebuild(Table t) {
+            t.clearChildren();
+            t.left();
+            fields(t, "position", false, position, v -> position = v);
+            fields(t, "expected", false, expected, v -> expected = v);
+            message(t, "message", "Assertion failed: expected [gold]{1}[], got [gold]{2}[].");
         }
 
         @Override
@@ -345,48 +389,22 @@ public class LogicStatements {
         }
     }
 
-    public static class AssertTypeStatement extends AssertStatement {
+    public static class AssertTypeStatement extends AbstractAssertStatement {
         public static final String opcode = "asserttype";
         public AssertionDataType expectedType = AssertionDataType.unit;
         public String actualValue = "@unit";
-        public String message = "null";
 
         public AssertTypeStatement() {
             super("Assert Type");
         }
 
         @Override
-        public void build(Table table) {
-            table.defaults().left();
-            table.clearChildren();
-            table.left();
-
-            if (LCanvas.isCompact()) {
-                subtable(table, subtable -> createValues(table, subtable));
-                table.row();
-                subtable(table, this::createMessage);
-            } else {
-                createValues(table, table);
-                createMessage(table);
-            }
-        }
-
-        private void createValues(Table root, Table table) {
-            field(table, actualValue, v -> actualValue = v);
-            table.add(" is ").self(this::param);
-            table.button(b -> {
-                b.label(() -> expectedType.name());
-                b.clicked(() -> showSelect(b, AssertionDataType.all, expectedType, o -> {
-                    expectedType = o;
-                    build(root);
-                }, 1, cell -> cell.size(160, 40)));
-            }, Styles.logict, () -> {
-            }).size(160, 40).left().pad(4f).color(table.color);
-        }
-
-        private void createMessage(Table table) {
-            table.add(" message ").self(this::param);
-            message(table, message, str -> message = str);
+        protected void rebuild(Table t) {
+            t.clearChildren();
+            t.left();
+            fields(t, actualValue, v -> actualValue = v);
+            select(t, "is", AssertionDataType.all, expectedType, o -> expectedType = o, 2, 160f);
+            message(t, "message", "Assertion failed: expected [gold]{1}[], got [gold]{2}[].");
         }
 
         @Override
@@ -414,80 +432,7 @@ public class LogicStatements {
         }
     }
 
-    public abstract static class MessageStatement extends AssertStatement {
-        private final String opcode;
-        private final boolean hasLevel;
-        public Log.LogLevel level = Log.LogLevel.info;
-        public String[] params = new String[10];
-
-        public MessageStatement(String opcode, String name, String message) {
-            super(name);
-            this.opcode = opcode;
-            this.hasLevel = opcode.equals("log");
-            params[0] = "\"" + message + " at #{1}\"";
-            params[1] = "@counter";
-            for (int i = 2; i < params.length; i++) params[i] = "null";
-        }
-
-        @Override
-        public void build(Table table) {
-            rebuild(table);
-        }
-
-        void rebuild(Table table) {
-            table.clearChildren();
-
-            table.defaults().left();
-            Table t1 = table.table().growX().left().get();
-            if (hasLevel) {
-                t1.button(b -> {
-                    b.label(() -> level.name());
-                    b.clicked(() -> showSelect(b, levels, level, o -> {
-                        level = o;
-                        rebuild(table);
-                    }, 1, cell -> cell.width(80)));
-                }, Styles.logict, () -> {
-                }).size(80f, 40f).left().pad(4f).color(table.color);
-            }
-            t1.setColor(category().color);
-            t1.add(" message ").self(this::param).left();
-            message(t1, params[0], str -> params[0] = str);
-            table.row();
-            Table t2 = table.table().growX().left().get().left();
-            t2.setColor(category().color);
-
-            for (int i = 1; i < params.length; i++) {
-                final int index = i;
-                t2.add(" p" + i + " ").self(this::param);
-                field(t2, params[index], v -> params[index] = v).width(LCanvas.isCompact() ? 150f : 220f);
-                if (LCanvas.isCompact()) {
-                    if (i % 2 == 0) t2.row();
-                } else {
-                    if (i % 3 == 0) t2.row();
-                }
-            }
-        }
-
-        @Override
-        public void write(StringBuilder builder) {
-            writer.start(builder);
-            writer.write(opcode);
-            if (hasLevel) writer.write(level.name());
-            for (String param : params) writer.write(param);
-            writer.end();
-        }
-
-        protected LStatement readTokens(String[] tokens) {
-            int i = 1;
-            if (hasLevel && tokens.length > i) level = Log.LogLevel.valueOf(tokens[i++]);
-            for (int j = 0; j < 10; j++) {
-                if (tokens.length > i) params[j] = tokens[i++];
-            }
-            return this;
-        }
-    }
-
-    public static class BreakpointStatement extends AssertStatement {
+    public static class BreakpointStatement extends AbstractAssertStatement {
         public static final String opcode = "breakpoint";
 
         public ConditionOp op = ConditionOp.always;
@@ -497,37 +442,15 @@ public class LogicStatements {
             super("Breakpoint");
         }
 
-        @Override
-        public void build(Table table) {
-            rebuild(table);
-        }
-
-        void rebuild(Table table) {
+        protected void rebuild(Table table) {
             table.clearChildren();
+            table.left();
 
-            if (op == ConditionOp.always) {
-                table.add("trigger ").padLeft(10).left();
-            } else {
-                table.add("trigger when ").padLeft(10).left();
-                table.row();
-            }
-
-            addOp(table, op, o -> {
+            if (op != ConditionOp.always) table.add("when").padLeft(10);
+            JumpStatement.addOp(this, table, op, o -> {
                 op = o;
                 rebuild(table);
             }, value, str -> value = str, compare, str -> compare = str);
-        }
-
-        public void addOp(Table t, ConditionOp op, Cons<ConditionOp> getter, String comp0, Cons<String> set0, String comp1, Cons<String> set2) {
-            if (op != ConditionOp.always) field(t, comp0, set0);
-
-            t.button(b -> {
-                b.add(op.symbol);
-                b.clicked(() -> showSelect(b, ConditionOp.all, op, getter));
-            }, Styles.logict, () -> {
-            }).size(op == ConditionOp.always ? 80f : 48f, 40f).pad(4f).color(t.color);
-
-            if (op != ConditionOp.always) field(t, comp1, set2);
         }
 
         @Override
@@ -555,7 +478,7 @@ public class LogicStatements {
         }
     }
 
-    public static class ErrorStatement extends MessageStatement {
+    public static class ErrorStatement extends AbstractMessageStatement {
         public static final String opcode = "error";
 
         public ErrorStatement() {
@@ -581,7 +504,7 @@ public class LogicStatements {
             Log.LogLevel.debug,
     };
 
-    public static class LogStatement extends MessageStatement {
+    public static class LogStatement extends AbstractMessageStatement {
         public static final String opcode = "log";
 
         public LogStatement() {
@@ -597,6 +520,56 @@ public class LogicStatements {
 
         public static LStatement read(String[] tokens) {
             return new LogStatement().readTokens(tokens);
+        }
+    }
+
+    public static class SnapshotStatement extends AbstractAssertStatement {
+        public static final String opcode = "snapshot";
+
+        public SnapshotType type = SnapshotType.isolated;
+        public String block = "@this";
+
+        public SnapshotStatement() {
+            super("Snapshot");
+        }
+
+        protected void rebuild(Table t) {
+            t.clearChildren();
+            t.left();
+
+            select(t, "create", SnapshotType.all, type, o -> type = o, 1, 130f);
+            if (type == SnapshotType.global) {
+                t.add(" snapshot");
+            } else {
+                t.add(" snapshot of ");
+                field(t, block, str -> block = str);
+            }
+
+            message(t, "name", "Snapshot created at #{@counter}.");
+        }
+
+        @Override
+        public LExecutor.LInstruction build(LAssembler builder) {
+            return new LogicInstructions.SnapshotI(type, builder.var(block), builder.var(message));
+        }
+
+        @Override
+        public void write(StringBuilder builder) {
+            writer.start(builder);
+            writer.write(opcode);
+            writer.write(type.name());
+            writer.write(block);
+            writer.write(message);
+            writer.end();
+        }
+
+        public static LStatement read(String[] tokens) {
+            SnapshotStatement stmt = new SnapshotStatement();
+            int i = 1;
+            if (tokens.length > i) stmt.type = SnapshotType.valueOf(tokens[i++]);
+            if (tokens.length > i) stmt.block = tokens[i++];
+            if (tokens.length > i) stmt.message = tokens[i++];
+            return stmt;
         }
     }
 }

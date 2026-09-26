@@ -6,6 +6,7 @@ import arc.scene.ui.*;
 import arc.scene.ui.layout.Cell;
 import arc.scene.ui.layout.Scl;
 import arc.scene.ui.layout.Table;
+import arc.struct.Queue;
 import arc.struct.Seq;
 import arc.util.Align;
 import arc.util.Time;
@@ -16,8 +17,6 @@ import mindustry.gen.Tex;
 import mindustry.graphics.Pal;
 import mindustry.ui.Styles;
 import mindustry.ui.dialogs.BaseDialog;
-import mindustry.world.blocks.logic.LogicBlock;
-import mindustry.world.blocks.logic.MemoryBlock;
 
 import java.util.Arrays;
 import java.util.Date;
@@ -32,7 +31,7 @@ public class VarsDialog extends BaseDialog {
 
     private final boolean processor;
 
-    private Seq<Snapshot> snapshots;
+    private Queue<Snapshot> snapshots;
     private int index;
 
     private VariableValues data;
@@ -50,11 +49,11 @@ public class VarsDialog extends BaseDialog {
         this(data, Snapshots.get(data.building()), -1);
     }
 
-    public VarsDialog(VariableValues data, Seq<Snapshot> snapshots, int index) {
+    public VarsDialog(VariableValues data, Queue<Snapshot> snapshots, int index) {
         super(data.processor() ? "@variables" : "@varsdialog.memory");
         this.processor = data.processor();
         this.snapshots = snapshots;
-        this.index = index < 0 ? snapshots.size : index;
+        this.index = index;
         this.data = data;
 
         onResize(() -> {
@@ -76,7 +75,7 @@ public class VarsDialog extends BaseDialog {
     }
 
     public void setup() {
-        view = index == snapshots.size ? data : snapshots.get(index);
+        view = index < 0 ? data : snapshots.get(index);
         view.setView(false, false, false);
 
         length = view.size();
@@ -93,7 +92,7 @@ public class VarsDialog extends BaseDialog {
 
         buttons.defaults().size(200f, 64f);
 
-        Snapshot snapshot = index == snapshots.size ? null : snapshots.get(index);
+        Snapshot snapshot = index < 0 ? null : snapshots.get(index);
         cont.table(t -> {
             t.table(text -> {
                 text.add(snapshot == null ? "Live view" : snapshot.name())
@@ -108,7 +107,7 @@ public class VarsDialog extends BaseDialog {
         cont.table(t -> {
             ImageButton.ImageButtonStyle style = Styles.defaulti;
             t.defaults().size(64f).pad(5f);
-            t.button(Icon.leftOpen, style, () -> setup(index + 1)).disabled(index == snapshots.size);
+            t.button(Icon.leftOpen, style, () -> setup(index - 1)).disabled(index < 0);
             t.button(Icon.download, style, () -> {
                 if (snapshot.writeTo(data)) {
                     Vars.ui.showInfo("The processor's state has been restored from the snapshot.");
@@ -116,21 +115,20 @@ public class VarsDialog extends BaseDialog {
                 } else {
                     Vars.ui.showErrorMessage("Cannot restore this snapshot: either the snapshot is invalid, or the processor's code has been recompiled.");
                 }
-            }).disabled(index == snapshots.size);
+            }).disabled(index < 0);
             t.button(Icon.folderOpen, style, () -> new SnapshotsDialog(VarsDialog.this, snapshots).show()).get().setDisabled(() -> snapshots.isEmpty());
             if (snapshot == null) {
                 t.button(Icon.box, style, () -> {
-                    Snapshots.create(data.building(), "User snapshot");
-                    index = snapshots.size;  // Stay on the live view
+                    Snapshots.add(data.building(), "User snapshot");
                 });
             } else {
                 t.button(Icon.trash, style, () -> {
-                    snapshots.remove(index);
-                    if (index > snapshots.size) index--;
+                    snapshots.removeIndex(index);
+                    if (index >= snapshots.size) index--;
                     setup();
                 });
             }
-            t.button(Icon.rightOpen, style, () -> setup(index - 1)).get().setDisabled(() -> index == 0);
+            t.button(Icon.rightOpen, style, () -> setup(index + 1)).get().setDisabled(() -> index >= snapshots.size - 1);
         }).pad(10f).row();
 
         cont.pane(p -> {
