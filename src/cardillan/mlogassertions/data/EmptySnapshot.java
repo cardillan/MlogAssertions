@@ -1,6 +1,9 @@
 package cardillan.mlogassertions.data;
 
+import arc.func.Cons;
+import arc.struct.Seq;
 import arc.util.Time;
+import cardillan.mlogassertions.logic.SnapshotType;
 import mindustry.gen.Building;
 
 public class EmptySnapshot implements Snapshot {
@@ -18,6 +21,11 @@ public class EmptySnapshot implements Snapshot {
 
     @Override
     public boolean processor() {
+        return false;
+    }
+
+    @Override
+    public boolean valid() {
         return false;
     }
 
@@ -85,12 +93,31 @@ public class EmptySnapshot implements Snapshot {
     }
 
     @Override
+    public SnapshotType type() {
+        return SnapshotType.isolated;
+    }
+
+    @Override
     public String name() {
         return "Invalid snapshot";
     }
 
     @Override
+    public int id() {
+        return 0;
+    }
+
+    @Override
+    public Seq<Snapshot> group() {
+        return null;
+    }
+
+    @Override
     public boolean writeTo(VariableValues liveData) {
         return false;
+    }
+
+    @Override
+    public void eachObject(Cons<Object> getter) {
     }
 }

@@ -1,5 +1,6 @@
 package cardillan.mlogassertions.data;
 
+import arc.func.Cons;
 import mindustry.Vars;
 import mindustry.ctype.Content;
 import mindustry.ctype.MappableContent;
@@ -10,6 +11,11 @@ import mindustry.gen.Unit;
 import static cardillan.mlogassertions.Constants.COLOR_LIMIT;
 
 public abstract class LogicVariableValues implements VariableValues {
+
+    @Override
+    public boolean valid() {
+        return true;
+    }
 
     @Override
     public String formatted(int index, boolean hex) {
@@ -46,7 +52,7 @@ public abstract class LogicVariableValues implements VariableValues {
         return isObj(index) && obj(index) instanceof String str ? str : formatted(index, hex);
     }
 
-    private String pos(float x, float y) {
+    public static String pos(float x, float y) {
         return String.format(" (%.1f,\u00a0%.1f)", x / Vars.tilesize, y / Vars.tilesize);
     }
 

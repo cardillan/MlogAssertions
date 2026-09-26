@@ -1,10 +1,13 @@
 package cardillan.mlogassertions.data;
 
+import arc.func.Cons;
+import arc.func.Cons2;
 import mindustry.gen.Building;
 
 public interface VariableValues {
     Building building();
     boolean processor();
+    boolean valid();
 
     int size();
     String label(int index, boolean hex);
@@ -21,6 +24,8 @@ public interface VariableValues {
 
     void clear();
     void setView(boolean sorted, boolean hideTemps, boolean hideLinks);
+
+    void eachObject(Cons<Object> getter);
 
     /** Stores a number into the given slot. Values of sources which cannot be modified are ignored. */
     default void set(int index, double value) {

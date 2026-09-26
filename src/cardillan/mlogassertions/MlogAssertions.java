@@ -1,6 +1,7 @@
 package cardillan.mlogassertions;
 
 import arc.Events;
+import cardillan.mlogassertions.data.MapIndex;
 import cardillan.mlogassertions.logic.AssertLogic;
 import cardillan.mlogassertions.ui.Assertions;
 import cardillan.mlogassertions.ui.LogicDialogAddon;
@@ -15,12 +16,17 @@ public class MlogAssertions extends Mod {
         Events.on(EventType.ClientLoadEvent.class, e -> {
             Settings.init();
 
+            // Logic statements
+            AssertLogic.init();
+
+            // Map
+            MapIndex.init();
+
+            // UI
+            Assertions.init();
             LogicDialogAddon.init();
             LogicConfiguration.init();
             MemoryVars.init();
-
-            AssertLogic.init();
-            Assertions.init();
         });
     }
 }

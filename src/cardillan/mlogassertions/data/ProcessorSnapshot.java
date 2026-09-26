@@ -1,16 +1,26 @@
 package cardillan.mlogassertions.data;
 
+import arc.struct.Seq;
 import arc.util.Time;
+import cardillan.mlogassertions.logic.SnapshotType;
+import mindustry.gen.Building;
 import mindustry.logic.LVar;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
 
 public class ProcessorSnapshot extends ProcessorVars implements Snapshot {
     public String name;
-    public String textBuffer;
+    public final SnapshotType type;
+    public final int id;
+    public final Seq<Snapshot> group;
     public final long timestamp = Time.millis();
 
-    public ProcessorSnapshot(LogicBuild build, String name) {
+    public final String textBuffer;
+
+    public ProcessorSnapshot(LogicBuild build, SnapshotType type, int id, Seq<Snapshot> group, String name) {
         super(build);
+        this.type = type;
+        this.id = id;
+        this.group = group;
         this.textBuffer = executor.textBuffer.toString();
         this.name = name;
     }
@@ -36,10 +46,24 @@ public class ProcessorSnapshot extends ProcessorVars implements Snapshot {
     }
 
     @Override
+    public SnapshotType type() {
+        return type;
+    }
+
+    @Override
     public String name() {
         return name;
     }
 
+    @Override
+    public int id() {
+        return id;
+    }
+
+    @Override
+    public Seq<Snapshot> group() {
+        return group;
+    }
 
     @Override
     public boolean writeTo(VariableValues liveData) {

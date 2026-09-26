@@ -1,5 +1,6 @@
 package cardillan.mlogassertions.data;
 
+import arc.func.Cons;
 import mindustry.gen.Building;
 import mindustry.logic.LExecutor;
 import mindustry.logic.LVar;
@@ -180,4 +181,11 @@ public class ProcessorVars extends LogicVariableValues {
 
         return Integer.compare(a.length(), b.length());
     };
+
+    @Override
+    public void eachObject(Cons<Object> getter) {
+        for (int index = 0; index < data.length; index++) {
+            if (data[index].isobj) getter.get(data[index].objval);
+        }
+    }
 }

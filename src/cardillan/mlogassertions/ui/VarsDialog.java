@@ -2,13 +2,14 @@ package cardillan.mlogassertions.ui;
 
 import arc.Core;
 import arc.graphics.Color;
+import arc.scene.style.TextureRegionDrawable;
 import arc.scene.ui.*;
 import arc.scene.ui.layout.Cell;
 import arc.scene.ui.layout.Scl;
 import arc.scene.ui.layout.Table;
 import arc.struct.Queue;
-import arc.struct.Seq;
 import arc.util.Align;
+import arc.util.Scaling;
 import arc.util.Time;
 import cardillan.mlogassertions.data.*;
 import mindustry.Vars;
@@ -22,7 +23,8 @@ import java.util.Arrays;
 import java.util.Date;
 
 public class VarsDialog extends BaseDialog {
-    public static final float RESET = 1e10f;
+    public static final float reset = 1e10f;
+    private static final int live = -1;
 
     static boolean hex = false;
     static boolean sorted = false;
@@ -46,7 +48,7 @@ public class VarsDialog extends BaseDialog {
     int rows, cols;
 
     public VarsDialog(VariableValues data) {
-        this(data, Snapshots.get(data.building()), -1);
+        this(data, Snapshots.get(data.building()), live);
     }
 
     public VarsDialog(VariableValues data, Queue<Snapshot> snapshots, int index) {
@@ -88,22 +90,28 @@ public class VarsDialog extends BaseDialog {
 
         buttons.clear();
         cont.clear();
-        Arrays.fill(counter, RESET);
+        Arrays.fill(counter, reset);
 
-        buttons.defaults().size(200f, 64f);
-
+        // Snapshot title
         Snapshot snapshot = index < 0 ? null : snapshots.get(index);
         cont.table(t -> {
             t.table(text -> {
-                text.add(snapshot == null ? "Live view" : snapshot.name())
-                        .color(Pal.accent).ellipsis(true).top().width(300f).growX().left();
+                text.add(snapshot == null ? "Live view" : snapshot.name()).color(Pal.accent).ellipsis(true).top().growX().left();
+                if (data.building() != null) {
+                    Image image = new Image(new TextureRegionDrawable(data.building().block.uiIcon),
+                            Vars.mobile ? Color.white : Color.lightGray).setScaling(Scaling.fit);
+                    text.add(image).size(Vars.iconLarge).right();
+                }
+
                 if (snapshot != null) {
+                    text.row();
                     text.add(snapshot == null ? "" : SnapshotsDialog.dateFormat.format(new Date(snapshot.timestamp())))
                             .color(Color.gray).width(60f).left();
                 }
-            }).width(300f).top().growX().row();
+            }).width(450f).top().growX().row();
         }).pad(10f).row();
 
+        // Snapshot navigation
         cont.table(t -> {
             ImageButton.ImageButtonStyle style = Styles.defaulti;
             t.defaults().size(64f).pad(5f);
@@ -111,15 +119,16 @@ public class VarsDialog extends BaseDialog {
             t.button(Icon.download, style, () -> {
                 if (snapshot.writeTo(data)) {
                     Vars.ui.showInfo("The processor's state has been restored from the snapshot.");
-                    setup(snapshots.size);
+                    setup(live);
                 } else {
                     Vars.ui.showErrorMessage("Cannot restore this snapshot: either the snapshot is invalid, or the processor's code has been recompiled.");
                 }
             }).disabled(index < 0);
             t.button(Icon.folderOpen, style, () -> new SnapshotsDialog(VarsDialog.this, snapshots).show()).get().setDisabled(() -> snapshots.isEmpty());
+            t.button(Icon.logic, style, () -> new SnapshotsDialog(VarsDialog.this, snapshot.group()).show()).disabled(snapshot == null || snapshot.group() == null);
             if (snapshot == null) {
                 t.button(Icon.box, style, () -> {
-                    Snapshots.add(data.building(), "User snapshot");
+                    Snapshots.create(data.building(), "User snapshot");
                 });
             } else {
                 t.button(Icon.trash, style, () -> {
@@ -174,7 +183,7 @@ public class VarsDialog extends BaseDialog {
                             if ((counter[index] += Time.delta) >= 15f) {
                                 Object objval = view.obj(index);
                                 double numval = view.num(index);
-                                if (counter[index] >= RESET || objval != lastObject[index] || numval != lastMemory[index]) {
+                                if (counter[index] >= reset || objval != lastObject[index] || numval != lastMemory[index]) {
                                     lastObject[index] = objval;
                                     lastMemory[index] = numval;
 
@@ -186,7 +195,7 @@ public class VarsDialog extends BaseDialog {
                                     halfShade.setColor(type.darkShade);
                                     fullShade.setColor(type.shade);
 
-                                    updated[index] = counter[index] < RESET;
+                                    updated[index] = counter[index] < reset;
                                     valueLabel.setColor(updated[index] ? Pal.accent : Color.white);
                                 } else {
                                     updated[index] = false;
@@ -202,6 +211,8 @@ public class VarsDialog extends BaseDialog {
             });
         });
 
+        // Dialog buttons
+        buttons.defaults().size(200f, 64f);
         buttons.button("@back", Icon.left, this::hide).name("back");
 
         if (processor) {
@@ -258,7 +269,7 @@ public class VarsDialog extends BaseDialog {
                     if (!processor) {
                         t.button("@varsdialog.clearmemory", Icon.cancel, style, () -> {
                             view.clear();
-                            Arrays.fill(counter, RESET / 2);
+                            Arrays.fill(counter, reset / 2);
                             dialog.hide();
                         }).marginLeft(12f).row();
                     }
@@ -287,7 +298,7 @@ public class VarsDialog extends BaseDialog {
                                 return;
                             }
 
-                            Arrays.fill(counter, RESET / 2);
+                            Arrays.fill(counter, reset / 2);
                             dialog.hide();
                         }).marginLeft(12f).row();
                     }
@@ -307,6 +318,13 @@ public class VarsDialog extends BaseDialog {
                         }).marginLeft(12f).row();
                     }
                      */
+
+                    t.button("Delete all snapshots", Icon.trash, style, () -> {
+                        Snapshots.deleteBuilding(view.building());
+                        dialog.hide();
+                        setup(live);
+                    }).marginLeft(12f).row();
+
                 });
             });
 
@@ -319,7 +337,7 @@ public class VarsDialog extends BaseDialog {
     }
 
     private void refreshView(boolean update) {
-        Arrays.fill(counter, RESET);
+        Arrays.fill(counter, reset);
     }
 
     private void updateView(boolean update) {
@@ -327,7 +345,7 @@ public class VarsDialog extends BaseDialog {
         if (view.size() != length) {
             setup();
         } else {
-            Arrays.fill(counter, RESET);
+            Arrays.fill(counter, reset);
         }
     }
 }

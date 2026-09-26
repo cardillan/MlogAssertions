@@ -15,6 +15,7 @@ import arc.util.Log;
 import arc.util.pooling.Pools;
 import cardillan.mlogassertions.Constants;
 import cardillan.mlogassertions.Settings;
+import cardillan.mlogassertions.data.MapIndex;
 import cardillan.mlogassertions.logic.LogicInstructions;
 import mindustry.Vars;
 import mindustry.content.Fx;
@@ -53,9 +54,6 @@ public class Assertions {
     // Active messages
     static final ObjectMap<LogicBuild, String> blocks = new ObjectMap<>();
 
-    // All processors
-    static final Seq<LogicBuild> allBlocks = new Seq<>();
-
     // Invalid blocks
     static final Seq<LogicBuild> invalidBlocks = new Seq<>();
 
@@ -70,35 +68,20 @@ public class Assertions {
     public static void init() {
         Events.on(EventType.ResetEvent.class, e -> {
             blocks.clear();
-            allBlocks.clear();
             invalidBlocks.clear();
             nextWarnEffect = 0;
         });
 
         Events.on(EventType.WorldLoadEndEvent.class, e -> {
             blocks.clear();
-            allBlocks.clear();
             invalidBlocks.clear();
             nextWarnEffect = 0;
-
-            Groups.build.each(b -> {
-                if (b instanceof LogicBuild build && blocks.put(build, "") == null) {
-                    allBlocks.add(build);
-                }
-            });
-
-            blocks.clear(32);
-
-            Log.info("WorldLoadEndEvent: found " + allBlocks.size + " processors on the map.");
         });
 
         Events.on(EventType.BlockBuildEndEvent.class, e -> {
             if (e.tile.build instanceof LogicBuild build) {
                 if (e.breaking) {
                     blocks.remove(build);
-                    allBlocks.remove(build);
-                } else {
-                    allBlocks.add(build);
                 }
             }
         });
@@ -130,7 +113,7 @@ public class Assertions {
             }
 
             invalidBlocks.each(blocks::remove);
-            allBlocks.removeAll(invalidBlocks);
+            MapIndex.processors.removeAll(invalidBlocks);
             invalidBlocks.clear();
         });
 
@@ -163,6 +146,9 @@ public class Assertions {
     }
 
     public static void breakpoint(LogicBuild processor, String message) {
+        // No breakpoint in multiplayer
+        if (Vars.net.active()) return;
+
         Vars.state.set(GameState.State.paused);
 
         if (Settings.detachCameraOnBreakpoint()) {
@@ -173,7 +159,7 @@ public class Assertions {
 
         // Clear all accumulators
         accumulators.clear();
-        allBlocks.each(b -> {
+        MapIndex.processors.each(b -> {
             accumulators.add(b.accumulator);
             b.accumulator = 0;
         });
@@ -181,7 +167,7 @@ public class Assertions {
         // Restore all accumulators right after the update has finished
         Core.app.post(() -> {
             for (int i = 0; i < accumulators.size; i++) {
-                allBlocks.get(i).accumulator += accumulators.get(i);
+                MapIndex.processors.get(i).accumulator += accumulators.get(i);
             }
         });
 
@@ -209,12 +195,12 @@ public class Assertions {
         long updates = (long) totalUpdates;
         totalUpdates -= updates;
 
-        if (allBlocks.size <= updates) {
-            allBlocks.each(Assertions::check);
+        if (MapIndex.processors.size <= updates) {
+            MapIndex.processors.each(Assertions::check);
         } else {
             for (int i = 0; i < updates; i++) {
-                if (checkIndex >= allBlocks.size) checkIndex = 0;
-                check(allBlocks.get(checkIndex++));
+                if (checkIndex >= MapIndex.processors.size) checkIndex = 0;
+                check(MapIndex.processors.get(checkIndex++));
             }
         }
 

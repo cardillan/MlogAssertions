@@ -1,5 +1,6 @@
 package cardillan.mlogassertions.data;
 
+import arc.func.Cons;
 import arc.util.Log;
 import mindustry.gen.Building;
 import mindustry.world.blocks.logic.MemoryBlock.MemoryBuild;
@@ -143,5 +144,12 @@ public class MemoryVars extends LogicVariableValues {
     @Override
     public void setView(boolean sorted, boolean hideTemps, boolean hideLinks) {
         // Do nothing
+    }
+
+    @Override
+    public void eachObject(Cons<Object> getter) {
+        for (int index = 0; index < size(); index++) {
+            if (objectMemory[index] != sentinel) getter.get(objectMemory[index]);
+        }
     }
 }

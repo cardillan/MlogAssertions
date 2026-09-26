@@ -6,7 +6,7 @@ import cardillan.mlogassertions.Constants;
 import cardillan.mlogassertions.Settings;
 import cardillan.mlogassertions.data.Snapshots;
 import cardillan.mlogassertions.ui.Assertions;
-import mindustry.Vars;
+import mindustry.gen.Building;
 import mindustry.logic.ConditionOp;
 import mindustry.logic.LExecutor;
 import mindustry.logic.LVar;
@@ -232,7 +232,11 @@ public class LogicInstructions {
 
         @Override
         public void run(LExecutor exec) {
-            Snapshots.add(exec.build, buildMessage(exec, type + " snapshot: ", false, message, new Object[0]));
+            if (block.obj() instanceof Building building) {
+                Snapshots.create(building, type, message.isobj && message.objval == null
+                        ? "Mlog " + type + " snapshot"
+                        : buildMessage(exec, "Mlog " + type + " snapshot: ", false, message, new Object[0]));
+            }
         }
 
         private String message(LExecutor exec) {
@@ -272,10 +276,6 @@ public class LogicInstructions {
 
     private static void breakpoint(LogicBuild build, String message) {
         if (Settings.disableBreakpoints()) return;
-        if (Vars.net.active()) {
-            Vars.ui.showInfoToast(Core.bundle.get("breakpoint.multiplayer"), 5);
-            return;
-        }
         Assertions.breakpoint(build, message);
     }
 

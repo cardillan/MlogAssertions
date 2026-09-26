@@ -104,10 +104,10 @@ public class LogicConfiguration {
                         table.clear();
                         table.background(null);
                         if (tile instanceof MemoryBuild build) {
-                            table.button(Icon.box, Styles.cleari, () -> Snapshots.add(build, "User snapshot")).size(40);
+                            table.button(Icon.box, Styles.cleari, () -> Snapshots.create(build, "User snapshot")).size(40);
                             table.button(Icon.zoom, Styles.cleari, () -> new VarsDialog(Snapshots.liveView(build)).show()).size(40);
                         } else if (tile instanceof LogicBuild build) {
-                            table.button(Icon.box, Styles.cleari, () -> Snapshots.add(build, "User snapshot")).size(40);
+                            table.button(Icon.box, Styles.cleari, () -> Snapshots.create(build, "User snapshot")).size(40);
                             table.button(Icon.pencil, Styles.cleari, build::showEditDialog).size(40);
                             table.button(Icon.menu, Styles.cleari, () -> new VarsDialog(Snapshots.liveView(build)).show()).size(40);
                         }
