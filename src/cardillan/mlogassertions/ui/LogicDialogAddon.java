@@ -9,11 +9,13 @@ import cardillan.mlogassertions.data.ProcessorVars;
 import mindustry.Vars;
 import mindustry.core.GameState;
 import mindustry.game.EventType;
+import mindustry.gen.Building;
 import mindustry.gen.Icon;
 import mindustry.logic.GlobalVarsDialog;
 import mindustry.logic.LExecutor;
 import mindustry.logic.LogicDialog;
 import mindustry.ui.dialogs.BaseDialog;
+import mindustry.world.blocks.logic.LogicBlock;
 
 import java.lang.reflect.Field;
 
@@ -24,6 +26,10 @@ public class LogicDialogAddon {
     public static Field executorField;
     public static Field wasPausedField;
     public static GlobalVarsDialog globalsDialog;
+
+    static int tapCount = 0;
+    static long timeTapped1, timeTapped2;
+    static Building lastTappedBuild;
 
     public static void init() {
         try {
@@ -42,6 +48,33 @@ public class LogicDialogAddon {
             // No point modifying the Logic dialog if we can't fully operate it
             return;
         }
+
+        Events.on(EventType.TapEvent.class, e -> {
+            if (lastTappedBuild != e.tile.build) {
+                lastTappedBuild = e.tile.build;
+                timeTapped1 = timeTapped2 = System.currentTimeMillis();
+                tapCount = 1;
+            } else if (timeTapped1 >= System.currentTimeMillis() - 1000) {
+                if (tapCount >= 2) {
+                    Building build = lastTappedBuild;
+                    Core.app.post(() -> new VarsDialog(build).show());
+                    lastTappedBuild = null;
+                } else {
+                    tapCount++;
+                    timeTapped1 = timeTapped2;
+                    timeTapped2 = System.currentTimeMillis();
+                }
+            } else if (timeTapped2 >= System.currentTimeMillis() - 1000) {
+                // The previous tap is still valid
+                timeTapped1 = timeTapped2;
+                timeTapped2 = System.currentTimeMillis();
+                tapCount = 2;
+            } else {
+                timeTapped1 = timeTapped2 = System.currentTimeMillis();
+                tapCount = 1;
+            }
+        });
+
 
         Vars.ui.logic.shown(LogicDialogAddon::setupLogicDialog);
 

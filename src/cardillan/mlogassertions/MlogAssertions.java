@@ -2,6 +2,7 @@ package cardillan.mlogassertions;
 
 import arc.Events;
 import cardillan.mlogassertions.data.MapIndex;
+import cardillan.mlogassertions.data.Snapshots;
 import cardillan.mlogassertions.logic.AssertLogic;
 import cardillan.mlogassertions.ui.Assertions;
 import cardillan.mlogassertions.ui.LogicDialogAddon;
@@ -21,6 +22,7 @@ public class MlogAssertions extends Mod {
 
             // Map
             MapIndex.init();
+            Snapshots.init();
 
             // UI
             Assertions.init();

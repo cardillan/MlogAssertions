@@ -42,8 +42,7 @@ public class BuildConfiguration {
             field.setAccessible(true);
             field.set(input, new MemoryBrowserConfigFragment(input.config));
 
-            //Vars.content.blocks().each(b -> b instanceof MemoryBlock, b -> b.configurable = true);
-            Vars.content.blocks().each(b -> b.configurable = true);
+            Vars.content.blocks().each(b -> b instanceof MemoryBlock, b -> b.configurable = true);
         } catch (ReflectiveOperationException e) {
             Log.err("[MlogAssertions] Failed to replace InputHandler.config", e);
         }
@@ -93,7 +92,7 @@ public class BuildConfiguration {
 
         @Override
         public void showConfig(Building build) {
-            if (true || build instanceof MemoryBuild || build instanceof LogicBuild) {
+            if (build instanceof MemoryBuild || build instanceof LogicBuild) {
                 try {
                     if (configSelected.get(delegate) instanceof Building bld) {
                         bld.onConfigureClosed();
@@ -106,7 +105,7 @@ public class BuildConfiguration {
                         table.background(null);
                         if (build instanceof MemoryBuild) {
                             table.button(Icon.box, Styles.cleari, () -> Snapshots.create(build, "User snapshot")).size(40);
-                            table.button(Icon.zoom, Styles.cleari, () -> new VarsDialog(build).show()).size(40);
+                            table.button(Icon.menu, Styles.cleari, () -> new VarsDialog(build).show()).size(40);
                         } else if (build instanceof LogicBuild logic) {
                             table.button(Icon.box, Styles.cleari, () -> Snapshots.create(build, "User snapshot")).size(40);
                             table.button(Icon.pencil, Styles.cleari, logic::showEditDialog).size(40);

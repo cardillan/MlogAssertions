@@ -132,31 +132,33 @@ public class VarsDialog extends BaseDialog {
         // Snapshot is null for live view
         Snapshot snapshot = snapshotList.snapshot(index);
         boolean dynamic = !snapshotList.group();
+        ImageButton.ImageButtonStyle style = Styles.defaulti;
 
+        // Snapshot navigation
         titleTable.clear();
         titleTable.table(t -> {
+            // Previous
+            t.button(Icon.leftOpen, style, this::prev).size(48f, 64f).pad(5f).disabled(index == 0);
+
+            if (view.building() != null) {
+                t.image(view.building().block.uiIcon).size(64f).pad(5f);
+            }
+
             t.table(text -> {
                 text.add(snapshot == null ? "Live view" : snapshot.name()).color(Pal.accent).ellipsis(true).top().growX().left();
-                if (view.building() != null) {
-                    Image image = new Image(new TextureRegionDrawable(view.building().block.uiIcon),
-                            Vars.mobile ? Color.white : Color.lightGray).setScaling(Scaling.fit);
-                    text.add(image).size(Vars.iconLarge).right();
-                }
-
                 if (snapshot != null) {
                     text.row();
                     text.add(snapshot == null ? "" : snapshot.time()).color(Color.gray).width(60f).left();
                 }
-            }).width(450f).top().growX().row();
+            }).width(450f).pad(5f).padLeft(10f).top().growX();
+
+            // Next snapshot
+            t.button(Icon.rightOpen, style, this::next).size(48f, 64f).pad(5f).disabled(index >= snapshotList.size() - 1);
         }).pad(10f).row();
 
-        // Snapshot navigation
+        // Snapshot commands
         titleTable.table(t -> {
-            ImageButton.ImageButtonStyle style = Styles.defaulti;
             t.defaults().size(64f).pad(5f);
-
-            // Previous
-            t.button(Icon.leftOpen, style, this::prev).disabled(index == 0);
 
             // Play/pause or apply snapshot
             if (snapshot == null) {
@@ -202,18 +204,16 @@ public class VarsDialog extends BaseDialog {
             if (snapshot == null) {
                 t.button(Icon.box, style, () -> {
                     Snapshots.create(view.building(), "User snapshot");
+                    rebuildTitle(titleTable);
                 });
             } else {
                 // Can't remove snapshots from snapshot groups
                 t.button(Icon.trash, style, () -> {
                     snapshotList.remove(index);
                     if (index >= snapshotList.size()) index--;
-                    setup();
+                    rebuildTitle(titleTable);
                 }).disabled(!dynamic || index == 0);
             }
-
-            // Next snapshot
-            t.button(Icon.rightOpen, style, this::next).get().setDisabled(() -> index >= snapshotList.size() - 1);
         }).pad(10f).row();
     }
 
