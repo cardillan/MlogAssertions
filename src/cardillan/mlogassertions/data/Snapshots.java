@@ -16,7 +16,7 @@ import mindustry.world.blocks.logic.MemoryBlock;
 import mindustry.world.blocks.logic.MemoryBlock.MemoryBuild;
 
 public class Snapshots {
-    static int maxSnapshots = 20;
+    static int maxSnapshots = 1000;
     static int id = 0;
 
     // Snapshots
@@ -38,9 +38,9 @@ public class Snapshots {
     }
 
     public static VariableValues liveView(Building building) {
-        if (building instanceof MemoryBlock.MemoryBuild build) return new MemoryVars(build);
-        if (building instanceof LogicBlock.LogicBuild build) return new ProcessorVars(build);
-        return new EmptySnapshot(building);
+        return building instanceof MemoryBlock.MemoryBuild build ? new MemoryVars(build) :
+                building instanceof LogicBlock.LogicBuild build ? new ProcessorVars(build) :
+                new SensorVars(building);
     }
 
     public static Queue<Snapshot> get(Building building) {
@@ -64,9 +64,7 @@ public class Snapshots {
                 buildings.add(building);
                 ObjectSet<Object> set = new ObjectSet<>();
                 content.eachObject(b -> {
-                    if ((b instanceof LogicBuild build || b instanceof MemoryBuild) && set.add(b)) {
-                        buildings.add((Building) b);
-                    }
+                    if (b instanceof Building build && set.add(b)) buildings.add(build);
                 });
             }
             case global -> {
@@ -94,9 +92,11 @@ public class Snapshots {
     }
 
     private static Snapshot create(Building building, SnapshotType type, Seq<Snapshot> group, String name) {
-        Snapshot snapshot = building instanceof MemoryBlock.MemoryBuild build ? new MemorySnapshot(build, type, id, group, name)
-                : building instanceof LogicBlock.LogicBuild build ? new ProcessorSnapshot(build, type, id, group, name)
-                : new EmptySnapshot(building);
+        Snapshot snapshot =
+                building instanceof MemoryBlock.MemoryBuild build ? new MemorySnapshot(build, type, id, group, name) :
+                building instanceof LogicBlock.LogicBuild build ? new ProcessorSnapshot(build, type, id, group, name) :
+                new SensorSnapshot(building, type, id, group, name);
+
         if (group != null) group.add(snapshot);
         return snapshot;
     }

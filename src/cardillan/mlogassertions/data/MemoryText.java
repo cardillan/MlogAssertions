@@ -15,7 +15,7 @@ public class MemoryText {
     /** @return true for the type names whose values can be restored. */
     private static boolean isImportable(ValueType type) {
         return type == ValueType.color || type == ValueType.integer || type == ValueType.number ||
-                type == ValueType.string || type == ValueType.nothing;
+                type == ValueType.string || type == ValueType.zero || type == ValueType.nothing;
     }
 
     /** @return the literal of a string value, so that it can be parsed back. */

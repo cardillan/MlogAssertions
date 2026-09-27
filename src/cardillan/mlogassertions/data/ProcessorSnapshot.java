@@ -1,11 +1,14 @@
 package cardillan.mlogassertions.data;
 
 import arc.struct.Seq;
+import arc.util.Log;
 import arc.util.Time;
 import cardillan.mlogassertions.logic.SnapshotType;
 import mindustry.gen.Building;
 import mindustry.logic.LVar;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
+
+import java.util.Arrays;
 
 public class ProcessorSnapshot extends ProcessorVars implements Snapshot {
     public String name;
@@ -16,6 +19,8 @@ public class ProcessorSnapshot extends ProcessorVars implements Snapshot {
 
     public final String textBuffer;
 
+    private float[] typeDistribution = null;
+
     public ProcessorSnapshot(LogicBuild build, SnapshotType type, int id, Seq<Snapshot> group, String name) {
         super(build);
         this.type = type;
@@ -23,6 +28,9 @@ public class ProcessorSnapshot extends ProcessorVars implements Snapshot {
         this.group = group;
         this.textBuffer = executor.textBuffer.toString();
         this.name = name;
+
+        setView(false, false, false);
+        typeDistribution = computeTypeDistribution();
     }
 
     @Override
@@ -34,10 +42,6 @@ public class ProcessorSnapshot extends ProcessorVars implements Snapshot {
         copy.objval = var.objval;
         copy.numval = var.numval;
         return copy;
-    }
-
-    public LogicBuild building() {
-        return build;
     }
 
     @Override
@@ -80,5 +84,10 @@ public class ProcessorSnapshot extends ProcessorVars implements Snapshot {
         } else {
             return false;
         }
+    }
+
+    @Override
+    public float[] typeDistribution() {
+        return typeDistribution;
     }
 }

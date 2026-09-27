@@ -8,7 +8,7 @@ import mindustry.world.blocks.logic.MemoryBlock.MemoryBuild;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 
-public class MemoryVars extends LogicVariableValues {
+public class MemoryVars extends BaseVariableValues {
     // Share cell labels across all instances
     public static String[] decLabels = new String[0];
     public static String[] hexLabels = new String[0];

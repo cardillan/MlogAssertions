@@ -60,4 +60,12 @@ public class MemorySnapshot extends MemoryVars implements Snapshot {
             return false;
         }
     }
+
+    private float[] typeDistribution = null;
+
+    @Override
+    public float[] typeDistribution() {
+        if (typeDistribution == null) typeDistribution = computeTypeDistribution();
+        return typeDistribution;
+    }
 }

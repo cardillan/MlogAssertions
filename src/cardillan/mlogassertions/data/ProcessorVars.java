@@ -9,7 +9,7 @@ import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
 import java.util.Arrays;
 import java.util.Comparator;
 
-public class ProcessorVars extends LogicVariableValues {
+public class ProcessorVars extends BaseVariableValues {
     public final LogicBuild build;
     public final LExecutor executor;
     public final LVar[] data;
@@ -23,7 +23,7 @@ public class ProcessorVars extends LogicVariableValues {
         this.data = new LVar[executor.vars.length + 2 + (executor.privileged ? 1 : 0)];
         int length = 0;
 
-        // Copy the original dat
+        // Copy the original data
         data[length++] = get(executor.counter);
         data[length++] = get(executor.unit);
         data[length++] = get(executor.ipt);

@@ -5,7 +5,7 @@ import cardillan.mlogassertions.data.MapIndex;
 import cardillan.mlogassertions.logic.AssertLogic;
 import cardillan.mlogassertions.ui.Assertions;
 import cardillan.mlogassertions.ui.LogicDialogAddon;
-import cardillan.mlogassertions.ui.LogicConfiguration;
+import cardillan.mlogassertions.ui.BuildConfiguration;
 import cardillan.mlogassertions.data.MemoryVars;
 import mindustry.game.EventType;
 import mindustry.mod.Mod;
@@ -25,7 +25,7 @@ public class MlogAssertions extends Mod {
             // UI
             Assertions.init();
             LogicDialogAddon.init();
-            LogicConfiguration.init();
+            BuildConfiguration.init();
             MemoryVars.init();
         });
     }

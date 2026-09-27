@@ -5,11 +5,12 @@ import mindustry.graphics.Pal;
 
 public enum ValueType {
     nothing     ("null",     Color.darkGray),
+    zero        ("integer",  new Color(0x4f4f4fff)),
     color       ("color",    Pal.berylShot),
     integer     ("integer",  Pal.logicWorld),
     number      ("number",   Pal.place),
     link        ("link",     Pal.tungstenShot),
-    string      ("string",   Pal.ammo),
+    string      ("string",   Pal.ammo.cpy().mul(0.75f)),
     content     ("content",  Pal.logicOperations),
     building    ("building", Pal.logicBlocks),
     unit        ("unit",     Pal.logicUnits),

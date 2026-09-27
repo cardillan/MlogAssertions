@@ -120,4 +120,11 @@ public class EmptySnapshot implements Snapshot {
     @Override
     public void eachObject(Cons<Object> getter) {
     }
+
+    @Override
+    public float[] typeDistribution() {
+        float[] dist = new float[ValueType.values().length];
+        dist[0] = 1f;
+        return dist;
+    }
 }

@@ -22,7 +22,7 @@ import java.lang.reflect.Field;
 
 import static mindustry.Vars.player;
 
-public class LogicConfiguration {
+public class BuildConfiguration {
 
     // BlockConfigFragment private fields
     private static Field configTable;
@@ -42,7 +42,8 @@ public class LogicConfiguration {
             field.setAccessible(true);
             field.set(input, new MemoryBrowserConfigFragment(input.config));
 
-            Vars.content.blocks().each(b -> b instanceof MemoryBlock, b -> b.configurable = true);
+            //Vars.content.blocks().each(b -> b instanceof MemoryBlock, b -> b.configurable = true);
+            Vars.content.blocks().each(b -> b.configurable = true);
         } catch (ReflectiveOperationException e) {
             Log.err("[MlogAssertions] Failed to replace InputHandler.config", e);
         }
@@ -91,25 +92,28 @@ public class LogicConfiguration {
         }
 
         @Override
-        public void showConfig(Building tile) {
-            if (tile instanceof MemoryBuild || tile instanceof LogicBuild) {
+        public void showConfig(Building build) {
+            if (true || build instanceof MemoryBuild || build instanceof LogicBuild) {
                 try {
                     if (configSelected.get(delegate) instanceof Building bld) {
                         bld.onConfigureClosed();
                     }
-                    if (tile.configTapped()) {
-                        configSelected.set(delegate, tile);
+                    if (build.configTapped()) {
+                        configSelected.set(delegate, build);
 
                         table.visible = true;
                         table.clear();
                         table.background(null);
-                        if (tile instanceof MemoryBuild build) {
+                        if (build instanceof MemoryBuild) {
                             table.button(Icon.box, Styles.cleari, () -> Snapshots.create(build, "User snapshot")).size(40);
-                            table.button(Icon.zoom, Styles.cleari, () -> new VarsDialog(Snapshots.liveView(build)).show()).size(40);
-                        } else if (tile instanceof LogicBuild build) {
+                            table.button(Icon.zoom, Styles.cleari, () -> new VarsDialog(build).show()).size(40);
+                        } else if (build instanceof LogicBuild logic) {
                             table.button(Icon.box, Styles.cleari, () -> Snapshots.create(build, "User snapshot")).size(40);
-                            table.button(Icon.pencil, Styles.cleari, build::showEditDialog).size(40);
-                            table.button(Icon.menu, Styles.cleari, () -> new VarsDialog(Snapshots.liveView(build)).show()).size(40);
+                            table.button(Icon.pencil, Styles.cleari, logic::showEditDialog).size(40);
+                            table.button(Icon.menu, Styles.cleari, () -> new VarsDialog(build).show()).size(40);
+                        } else {
+                            build.buildConfiguration(table);
+                            table.button(Icon.zoom, Styles.cleari, () -> new VarsDialog(build).show()).size(40);
                         }
                         table.pack();
                         table.setTransform(true);
@@ -135,7 +139,7 @@ public class LogicConfiguration {
                     Log.err("[MlogAssertions] Failed to access BlockConfigFragment private fields", e);
                 }
             } else {
-                delegate.showConfig(tile);
+                delegate.showConfig(build);
             }
         }
 

@@ -7,12 +7,14 @@ import arc.scene.ui.*;
 import arc.scene.ui.layout.Cell;
 import arc.scene.ui.layout.Scl;
 import arc.scene.ui.layout.Table;
-import arc.struct.Queue;
+import arc.struct.Seq;
 import arc.util.Align;
 import arc.util.Scaling;
 import arc.util.Time;
 import cardillan.mlogassertions.data.*;
 import mindustry.Vars;
+import mindustry.core.GameState;
+import mindustry.gen.Building;
 import mindustry.gen.Icon;
 import mindustry.gen.Tex;
 import mindustry.graphics.Pal;
@@ -21,6 +23,8 @@ import mindustry.ui.dialogs.BaseDialog;
 
 import java.util.Arrays;
 import java.util.Date;
+
+import static mindustry.Vars.state;
 
 public class VarsDialog extends BaseDialog {
     public static final float reset = 1e10f;
@@ -31,12 +35,15 @@ public class VarsDialog extends BaseDialog {
     static boolean hideTemps = false;
     static boolean hideLinks = false;
 
-    private final boolean processor;
+    private Building building;
+    private boolean processor;
 
-    private Queue<Snapshot> snapshots;
+    // A list of snapshots that can be browsed through
+    private SnapshotList snapshotList;
     private int index;
 
-    private VariableValues data;
+    // Cuurrently displayed snapshots
+    private VariableValues liveData;
     private VariableValues view;
     private Object[] lastObject;
     private double[] lastMemory;
@@ -47,16 +54,14 @@ public class VarsDialog extends BaseDialog {
     boolean wasPortrait;
     int rows, cols;
 
-    public VarsDialog(VariableValues data) {
-        this(data, Snapshots.get(data.building()), live);
+    public VarsDialog(Building building) {
+        this(SnapshotList.list(building));
     }
 
-    public VarsDialog(VariableValues data, Queue<Snapshot> snapshots, int index) {
-        super(data.processor() ? "@variables" : "@varsdialog.memory");
-        this.processor = data.processor();
-        this.snapshots = snapshots;
-        this.index = index;
-        this.data = data;
+    private VarsDialog(SnapshotList snapshotList) {
+        super(snapshotList.title());
+        this.snapshotList = snapshotList;
+        this.index = 0;
 
         onResize(() -> {
             if (cols != cols() || wasPortrait != Core.graphics.isPortrait()) {
@@ -71,13 +76,26 @@ public class VarsDialog extends BaseDialog {
         return processor ? 1 : Math.max(1, (int) (Core.graphics.getWidth() / Scl.scl(550f)));
     }
 
+    public void setup(SnapshotList snapshotList, int index) {
+        this.snapshotList = snapshotList;
+        this.index = index;
+        setup();
+    }
+
     public void setup(int index) {
         this.index = index;
         setup();
     }
 
-    public void setup() {
-        view = index < 0 ? data : snapshots.get(index);
+    private void setup() {
+        // Snapshot is null for live view
+        Snapshot snapshot = snapshotList.snapshot(index);
+        boolean dynamic = !snapshotList.group();
+
+        title.setText(snapshotList.title());
+
+        // Current view
+        view = snapshotList.view(index);
         view.setView(false, false, false);
 
         length = view.size();
@@ -87,18 +105,24 @@ public class VarsDialog extends BaseDialog {
         updated = new boolean[length];
 
         view.setView(sorted, hideTemps, hideLinks);
+        Arrays.fill(counter, reset);
+
+        // Always obtain independent live data
+        if (view.building() != building) {
+            building = view.building();
+            liveData = Snapshots.liveView(building);
+            processor = liveData.processor();
+        }
 
         buttons.clear();
         cont.clear();
-        Arrays.fill(counter, reset);
 
         // Snapshot title
-        Snapshot snapshot = index < 0 ? null : snapshots.get(index);
         cont.table(t -> {
             t.table(text -> {
                 text.add(snapshot == null ? "Live view" : snapshot.name()).color(Pal.accent).ellipsis(true).top().growX().left();
-                if (data.building() != null) {
-                    Image image = new Image(new TextureRegionDrawable(data.building().block.uiIcon),
+                if (view.building() != null) {
+                    Image image = new Image(new TextureRegionDrawable(view.building().block.uiIcon),
                             Vars.mobile ? Color.white : Color.lightGray).setScaling(Scaling.fit);
                     text.add(image).size(Vars.iconLarge).right();
                 }
@@ -115,29 +139,66 @@ public class VarsDialog extends BaseDialog {
         cont.table(t -> {
             ImageButton.ImageButtonStyle style = Styles.defaulti;
             t.defaults().size(64f).pad(5f);
-            t.button(Icon.leftOpen, style, () -> setup(index - 1)).disabled(index < 0);
-            t.button(Icon.download, style, () -> {
-                if (snapshot.writeTo(data)) {
-                    Vars.ui.showInfo("The processor's state has been restored from the snapshot.");
-                    setup(live);
-                } else {
-                    Vars.ui.showErrorMessage("Cannot restore this snapshot: either the snapshot is invalid, or the processor's code has been recompiled.");
-                }
-            }).disabled(index < 0);
-            t.button(Icon.folderOpen, style, () -> new SnapshotsDialog(VarsDialog.this, snapshots).show()).get().setDisabled(() -> snapshots.isEmpty());
-            t.button(Icon.logic, style, () -> new SnapshotsDialog(VarsDialog.this, snapshot.group()).show()).disabled(snapshot == null || snapshot.group() == null);
+
+            // Previous
+            t.button(Icon.leftOpen, style, () -> setup(index - 1)).disabled(index == 0);
+
+            // Play/pause or apply snapshot
+            if (snapshot == null) {
+                // Play/pause the game
+                Image icon = new Image(Vars.state.isPlaying() ? Icon.pause : Icon.play);
+                var b = new Button();
+                b.add(icon).size(64f);
+                b.setStyle(style);
+                b.clicked(() -> {
+                    if (state.isPlaying()) {
+                        state.set(GameState.State.paused);
+                        icon.setDrawable(Icon.play);
+                    } else {
+                        state.set(GameState.State.playing);
+                        icon.setDrawable(Icon.pause);
+                    }
+                });
+                t.add(b);
+            } else {
+                // Restore a snapshot
+                // TODO Group restore
+                t.button(Icon.download, style, () -> {
+                    if (snapshot.writeTo(liveData)) {
+                        Vars.ui.showInfo("The processor's state has been restored from the snapshot.");
+                        setup(live);
+                    } else {
+                        Vars.ui.showErrorMessage("Cannot restore this snapshot: either the snapshot is invalid, or the processor's code has been recompiled.");
+                    }
+                }).disabled(index < 0);
+            }
+
+            // Select a snapshot from the current block's list of snapshots
+            t.button(Icon.folderOpen, style,
+                    () -> new SnapshotsDialog(VarsDialog.this, dynamic ? snapshotList : SnapshotList.list(building)).show())
+                    .get().setDisabled(() -> snapshotList.size() <= 1);
+
+            // Select a snapshot from a group snapshot
+            t.button(Icon.logic, style,
+                    () -> new SnapshotsDialog(VarsDialog.this, dynamic ? SnapshotList.list(snapshot.group()) : snapshotList).show())
+                    .disabled(snapshot == null || snapshot.group() == null);
+
+            // Create/remove a snapshot
             if (snapshot == null) {
                 t.button(Icon.box, style, () -> {
-                    Snapshots.create(data.building(), "User snapshot");
+                    Snapshots.create(view.building(), "User snapshot");
                 });
             } else {
+                // Can't remove snapshots from snapshot groups
                 t.button(Icon.trash, style, () -> {
-                    snapshots.removeIndex(index);
-                    if (index >= snapshots.size) index--;
+                    snapshotList.remove(index);
+                    if (index >= snapshotList.size()) index--;
                     setup();
-                });
+                }).disabled(!dynamic || index == 0);
             }
-            t.button(Icon.rightOpen, style, () -> setup(index + 1)).get().setDisabled(() -> index >= snapshots.size - 1);
+
+            // Next snapshot
+            t.button(Icon.rightOpen, style, () -> setup(index + 1)).get().setDisabled(() -> index >= snapshotList.size() - 1);
         }).pad(10f).row();
 
         cont.pane(p -> {

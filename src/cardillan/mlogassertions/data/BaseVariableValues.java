@@ -1,6 +1,5 @@
 package cardillan.mlogassertions.data;
 
-import arc.func.Cons;
 import mindustry.Vars;
 import mindustry.ctype.Content;
 import mindustry.ctype.MappableContent;
@@ -10,7 +9,7 @@ import mindustry.gen.Unit;
 
 import static cardillan.mlogassertions.Constants.COLOR_LIMIT;
 
-public abstract class LogicVariableValues implements VariableValues {
+public abstract class BaseVariableValues implements VariableValues {
 
     @Override
     public boolean valid() {
@@ -72,9 +71,25 @@ public abstract class LogicVariableValues implements VariableValues {
                     ValueType.unknown;
         } else {
             double num = num(index);
-            return  num <= COLOR_LIMIT && num > 0 ? ValueType.color :
+            return  num == 0 ? ValueType.zero :
+                    num <= COLOR_LIMIT && num > 0 ? ValueType.color :
                     (long) num == num ? ValueType.integer :
                     ValueType.number;
         }
+    }
+
+    protected float[] computeTypeDistribution() {
+        int size = size();
+
+        int[] counts = new int[ValueType.values().length];
+        for (int i = 0; i < size; i++) {
+            counts[type(i).ordinal()]++;
+        }
+
+        float[] dist = new float[counts.length];
+        for (int i = 0; i < counts.length; i++) {
+            dist[i] = (float) ((double)counts[i] / size);
+        }
+        return dist;
     }
 }

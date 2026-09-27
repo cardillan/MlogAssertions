@@ -85,7 +85,7 @@ public class LogicDialogAddon {
                         return;
                     }
 
-                    VarsDialog dialog = new VarsDialog(new ProcessorVars(executor.build));
+                    VarsDialog dialog = new VarsDialog(executor.build);
 
                     dialog.hidden(() -> {
                         if (!wasPaused && !net.active() && !state.isMenu()) {
