@@ -10,6 +10,23 @@ import mindustry.gen.Unit;
 import static cardillan.mlogassertions.Constants.COLOR_LIMIT;
 
 public abstract class BaseVariableValues implements VariableValues {
+    public final long timestamp = (long) (Vars.state.tick / 60.0 * 1000.0);
+
+    @Override
+    public long timestamp() {
+        return timestamp;
+    }
+
+    @Override
+    public String time() {
+        if (timestamp > 86400000) {
+            int days = (int) (timestamp / 86400000);
+            long millis = timestamp % 86400000;
+            return String.format("%dd %d:%02d:%02d.%03d", days, millis / 3600000, millis / 60000 % 60, millis / 1000 % 60, millis % 1000);
+        } else {
+            return String.format("%d:%02d:%02d.%03d", timestamp / 3600000, timestamp / 60000 % 60, timestamp / 1000 % 60, timestamp % 1000);
+        }
+    }
 
     @Override
     public boolean valid() {
@@ -88,7 +105,7 @@ public abstract class BaseVariableValues implements VariableValues {
 
         float[] dist = new float[counts.length];
         for (int i = 0; i < counts.length; i++) {
-            dist[i] = (float) ((double)counts[i] / size);
+            dist[i] = (float) ((double) counts[i] / size);
         }
         return dist;
     }

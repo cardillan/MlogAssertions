@@ -4,6 +4,7 @@ import arc.struct.Seq;
 import arc.util.Time;
 import cardillan.mlogassertions.logic.SnapshotType;
 import mindustry.Vars;
+import mindustry.logic.GlobalVars;
 import mindustry.world.blocks.logic.MemoryBlock.MemoryBuild;
 
 import java.util.Arrays;
@@ -15,7 +16,6 @@ public class MemorySnapshot extends MemoryVars implements Snapshot {
     public final SnapshotType type;
     public final int id;
     public final Seq<Snapshot> group;
-    public final long timestamp = Time.millis();
 
     public MemorySnapshot(MemoryBuild build, SnapshotType type, int id, Seq<Snapshot> group, String name) {
         super(build, false);
@@ -23,11 +23,6 @@ public class MemorySnapshot extends MemoryVars implements Snapshot {
         this.id = id;
         this.group = group;
         this.name = name;
-    }
-
-    @Override
-    public long timestamp() {
-        return timestamp;
     }
 
     @Override

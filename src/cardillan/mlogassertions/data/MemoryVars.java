@@ -79,6 +79,11 @@ public class MemoryVars extends BaseVariableValues {
     }
 
     @Override
+    public String buildingDesc() {
+        return build.block.name + "[gray]" + BaseVariableValues.pos(build.x(), build.y());
+    }
+
+    @Override
     public boolean processor() {
         return false;
     }

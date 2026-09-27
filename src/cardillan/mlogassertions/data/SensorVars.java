@@ -42,6 +42,11 @@ public class SensorVars extends BaseVariableValues {
     }
 
     @Override
+    public String buildingDesc() {
+        return build.block.name + "[gray]" + BaseVariableValues.pos(build.x(), build.y());
+    }
+
+    @Override
     public Building building() {
         return build;
     }

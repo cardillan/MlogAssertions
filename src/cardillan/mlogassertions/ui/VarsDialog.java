@@ -2,6 +2,9 @@ package cardillan.mlogassertions.ui;
 
 import arc.Core;
 import arc.graphics.Color;
+import arc.input.KeyCode;
+import arc.scene.event.InputEvent;
+import arc.scene.event.InputListener;
 import arc.scene.style.TextureRegionDrawable;
 import arc.scene.ui.*;
 import arc.scene.ui.layout.Cell;
@@ -27,8 +30,10 @@ import java.util.Date;
 import static mindustry.Vars.state;
 
 public class VarsDialog extends BaseDialog {
+    public static int updateFrequency = 15;
+
     public static final float reset = 1e10f;
-    private static final int live = -1;
+    private static final int live = 0;
 
     static boolean hex = false;
     static boolean sorted = false;
@@ -69,6 +74,22 @@ public class VarsDialog extends BaseDialog {
             }
         });
 
+        addListener(new InputListener() {
+            @Override
+            public boolean keyDown(InputEvent event, KeyCode keycode) {
+                switch (keycode) {
+                    case pageUp, left -> prev();
+                    case pageDown, right -> next();
+                    case home -> setup(0);
+                    case end -> setup(snapshotList.size() - 1);
+                    default -> {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        });
+
         setup();
     }
 
@@ -82,43 +103,38 @@ public class VarsDialog extends BaseDialog {
         setup();
     }
 
+    private Table titleTable;
+
     public void setup(int index) {
         this.index = index;
-        setup();
+        view = snapshotList.view(index);
+        view.setView(sorted, hideTemps, hideLinks);
+
+        if (view.building() != building || view.size() != length) {
+            setup();
+        } else {
+            rebuildTitle(titleTable);
+            Arrays.fill(counter, reset);
+        }
     }
 
-    private void setup() {
+    private void prev() {
+        if (index > 0) setup(index - 1);
+    }
+
+    private void next() {
+        if (index < snapshotList.size() - 1) setup(index + 1);
+    }
+
+    private void rebuildTitle(Table titleTable) {
+        this.titleTable = titleTable;
+
         // Snapshot is null for live view
         Snapshot snapshot = snapshotList.snapshot(index);
         boolean dynamic = !snapshotList.group();
 
-        title.setText(snapshotList.title());
-
-        // Current view
-        view = snapshotList.view(index);
-        view.setView(false, false, false);
-
-        length = view.size();
-        counter = new float[length];
-        lastObject = new Object[length];
-        lastMemory = new double[length];
-        updated = new boolean[length];
-
-        view.setView(sorted, hideTemps, hideLinks);
-        Arrays.fill(counter, reset);
-
-        // Always obtain independent live data
-        if (view.building() != building) {
-            building = view.building();
-            liveData = Snapshots.liveView(building);
-            processor = liveData.processor();
-        }
-
-        buttons.clear();
-        cont.clear();
-
-        // Snapshot title
-        cont.table(t -> {
+        titleTable.clear();
+        titleTable.table(t -> {
             t.table(text -> {
                 text.add(snapshot == null ? "Live view" : snapshot.name()).color(Pal.accent).ellipsis(true).top().growX().left();
                 if (view.building() != null) {
@@ -129,19 +145,18 @@ public class VarsDialog extends BaseDialog {
 
                 if (snapshot != null) {
                     text.row();
-                    text.add(snapshot == null ? "" : SnapshotsDialog.dateFormat.format(new Date(snapshot.timestamp())))
-                            .color(Color.gray).width(60f).left();
+                    text.add(snapshot == null ? "" : snapshot.time()).color(Color.gray).width(60f).left();
                 }
             }).width(450f).top().growX().row();
         }).pad(10f).row();
 
         // Snapshot navigation
-        cont.table(t -> {
+        titleTable.table(t -> {
             ImageButton.ImageButtonStyle style = Styles.defaulti;
             t.defaults().size(64f).pad(5f);
 
             // Previous
-            t.button(Icon.leftOpen, style, () -> setup(index - 1)).disabled(index == 0);
+            t.button(Icon.leftOpen, style, this::prev).disabled(index == 0);
 
             // Play/pause or apply snapshot
             if (snapshot == null) {
@@ -175,12 +190,12 @@ public class VarsDialog extends BaseDialog {
 
             // Select a snapshot from the current block's list of snapshots
             t.button(Icon.folderOpen, style,
-                    () -> new SnapshotsDialog(VarsDialog.this, dynamic ? snapshotList : SnapshotList.list(building)).show())
+                            () -> new SnapshotsDialog(VarsDialog.this, dynamic ? snapshotList : SnapshotList.list(building)).show())
                     .get().setDisabled(() -> snapshotList.size() <= 1);
 
             // Select a snapshot from a group snapshot
             t.button(Icon.logic, style,
-                    () -> new SnapshotsDialog(VarsDialog.this, dynamic ? SnapshotList.list(snapshot.group()) : snapshotList).show())
+                            () -> new SnapshotsDialog(VarsDialog.this, dynamic ? SnapshotList.list(snapshot.group()) : snapshotList).show())
                     .disabled(snapshot == null || snapshot.group() == null);
 
             // Create/remove a snapshot
@@ -198,8 +213,37 @@ public class VarsDialog extends BaseDialog {
             }
 
             // Next snapshot
-            t.button(Icon.rightOpen, style, () -> setup(index + 1)).get().setDisabled(() -> index >= snapshotList.size() - 1);
+            t.button(Icon.rightOpen, style, this::next).get().setDisabled(() -> index >= snapshotList.size() - 1);
         }).pad(10f).row();
+    }
+
+    private void setup() {
+        title.setText(snapshotList.title());
+
+        // Current view
+        view = snapshotList.view(index);
+        view.setView(false, false, false);
+
+        length = view.size();
+        counter = new float[length];
+        lastObject = new Object[length];
+        lastMemory = new double[length];
+        updated = new boolean[length];
+
+        view.setView(sorted, hideTemps, hideLinks);
+        Arrays.fill(counter, reset);
+
+        // Always obtain independent live data
+        if (view.building() != building) {
+            building = view.building();
+            liveData = Snapshots.liveView(building);
+            processor = liveData.processor();
+        }
+
+        buttons.clear();
+        cont.clear();
+
+        cont.table(this::rebuildTitle).row();
 
         cont.pane(p -> {
             p.margin(10f).marginRight(16f);
@@ -241,7 +285,7 @@ public class VarsDialog extends BaseDialog {
                         t.stack(fullShade, typeLabel).minWidth(120f).get();
 
                         valueLabel.update(() -> {
-                            if ((counter[index] += Time.delta) >= 15f) {
+                            if ((counter[index] += Time.delta) >= updateFrequency) {
                                 Object objval = view.obj(index);
                                 double numval = view.num(index);
                                 if (counter[index] >= reset || objval != lastObject[index] || numval != lastMemory[index]) {

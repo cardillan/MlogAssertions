@@ -5,7 +5,11 @@ import arc.func.Cons2;
 import mindustry.gen.Building;
 
 public interface VariableValues {
+    long timestamp();
+    String time();
+
     Building building();
+    String buildingDesc();
     boolean processor();
     boolean valid();
 

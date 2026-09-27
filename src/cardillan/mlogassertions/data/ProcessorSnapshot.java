@@ -15,7 +15,6 @@ public class ProcessorSnapshot extends ProcessorVars implements Snapshot {
     public final SnapshotType type;
     public final int id;
     public final Seq<Snapshot> group;
-    public final long timestamp = Time.millis();
 
     public final String textBuffer;
 
@@ -42,11 +41,6 @@ public class ProcessorSnapshot extends ProcessorVars implements Snapshot {
         copy.objval = var.objval;
         copy.numval = var.numval;
         return copy;
-    }
-
-    @Override
-    public long timestamp() {
-        return timestamp;
     }
 
     @Override

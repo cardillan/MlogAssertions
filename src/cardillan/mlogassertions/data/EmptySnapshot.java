@@ -20,6 +20,11 @@ public class EmptySnapshot implements Snapshot {
     }
 
     @Override
+    public String buildingDesc() {
+        return build.block.name + BaseVariableValues.pos(build.x(), build.y());
+    }
+
+    @Override
     public boolean processor() {
         return false;
     }
@@ -90,6 +95,11 @@ public class EmptySnapshot implements Snapshot {
     @Override
     public long timestamp() {
         return timestamp;
+    }
+
+    @Override
+    public String time() {
+        return "0";
     }
 
     @Override

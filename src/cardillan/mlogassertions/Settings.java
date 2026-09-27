@@ -3,6 +3,7 @@ package cardillan.mlogassertions;
 import arc.Core;
 import arc.scene.ui.layout.Table;
 import cardillan.mlogassertions.ui.Assertions;
+import cardillan.mlogassertions.ui.VarsDialog;
 import mindustry.Vars;
 import mindustry.gen.Icon;
 import mindustry.logic.LExecutor;
@@ -19,7 +20,8 @@ public class Settings {
                 Constants.maxInstructions, LExecutor.maxInstructions,
                 Constants.minWaitTimeUpdate, Assertions.minWaitTimeUpdate,
                 Constants.processorUpdatesPerTick, 4,
-                Constants.warnEffectFrequency, Assertions.warnEffectFrequency
+                Constants.warnEffectFrequency, Assertions.warnEffectFrequency,
+                Constants.variableUpdateFrequency, VarsDialog.updateFrequency
         );
 
         Vars.ui.settings.addCategory("Mlog Assertions", Icon.warningSmall, t -> {
@@ -48,7 +50,14 @@ public class Settings {
 
             t.sliderPref(Constants.warnEffectFrequency, 0, -5, 60, 5, i -> {
                 Assertions.warnEffectFrequency = i;
-                return i < 0 ? "never" : i == 0 ? "once" : "every " + i + " sec";
+                return i < 0 ? Core.bundle.get("setting.warn-effect-frequency.never") :
+                        i == 0 ? Core.bundle.get("setting.warn-effect-frequency.once") :
+                                Core.bundle.format("setting.warn-effect-frequency.every", i);
+            });
+
+            t.sliderPref(Constants.variableUpdateFrequency, 15, 5, 60, 5, i -> {
+                VarsDialog.updateFrequency = i;
+                return Core.bundle.format("setting.variable-update-frequency.every", i);
             });
         });
 
@@ -58,6 +67,7 @@ public class Settings {
         Assertions.minWaitTimeUpdate = Core.settings.getInt(Constants.minWaitTimeUpdate);
         Assertions.processorUpdatesPerTick = updatesPerTick(Core.settings.getInt(Constants.processorUpdatesPerTick, 4));
         Assertions.warnEffectFrequency = Core.settings.getInt(Constants.warnEffectFrequency);
+        VarsDialog.updateFrequency = Core.settings.getInt(Constants.variableUpdateFrequency);
     }
 
     public static boolean disableBreakpoints() {

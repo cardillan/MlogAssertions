@@ -8,7 +8,6 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
 public interface Snapshot extends VariableValues {
-    long timestamp();
     SnapshotType type();
     String name();
     int id();

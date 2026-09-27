@@ -17,6 +17,8 @@ public class ProcessorVars extends BaseVariableValues {
     public final int start;
     public int length;
 
+    LVar id;
+
     public ProcessorVars(LogicBuild build) {
         this.build = build;
         this.executor = build.executor;
@@ -35,6 +37,7 @@ public class ProcessorVars extends BaseVariableValues {
 
         for (int i = 1; i < executor.vars.length; i++) {
             data[length++] = get(executor.vars[i]);
+            if (executor.vars[i].name.equals("*id")) id = executor.vars[i];
         }
 
         view = Arrays.copyOf(data, length);
@@ -47,6 +50,31 @@ public class ProcessorVars extends BaseVariableValues {
     @Override
     public Building building() {
         return build;
+    }
+
+    static char[] buffer = new char[150];
+
+    @Override
+    public String buildingDesc() {
+        if (id == null || !(id.obj() instanceof String text)) return build.block.name + "[gray]" + BaseVariableValues.pos(build.x(), build.y());
+
+        boolean copying = false;
+        int beg = 0, l = 0;
+        int stop = Math.min(text.length(), buffer.length);
+        for (int i = 0; i < stop; i++) {
+            char ch = text.charAt(i);
+            buffer[l++] = ch;
+
+            if (ch == ' ' && !copying) {
+                l = beg;
+                copying = true;
+            } else if (ch == '\n') {
+                copying = false;
+                beg = l;
+            }
+        }
+
+        return new String(buffer, 0, l) + "[gray]" + BaseVariableValues.pos(build.x(), build.y());
     }
 
     @Override

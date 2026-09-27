@@ -14,7 +14,6 @@ public class SensorSnapshot extends SensorVars implements Snapshot{
     public final SnapshotType type;
     public final int id;
     public final Seq<Snapshot> group;
-    public final long timestamp = Time.millis();
 
     public final Object[] values = new Object[length];
 
@@ -47,11 +46,6 @@ public class SensorSnapshot extends SensorVars implements Snapshot{
     @Override
     public double num(int index) {
         return values[index] instanceof Double d ? d : 0;
-    }
-
-    @Override
-    public long timestamp() {
-        return timestamp;
     }
 
     @Override
