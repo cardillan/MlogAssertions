@@ -1,7 +1,7 @@
 package cardillan.mlogassertions.data;
 
 import arc.func.Cons;
-import mindustry.gen.Building;
+import mindustry.Vars;
 import mindustry.logic.LExecutor;
 import mindustry.logic.LVar;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
@@ -46,35 +46,48 @@ public class ProcessorVars extends BaseVariableValues {
         return var;
     }
 
+    static char[] bufferM = new char[150];
     static char[] buffer = new char[150];
-    String rawId, formattedId;
+    String rawId, formattedId, formattedIdMulti;
 
-    @Override
-    public String buildingDesc() {
-        if (id == null || !(id.obj() instanceof String text)) return description;
-
-        if (rawId == text) {
-            return formattedId;
-        }
-
+    private void updateDesc(String text) {
         boolean copying = false;
         int beg = 0, l = 0;
-        int stop = Math.min(text.length(), buffer.length);
+        int stop = Math.min(text.length(), bufferM.length);
         for (int i = 0; i < stop; i++) {
             char ch = text.charAt(i);
-            buffer[l++] = ch;
+            bufferM[l] = ch;
+            buffer[l] = ch;
+            l++;
 
             if (ch == ' ' && !copying) {
                 l = beg;
                 copying = true;
             } else if (ch == '\n') {
+                buffer[l - 1] = '/';
                 copying = false;
                 beg = l;
             }
         }
 
         rawId = text;
-        return formattedId = new String(buffer, 0, l) + "[gray]" + BaseVariableValues.pos(build.x(), build.y());
+        formattedId = new String(buffer, 0, l);
+        formattedIdMulti = new String(bufferM, 0, l) + " [gray](" + buildingPos() + ")";
+    }
+
+    @Override
+    public String buildingDesc() {
+        if (id == null || !(id.obj() instanceof String text)) return super.buildingDesc();
+        if (rawId != text) updateDesc(text);
+        return formattedId;
+    }
+
+    @Override
+    public String buildingDescMulti() {
+        if (id == null || !(id.obj() instanceof String text)) return super.buildingDescMulti();
+
+        if (rawId != text) updateDesc(text);
+        return formattedIdMulti;
     }
 
     @Override
@@ -94,7 +107,7 @@ public class ProcessorVars extends BaseVariableValues {
 
     @Override
     public String label(int index, boolean hex) {
-        return view[index].name;
+        return " " + view[index].name + " ";
     }
 
     @Override

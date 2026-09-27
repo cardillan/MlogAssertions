@@ -1,7 +1,6 @@
 package cardillan.mlogassertions.data;
 
 import arc.func.Cons;
-import arc.func.Cons2;
 import mindustry.gen.Building;
 
 public interface VariableValues {
@@ -10,6 +9,8 @@ public interface VariableValues {
 
     Building building();
     String buildingDesc();
+    String buildingPos();
+    String buildingDescMulti();
     boolean processor();
     boolean valid();
     float maxColWidth();

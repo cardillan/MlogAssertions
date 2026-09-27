@@ -5,7 +5,6 @@ import arc.Events;
 import arc.scene.ui.TextButton;
 import arc.scene.ui.layout.Table;
 import arc.util.Log;
-import cardillan.mlogassertions.data.ProcessorVars;
 import mindustry.Vars;
 import mindustry.core.GameState;
 import mindustry.game.EventType;
@@ -15,7 +14,6 @@ import mindustry.logic.GlobalVarsDialog;
 import mindustry.logic.LExecutor;
 import mindustry.logic.LogicDialog;
 import mindustry.ui.dialogs.BaseDialog;
-import mindustry.world.blocks.logic.LogicBlock;
 
 import java.lang.reflect.Field;
 
@@ -23,6 +21,8 @@ import static mindustry.Vars.net;
 import static mindustry.Vars.state;
 
 public class LogicDialogAddon {
+    public static int tripleTapSpeed = 500;
+
     public static Field executorField;
     public static Field wasPausedField;
     public static GlobalVarsDialog globalsDialog;
@@ -50,11 +50,13 @@ public class LogicDialogAddon {
         }
 
         Events.on(EventType.TapEvent.class, e -> {
-            if (lastTappedBuild != e.tile.build) {
+            if (tripleTapSpeed <= 0) return;
+
+            if (lastTappedBuild != e.tile.build ||  e.tile.build == null) {
                 lastTappedBuild = e.tile.build;
                 timeTapped1 = timeTapped2 = System.currentTimeMillis();
                 tapCount = 1;
-            } else if (timeTapped1 >= System.currentTimeMillis() - 1000) {
+            } else if (timeTapped1 >= System.currentTimeMillis() - tripleTapSpeed) {
                 if (tapCount >= 2) {
                     Building build = lastTappedBuild;
                     Core.app.post(() -> new VarsDialog(build).show());

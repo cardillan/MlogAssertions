@@ -5,17 +5,13 @@ import arc.graphics.Color;
 import arc.input.KeyCode;
 import arc.scene.event.InputEvent;
 import arc.scene.event.InputListener;
-import arc.scene.style.TextureRegionDrawable;
 import arc.scene.ui.*;
 import arc.scene.ui.layout.Cell;
 import arc.scene.ui.layout.Scl;
 import arc.scene.ui.layout.Table;
-import arc.struct.Seq;
 import arc.util.Align;
-import arc.util.Scaling;
 import arc.util.Time;
 import cardillan.mlogassertions.data.*;
-import mindustry.Vars;
 import mindustry.core.GameState;
 import mindustry.gen.Building;
 import mindustry.gen.Icon;
@@ -25,9 +21,8 @@ import mindustry.ui.Styles;
 import mindustry.ui.dialogs.BaseDialog;
 
 import java.util.Arrays;
-import java.util.Date;
 
-import static mindustry.Vars.state;
+import static mindustry.Vars.*;
 
 public class VarsDialog extends BaseDialog {
     public static int updateFrequency = 15;
@@ -106,9 +101,11 @@ public class VarsDialog extends BaseDialog {
     private Table titleTable;
 
     public void setup(int index) {
-        this.index = index;
+        this.index = Math.min(index, snapshotList.size() - 1);
         view = snapshotList.view(index);
         view.setView(sorted, hideTemps, hideLinks);
+
+        if (snapshotList.group()) cont.top(); else cont.center();
 
         if (view.building() != building || view.size() != length) {
             setup();
@@ -131,90 +128,133 @@ public class VarsDialog extends BaseDialog {
 
         // Snapshot is null for live view
         Snapshot snapshot = snapshotList.snapshot(index);
-        boolean dynamic = !snapshotList.group();
-        ImageButton.ImageButtonStyle style = Styles.defaulti;
+        if (snapshotList.group()) cont.top(); else cont.center();
 
         // Snapshot navigation
         titleTable.clear();
         titleTable.table(t -> {
             // Previous
-            t.button(Icon.leftOpen, style, this::prev).size(48f, 64f).pad(5f).disabled(index == 0);
+            t.button(Icon.leftOpen, Styles.defaulti, this::prev).size(48f, 64f).pad(5f).disabled(index == 0);
 
-            if (view.building() != null) {
+            if (snapshotList.group()) {
                 t.image(view.building().block.uiIcon).size(64f).pad(5f);
-            }
 
-            t.table(text -> {
-                text.add(snapshot == null ? "Live view" : snapshot.name()).color(Pal.accent).ellipsis(true).top().growX().left();
-                if (snapshot != null) {
-                    text.row();
-                    text.add(snapshot == null ? "" : snapshot.time()).color(Color.gray).width(60f).left();
-                }
-            }).width(450f).pad(5f).padLeft(10f).top().growX();
+                t.table(left -> {
+                    left.add(view.buildingDescMulti()).growX().ellipsis(true).wrap(false).top().left();
+                }).minWidth(0f).width(300f).pad(5f).padLeft(10f).top().growX();
+
+                t.table(right -> {
+                    right.add((index + 1) + "/" + snapshotList.size()).color(Pal.accent).top().right().growX().get().setAlignment(Align.right);
+                    right.row();
+                    right.add(snapshot == null ? "" : snapshot.time()).color(Color.gray).top().right().growX().get().setAlignment(Align.right);
+                }).right().minWidth(0f).width(150f).pad(5f).padLeft(10f).top().growX();
+            } else {
+                float w = 64+5+300+5+150+10;
+                t.table(title -> {
+                    title.table(tBlock -> {
+                        tBlock.image(view.building().block.uiIcon).size(iconLarge).padRight(5f);
+                        tBlock.table(text -> {
+                            text.add(view.buildingDesc()).color(Color.white).growX().ellipsis(true).wrap(false).get().setAlignment(Align.left);
+                            text.row();
+                            text.table(tProperties -> {
+                                tProperties.add(view.buildingPos()).color(Color.gray).growX().ellipsis(true).wrap(false).get().setAlignment(Align.left);
+                                if (index > 0) {
+                                    tProperties.add(snapshot.time()).color(Color.gray).growX().get().setAlignment(Align.right);
+                                }
+                            }).top().growX();
+                        }).top().growX();
+                    }).top().growX();
+                    title.row();
+
+                    title.table(tSnapshot -> {
+                        if (index == 0) {
+                            tSnapshot.add("Live").color(Pal.accent).top().growX().get().setAlignment(Align.left);
+                        } else {
+                            tSnapshot.add("#" + snapshot.id() + ": " + snapshot.name()).color(Pal.accent).growX().ellipsis(true).wrap(false).get().setAlignment(Align.left);
+
+                            Label l = tSnapshot.add(index + "/" + (snapshotList.size() - 1)).color(Pal.accent).growX().get();
+                            l.setAlignment(Align.right);
+                            l.update(() -> {
+                                if (index < snapshotList.size() && snapshotList.snapshot(index) == snapshot) {
+                                    l.setText(index + "/" + (snapshotList.size() - 1));
+                                } else {
+                                    // Try to find our snapshot
+                                    for (int i = 0; i < snapshotList.size(); i++) {
+                                        if (snapshotList.snapshot(i) == snapshot) {
+                                            index = i;
+                                            l.setText(i + "/" + (snapshotList.size() - 1));
+                                            return;
+                                        }
+                                    }
+                                    // Not found
+                                    l.setText("--/" + (snapshotList.size() - 1));
+                                }
+                            });
+                        }
+                    }).top().growX();
+                    title.row();
+                }).minWidth(0f).width(w).pad(5f);
+            }
 
             // Next snapshot
-            t.button(Icon.rightOpen, style, this::next).size(48f, 64f).pad(5f).disabled(index >= snapshotList.size() - 1);
-        }).pad(10f).row();
+            t.button(Icon.rightOpen, Styles.defaulti, this::next).size(48f, 64f).pad(5f).get().setDisabled(() -> index >= snapshotList.size() - 1);
+        }).row();
 
-        // Snapshot commands
+        // View/snapshot commands
         titleTable.table(t -> {
-            t.defaults().size(64f).pad(5f);
+            ImageButton.ImageButtonStyle style = Styles.cleari;
+            t.defaults().size(40f).pad(5f);
 
-            // Play/pause or apply snapshot
-            if (snapshot == null) {
-                // Play/pause the game
-                Image icon = new Image(Vars.state.isPlaying() ? Icon.pause : Icon.play);
-                var b = new Button();
-                b.add(icon).size(64f);
-                b.setStyle(style);
-                b.clicked(() -> {
-                    if (state.isPlaying()) {
-                        state.set(GameState.State.paused);
-                        icon.setDrawable(Icon.play);
-                    } else {
-                        state.set(GameState.State.playing);
-                        icon.setDrawable(Icon.pause);
-                    }
-                });
-                t.add(b);
-            } else {
-                // Restore a snapshot
-                // TODO Group restore
-                t.button(Icon.download, style, () -> {
-                    if (snapshot.writeTo(liveData)) {
-                        Vars.ui.showInfo("The processor's state has been restored from the snapshot.");
-                        setup(live);
-                    } else {
-                        Vars.ui.showErrorMessage("Cannot restore this snapshot: either the snapshot is invalid, or the processor's code has been recompiled.");
-                    }
-                }).disabled(index < 0);
-            }
+            // Play/pause the game
+            Image icon = new Image(state.isPlaying() ? Icon.pause : Icon.play);
+            var b = new Button();
+            b.add(icon).size(64f);
+            b.setStyle(style);
+            b.clicked(() -> {
+                if (state.isPlaying()) {
+                    state.set(GameState.State.paused);
+                    icon.setDrawable(Icon.play);
+                } else {
+                    state.set(GameState.State.playing);
+                    icon.setDrawable(Icon.pause);
+                }
+            });
+            t.add(b);
+
+            // Restore a snapshot
+            // TODO Group restore
+            t.button(Icon.download, style, () -> {
+                if (snapshot.writeTo(liveData)) {
+                    ui.showInfo("The processor's state has been restored from the snapshot.");
+                    setup(live);
+                } else {
+                    ui.showErrorMessage("Cannot restore this snapshot: either the snapshot is invalid, or the processor's code has been recompiled.");
+                }
+            }).disabled(snapshot == null);
 
             // Select a snapshot from the current block's list of snapshots
             t.button(Icon.folderOpen, style,
-                            () -> new SnapshotsDialog(VarsDialog.this, dynamic ? snapshotList : SnapshotList.list(building)).show())
+                            () -> new SnapshotsDialog(VarsDialog.this, snapshotList.group() ? SnapshotList.list(building) : snapshotList).show())
                     .get().setDisabled(() -> snapshotList.size() <= 1);
 
             // Select a snapshot from a group snapshot
             t.button(Icon.logic, style,
-                            () -> new SnapshotsDialog(VarsDialog.this, dynamic ? SnapshotList.list(snapshot.group()) : snapshotList).show())
+                            () -> new SnapshotsDialog(VarsDialog.this, snapshotList.group() ? snapshotList : SnapshotList.list(snapshot.group())).show())
                     .disabled(snapshot == null || snapshot.group() == null);
 
-            // Create/remove a snapshot
-            if (snapshot == null) {
-                t.button(Icon.box, style, () -> {
-                    Snapshots.create(view.building(), "User snapshot");
-                    rebuildTitle(titleTable);
-                });
-            } else {
-                // Can't remove snapshots from snapshot groups
-                t.button(Icon.trash, style, () -> {
-                    snapshotList.remove(index);
-                    if (index >= snapshotList.size()) index--;
-                    rebuildTitle(titleTable);
-                }).disabled(!dynamic || index == 0);
-            }
-        }).pad(10f).row();
+            // Can't remove snapshots from snapshot groups
+            t.button(Icon.trash, style, () -> {
+                snapshotList.remove(index);
+                if (index >= snapshotList.size()) index--;
+                rebuildTitle(titleTable);
+            }).disabled(snapshotList.group() || index == 0);
+
+            // Create a snapshot
+            t.button(Icon.box, style, () -> {
+                Snapshots.create(view.building(), "User snapshot");
+                rebuildTitle(titleTable);
+            }).disabled(snapshot != null);
+        }).left();
     }
 
     private void setup() {
@@ -246,7 +286,7 @@ public class VarsDialog extends BaseDialog {
         cont.table(this::rebuildTitle).row();
 
         cont.pane(p -> {
-            p.margin(10f).marginRight(16f);
+            p.margin(10f).marginTop(0f);
             p.table(Tex.button, t -> {
                 t.defaults().fillX().height(45f);
                 length = view.size();
@@ -399,7 +439,7 @@ public class VarsDialog extends BaseDialog {
                             if (error == null) error = MemoryText.read(text, length, view);
 
                             if (error != null) {
-                                Vars.ui.showInfoFade(Core.bundle.format("varsdialog.importfailed", error));
+                                ui.showInfoFade(Core.bundle.format("varsdialog.importfailed", error));
                                 return;
                             }
 

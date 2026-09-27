@@ -7,7 +7,6 @@ import arc.scene.style.TextureRegionDrawable;
 import arc.scene.ui.Button;
 import arc.scene.ui.Image;
 import arc.scene.ui.layout.Scl;
-import arc.util.Log;
 import arc.util.Scaling;
 import cardillan.mlogassertions.data.*;
 import mindustry.Vars;
@@ -19,10 +18,6 @@ import mindustry.ui.Styles;
 import mindustry.ui.dialogs.BaseDialog;
 import mindustry.world.blocks.logic.LogicBlock;
 import mindustry.world.blocks.logic.MemoryBlock;
-
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 public class SnapshotsDialog extends BaseDialog {
     VarsDialog vars;
@@ -115,7 +110,7 @@ public class SnapshotsDialog extends BaseDialog {
                 item.left();
                 item.table(text -> {
                     if (group) {
-                        text.add(snapshot.buildingDesc()).growX().ellipsis(true).wrap(false).pad(0).top().left();
+                        text.add(snapshot.buildingDescMulti()).growX().ellipsis(true).wrap(false).pad(0).top().left();
                     } else {
                         text.add("Snapshot #" + snapshot.id() + ": " + groupSize + (groupSize > 1 ? " blocks" : " block"))
                                 .growX().ellipsis(true).wrap(false).pad(0).top().left();

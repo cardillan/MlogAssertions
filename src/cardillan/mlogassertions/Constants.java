@@ -20,4 +20,5 @@ public class Constants {
     public static final String processorUpdatesPerTick = "processor-updates-per-tick";
     public static final String warnEffectFrequency = "warn-effect-frequency";
     public static final String variableUpdateFrequency = "variable-update-frequency";
+    public static final String tripleTapSpeed = "triple-tap-speed";
 }

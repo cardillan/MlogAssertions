@@ -5,6 +5,7 @@ import mindustry.ctype.Content;
 import mindustry.ctype.MappableContent;
 import mindustry.game.Team;
 import mindustry.gen.Building;
+import mindustry.gen.Iconc;
 import mindustry.gen.Unit;
 
 import static cardillan.mlogassertions.Constants.COLOR_LIMIT;
@@ -12,11 +13,9 @@ import static cardillan.mlogassertions.Constants.COLOR_LIMIT;
 public abstract class BaseVariableValues implements VariableValues {
     public final long timestamp = (long) (Vars.state.tick / 60.0 * 1000.0);
     public final Building build;
-    public final String description;
 
     public BaseVariableValues(Building build) {
         this.build = build;
-        description = String.format("%s\n[gray](%f,\u00a0%f)", build.block.name, build.x() / Vars.tilesize, build.y() / Vars.tilesize);
     }
 
     @Override
@@ -36,18 +35,40 @@ public abstract class BaseVariableValues implements VariableValues {
 
     @Override
     public String buildingDesc() {
-        return description;
+        return build.block.localizedName;
     }
 
+    private String buildingPos;
+    @Override
+    public String buildingPos() {
+        if (buildingPos == null) {
+            buildingPos = String.format("%.0f,\u00a0%.0f", build.x() / Vars.tilesize, build.y() / Vars.tilesize);
+        }
+        return buildingPos;
+    }
+
+    private String buildingDescMulti;
+    @Override
+    public String buildingDescMulti() {
+        if (buildingDescMulti == null) {
+            buildingDescMulti = String.format("%s\n[gray](%.0f,\u00a0%.0f)", build.block.localizedName, build.x() / Vars.tilesize, build.y() / Vars.tilesize);
+        }
+        return buildingDescMulti;
+    }
+
+    private String time;
     @Override
     public String time() {
-        if (timestamp > 86400000) {
-            int days = (int) (timestamp / 86400000);
-            long millis = timestamp % 86400000;
-            return String.format("%dd %d:%02d:%02d.%03d", days, millis / 3600000, millis / 60000 % 60, millis / 1000 % 60, millis % 1000);
-        } else {
-            return String.format("%d:%02d:%02d.%03d", timestamp / 3600000, timestamp / 60000 % 60, timestamp / 1000 % 60, timestamp % 1000);
+        if (time == null) {
+            if (timestamp > 86_400_000) {
+                int days = (int) (timestamp / 86_400_000);
+                long millis = timestamp % 86_400_000;
+                time = String.format("%dd %d:%02d:%02d.%03d", days, millis / 3_600_000, millis / 60_000 % 60, millis / 1000 % 60, millis % 1000);
+            } else {
+                time = String.format("%d:%02d:%02d.%03d", timestamp / 3_600_000, timestamp / 60_000 % 60, timestamp / 1000 % 60, timestamp % 1000);
+            }
         }
+        return time;
     }
 
     @Override

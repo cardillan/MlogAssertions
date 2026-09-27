@@ -3,6 +3,7 @@ package cardillan.mlogassertions;
 import arc.Core;
 import arc.scene.ui.layout.Table;
 import cardillan.mlogassertions.ui.Assertions;
+import cardillan.mlogassertions.ui.LogicDialogAddon;
 import cardillan.mlogassertions.ui.VarsDialog;
 import mindustry.Vars;
 import mindustry.gen.Icon;
@@ -21,7 +22,8 @@ public class Settings {
                 Constants.minWaitTimeUpdate, Assertions.minWaitTimeUpdate,
                 Constants.processorUpdatesPerTick, 4,
                 Constants.warnEffectFrequency, Assertions.warnEffectFrequency,
-                Constants.variableUpdateFrequency, VarsDialog.updateFrequency
+                Constants.variableUpdateFrequency, VarsDialog.updateFrequency,
+                Constants.tripleTapSpeed, LogicDialogAddon.tripleTapSpeed
         );
 
         Vars.ui.settings.addCategory("Mlog Assertions", Icon.warningSmall, t -> {
@@ -40,7 +42,7 @@ public class Settings {
 
             t.sliderPref(Constants.minWaitTimeUpdate, 1000, 0, 10000, 500, i -> {
                 Assertions.minWaitTimeUpdate = i;
-                return i == 0 ? "none" : Double.toString(i / 1000.0);
+                return i == 0 ? Core.bundle.get("setting.min-wait-time-update.none") : Double.toString(i / 1000.0);
             });
 
             t.sliderPref(Constants.processorUpdatesPerTick, 4, 0, UPDATES_PER_TICK.length - 1, i -> {
@@ -58,6 +60,12 @@ public class Settings {
             t.sliderPref(Constants.variableUpdateFrequency, 15, 5, 60, 5, i -> {
                 VarsDialog.updateFrequency = i;
                 return Core.bundle.format("setting.variable-update-frequency.every", i);
+            });
+
+            t.sliderPref(Constants.tripleTapSpeed, 500, 0, 5000, 50, i -> {
+                LogicDialogAddon.tripleTapSpeed = i;
+                return i == 0 ? Core.bundle.get("setting.triple-tap-speed.disabled") :
+                        Core.bundle.format("setting.triple-tap-speed.delay", i);
             });
         });
 
