@@ -3,6 +3,7 @@ package cardillan.mlogassertions.data;
 import arc.func.Cons;
 import mindustry.Vars;
 import mindustry.ctype.Content;
+import mindustry.ctype.MappableContent;
 import mindustry.gen.Building;
 import mindustry.logic.LAccess;
 import mindustry.logic.LVar;
@@ -11,39 +12,52 @@ import mindustry.type.Item;
 import mindustry.type.Liquid;
 
 public class SensorVars extends BaseVariableValues {
-    protected static Content[] contents = new Content[Vars.content.items().size + Vars.content.liquids().size];
-    protected static String[] labels = new String[LAccess.all.length + contents.length];
-    protected static int contentOffset;
-    protected static int length;
+    protected static String[] accessLabels = new String[LAccess.all.length];
+    protected static String[] itemLabels = new String[Vars.content.items().size];
+    protected static String[] liquidLabels = new String[Vars.content.liquids().size];
+    protected static MappableContent[] items = new MappableContent[Vars.content.items().size];
+    protected static MappableContent[] liquids = new MappableContent[Vars.content.liquids().size];
 
     static {
-        length = 0;
-
-        for (int i = 0; i < LAccess.all.length; i++) {
-            labels[length++] = " @" + LAccess.all[i].name() + " ";
+        for (int i = 0; i < accessLabels.length; i++) {
+            accessLabels[i] = " @" + LAccess.all[i].name() + " ";
         }
 
-        contentOffset = length;
-
-        for (Item item : Vars.content.items()) {
-            contents[length - contentOffset] = item;
-            labels[length++] = " @" + item.name + " ";
+        for (int i = 0; i < itemLabels.length; i++) {
+            items[i] = Vars.content.items().get(i);
+            itemLabels[i] = " @" + items[i].name + " ";
         }
-        for (Liquid liquid : Vars.content.liquids()) {
-            contents[length - contentOffset] = liquid;
-            labels[length++] = " @" + liquid.name + " ";
+        for (int i = 0; i < liquidLabels.length; i++) {
+            liquids[i] = Vars.content.liquids().get(i);
+            liquidLabels[i] = " @" + liquids[i].name + " ";
         }
     }
 
-    public final Building build;
+    public final int length;
+    public final Content[] contents;
+    public final String[] labels;
 
     public SensorVars(Building build) {
-        this.build = build;
-    }
+        super(build);
 
-    @Override
-    public String buildingDesc() {
-        return build.block.name + "[gray]" + BaseVariableValues.pos(build.x(), build.y());
+        length = accessLabels.length
+                + (build.block.hasItems ? itemLabels.length : 0)
+                + (build.block.hasLiquids ? liquidLabels.length : 0);
+
+        contents = new Content[length - accessLabels.length];
+        labels = new String[length];
+
+        System.arraycopy(accessLabels, 0, labels, 0, accessLabels.length);
+        int index = 0;
+        if (build.block.hasItems) {
+            System.arraycopy(items, 0, contents, index, items.length);
+            System.arraycopy(itemLabels, 0, labels, accessLabels.length + index, itemLabels.length);
+            index += itemLabels.length;
+        }
+        if (build.block.hasLiquids) {
+            System.arraycopy(liquids, 0, contents, index, liquids.length);
+            System.arraycopy(liquidLabels, 0, labels, accessLabels.length + index, liquidLabels.length);
+        }
     }
 
     @Override
@@ -68,7 +82,7 @@ public class SensorVars extends BaseVariableValues {
 
     @Override
     public boolean isObj(int index) {
-        return index >= contentOffset ? LVar.invalid(build.sense(contents[index - contentOffset]))
+        return index >= accessLabels.length ? LVar.invalid(build.sense(contents[index - accessLabels.length]))
                 : build.senseObject(LAccess.all[index]) != Senseable.noSensed || LVar.invalid(build.sense(LAccess.all[index]));
     }
 
@@ -79,7 +93,7 @@ public class SensorVars extends BaseVariableValues {
 
     @Override
     public Object obj(int index) {
-        if (index >= contentOffset) {
+        if (index >= accessLabels.length) {
             return null;
         } else {
             Object result = build.senseObject(LAccess.all[index]);
@@ -89,7 +103,7 @@ public class SensorVars extends BaseVariableValues {
 
     @Override
     public double num(int index) {
-        double value = index >= contentOffset ? build.sense(contents[index - contentOffset]) : build.sense(LAccess.all[index]);
+        double value = index >= accessLabels.length ? build.sense(contents[index - accessLabels.length]) : build.sense(LAccess.all[index]);
         return Double.isNaN(value) ? 0 : value;
     }
 

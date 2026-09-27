@@ -12,6 +12,7 @@ public interface VariableValues {
     String buildingDesc();
     boolean processor();
     boolean valid();
+    float maxColWidth();
 
     int size();
     String label(int index, boolean hex);

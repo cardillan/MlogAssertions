@@ -18,7 +18,6 @@ public class MemoryVars extends BaseVariableValues {
     private static Field objectField;
     private static Field numberField;
 
-    public final MemoryBuild build;
     public final Object[] objectMemory;
     public final double[] numberMemory;
     public final int length;
@@ -43,11 +42,12 @@ public class MemoryVars extends BaseVariableValues {
     }
 
     protected MemoryVars(MemoryBuild build, boolean live) {
+        super(build);
+
         Object[] objectMemory = get(build, objectField, new Object[0]);
         double[] numberMemory = get(build, numberField, new double[0]);
 
         length = Math.min(objectMemory.length, numberMemory.length);
-        this.build = build;
         this.objectMemory = live ? objectMemory : Arrays.copyOf(objectMemory, length);
         this.numberMemory = live ? numberMemory : Arrays.copyOf(numberMemory, length);
 
@@ -74,18 +74,13 @@ public class MemoryVars extends BaseVariableValues {
     }
 
     @Override
-    public Building building() {
-        return build;
-    }
-
-    @Override
-    public String buildingDesc() {
-        return build.block.name + "[gray]" + BaseVariableValues.pos(build.x(), build.y());
-    }
-
-    @Override
     public boolean processor() {
         return false;
+    }
+
+    @Override
+    public float maxColWidth() {
+        return 550f;
     }
 
     @Override

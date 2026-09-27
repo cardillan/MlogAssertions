@@ -10,7 +10,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 public class ProcessorVars extends BaseVariableValues {
-    public final LogicBuild build;
     public final LExecutor executor;
     public final LVar[] data;
     public final LVar[] view;
@@ -20,7 +19,7 @@ public class ProcessorVars extends BaseVariableValues {
     LVar id;
 
     public ProcessorVars(LogicBuild build) {
-        this.build = build;
+        super(build);
         this.executor = build.executor;
         this.data = new LVar[executor.vars.length + 2 + (executor.privileged ? 1 : 0)];
         int length = 0;
@@ -47,16 +46,16 @@ public class ProcessorVars extends BaseVariableValues {
         return var;
     }
 
-    @Override
-    public Building building() {
-        return build;
-    }
-
     static char[] buffer = new char[150];
+    String rawId, formattedId;
 
     @Override
     public String buildingDesc() {
-        if (id == null || !(id.obj() instanceof String text)) return build.block.name + "[gray]" + BaseVariableValues.pos(build.x(), build.y());
+        if (id == null || !(id.obj() instanceof String text)) return description;
+
+        if (rawId == text) {
+            return formattedId;
+        }
 
         boolean copying = false;
         int beg = 0, l = 0;
@@ -74,12 +73,18 @@ public class ProcessorVars extends BaseVariableValues {
             }
         }
 
-        return new String(buffer, 0, l) + "[gray]" + BaseVariableValues.pos(build.x(), build.y());
+        rawId = text;
+        return formattedId = new String(buffer, 0, l) + "[gray]" + BaseVariableValues.pos(build.x(), build.y());
     }
 
     @Override
     public boolean processor() {
         return true;
+    }
+
+    @Override
+    public float maxColWidth() {
+        return 10000f;
     }
 
     @Override

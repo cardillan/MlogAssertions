@@ -35,6 +35,11 @@ public class EmptySnapshot implements Snapshot {
     }
 
     @Override
+    public float maxColWidth() {
+        return 10000f;
+    }
+
+    @Override
     public int size() {
         return 0;
     }

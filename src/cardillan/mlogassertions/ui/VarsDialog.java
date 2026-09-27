@@ -94,7 +94,7 @@ public class VarsDialog extends BaseDialog {
     }
 
     private int cols() {
-        return processor ? 1 : Math.max(1, (int) (Core.graphics.getWidth() / Scl.scl(550f)));
+        return Math.max(1, (int) (Core.graphics.getWidth() / Scl.scl(view.maxColWidth())));
     }
 
     public void setup(SnapshotList snapshotList, int index) {

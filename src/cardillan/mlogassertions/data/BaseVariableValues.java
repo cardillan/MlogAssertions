@@ -11,10 +11,32 @@ import static cardillan.mlogassertions.Constants.COLOR_LIMIT;
 
 public abstract class BaseVariableValues implements VariableValues {
     public final long timestamp = (long) (Vars.state.tick / 60.0 * 1000.0);
+    public final Building build;
+    public final String description;
+
+    public BaseVariableValues(Building build) {
+        this.build = build;
+        description = String.format("%s\n[gray](%f,\u00a0%f)", build.block.name, build.x() / Vars.tilesize, build.y() / Vars.tilesize);
+    }
 
     @Override
     public long timestamp() {
         return timestamp;
+    }
+
+    @Override
+    public float maxColWidth() {
+        return 750f;
+    }
+
+    @Override
+    public Building building() {
+        return build;
+    }
+
+    @Override
+    public String buildingDesc() {
+        return description;
     }
 
     @Override
