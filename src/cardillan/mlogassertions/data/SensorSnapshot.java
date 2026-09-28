@@ -19,7 +19,11 @@ public class SensorSnapshot extends SensorVars implements Snapshot{
 
     private float[] typeDistribution = null;
 
-    public SensorSnapshot(Building build, SnapshotType type, int id, Seq<Snapshot> group, String name) {
+    public static SensorSnapshot create(Building build, SnapshotType type, int id, Seq<Snapshot> group, String name) {
+        return new SensorSnapshot(build, type, id, group, name);
+    }
+
+    private SensorSnapshot(Building build, SnapshotType type, int id, Seq<Snapshot> group, String name) {
         super(build);
         this.type = type;
         this.id = id;

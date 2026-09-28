@@ -20,7 +20,11 @@ public class ProcessorSnapshot extends ProcessorVars implements Snapshot {
 
     private float[] typeDistribution = null;
 
-    public ProcessorSnapshot(LogicBuild build, SnapshotType type, int id, Seq<Snapshot> group, String name) {
+    public static ProcessorSnapshot create(LogicBuild build, SnapshotType type, int id, Seq<Snapshot> group, String name) {
+        return build.executor.vars.length == 0 ? null : new ProcessorSnapshot(build, type, id, group, name);
+    }
+
+    private ProcessorSnapshot(LogicBuild build, SnapshotType type, int id, Seq<Snapshot> group, String name) {
         super(build);
         this.type = type;
         this.id = id;
@@ -33,14 +37,16 @@ public class ProcessorSnapshot extends ProcessorVars implements Snapshot {
     }
 
     @Override
-    protected LVar get(LVar var) {
-        LVar copy = new LVar(var.name);
-        copy.id = var.id;
-        copy.isobj = var.isobj;
-        copy.constant = var.constant;
-        copy.objval = var.objval;
-        copy.numval = var.numval;
-        return copy;
+    protected void copyVar(LVar var) {
+        if (var != null) {
+            LVar copy = new LVar(var.name);
+            copy.id = var.id;
+            copy.isobj = var.isobj;
+            copy.constant = var.constant;
+            copy.objval = var.objval;
+            copy.numval = var.numval;
+            data[length++] = copy;
+        }
     }
 
     @Override

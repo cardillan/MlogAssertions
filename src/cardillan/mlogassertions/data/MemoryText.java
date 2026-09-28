@@ -155,7 +155,7 @@ public class MemoryText {
                     !data.isObj(index) && !Double.isFinite(data.num(index)) ? "null" :
                     //the formatted value isn't a literal for the values in the color range
                     type == ValueType.color ? "%" + Long.toHexString(Double.doubleToRawLongBits(data.num(index)) | 0x100000000L).substring(1) :
-                    data.formatted(index, hex);
+                    data.formatted(index, hex, 20);
 
             result.append(data.label(index, false).trim()).append('\t')
                     .append(type.title)

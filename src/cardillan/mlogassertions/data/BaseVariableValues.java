@@ -83,7 +83,7 @@ public abstract class BaseVariableValues implements VariableValues {
     }
 
     @Override
-    public String formatted(int index, boolean hex) {
+    public String formatted(int index, boolean hex, int significantDigits) {
         if (isObj(index)) {
             Object obj = obj(index);
             if (obj instanceof String str) {
@@ -108,23 +108,24 @@ public abstract class BaseVariableValues implements VariableValues {
             } else if ((long) num == num) {
                 return hex ? "0x" + Long.toHexString((long) num).toUpperCase() : Long.toString((long) num);
             } else {
-                if (VarsDialog.significantDigits >= formats.length) return Double.toString(num).toLowerCase();
-                String str = String.format(formats[VarsDialog.significantDigits], num);
+                if (significantDigits >= formats.length) return Double.toString(num).toLowerCase();
+                String str = String.format(formats[significantDigits], num);
                 if (str.indexOf('e') > 0) return str;
                 if (str.indexOf('.') == -1) return str + ".0";  // It's NOT an integer
                 int l = str.length() - 1;
                 while (l > 0 && str.charAt(l) == '0') l--;
+                if (str.charAt(l) == '.') l++;
                 return str.substring(0, l + 1);
             }
         }
     }
 
     public String clipboard(int index, boolean hex) {
-        return isObj(index) && obj(index) instanceof String str ? str : formatted(index, hex);
+        return isObj(index) && obj(index) instanceof String str ? str : formatted(index, hex, 16);
     }
 
     public static String pos(float x, float y) {
-        return String.format(" (%.1f,\u00a0%.1f)", x / Vars.tilesize, y / Vars.tilesize);
+        return String.format("\u00a0[gray]%.0f,\u00a0%.0f", x / Vars.tilesize, y / Vars.tilesize);
     }
 
     @Override

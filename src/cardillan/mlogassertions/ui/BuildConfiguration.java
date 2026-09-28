@@ -92,7 +92,7 @@ public class BuildConfiguration {
 
         @Override
         public void showConfig(Building build) {
-            if (build instanceof MemoryBuild || build instanceof LogicBuild) {
+            if (build instanceof MemoryBuild || build instanceof LogicBuild b && b.executor.vars.length > 0 && Snapshots.maxSnapshots > 0) {
                 try {
                     if (configSelected.get(delegate) instanceof Building bld) {
                         bld.onConfigureClosed();
@@ -104,7 +104,9 @@ public class BuildConfiguration {
                         table.clear();
                         table.background(null);
                         if (build instanceof MemoryBuild) {
-                            table.button(Icon.box, Styles.cleari, () -> Snapshots.create(build, "User snapshot")).size(40);
+                            if (Snapshots.maxSnapshots > 0) {
+                                table.button(Icon.box, Styles.cleari, () -> Snapshots.create(build, "User snapshot")).size(40);
+                            }
                             table.button(Icon.menu, Styles.cleari, () -> new VarsDialog(build).show()).size(40);
                         } else if (build instanceof LogicBuild logic) {
                             table.button(Icon.box, Styles.cleari, () -> Snapshots.create(build, "User snapshot")).size(40);

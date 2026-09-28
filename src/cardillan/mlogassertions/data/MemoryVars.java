@@ -2,7 +2,6 @@ package cardillan.mlogassertions.data;
 
 import arc.func.Cons;
 import arc.util.Log;
-import mindustry.gen.Building;
 import mindustry.world.blocks.logic.MemoryBlock.MemoryBuild;
 
 import java.lang.reflect.Field;
@@ -74,8 +73,8 @@ public class MemoryVars extends BaseVariableValues {
     }
 
     @Override
-    public boolean processor() {
-        return false;
+    public BlockDataType dataType() {
+        return BlockDataType.memory;
     }
 
     @Override
@@ -142,7 +141,7 @@ public class MemoryVars extends BaseVariableValues {
     }
 
     @Override
-    public void setView(boolean sorted, boolean hideTemps, boolean hideLinks) {
+    public void setView(boolean sorted, boolean filtered, boolean hideLinks) {
         // Do nothing
     }
 

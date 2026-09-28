@@ -17,7 +17,11 @@ public class MemorySnapshot extends MemoryVars implements Snapshot {
     public final int id;
     public final Seq<Snapshot> group;
 
-    public MemorySnapshot(MemoryBuild build, SnapshotType type, int id, Seq<Snapshot> group, String name) {
+    public static MemorySnapshot create(MemoryBuild build, SnapshotType type, int id, Seq<Snapshot> group, String name) {
+        return new MemorySnapshot(build, type, id, group, name);
+    }
+
+    private MemorySnapshot(MemoryBuild build, SnapshotType type, int id, Seq<Snapshot> group, String name) {
         super(build, false);
         this.type = type;
         this.id = id;

@@ -7,17 +7,18 @@ public interface VariableValues {
     long timestamp();
     String time();
 
+    BlockDataType dataType();
     Building building();
     String buildingDesc();
     String buildingPos();
     String buildingDescMulti();
-    boolean processor();
+
     boolean valid();
     float maxColWidth();
 
     int size();
     String label(int index, boolean hex);
-    String formatted(int index, boolean hex);
+    String formatted(int index, boolean hex, int significantDigits);
     String clipboard(int index, boolean hex);
     ValueType type(int index);
 
@@ -29,7 +30,7 @@ public interface VariableValues {
     String textBuffer();
 
     void clear();
-    void setView(boolean sorted, boolean hideTemps, boolean hideLinks);
+    void setView(boolean sorted, boolean filtered, boolean hideLinks);
 
     void eachObject(Cons<Object> getter);
 

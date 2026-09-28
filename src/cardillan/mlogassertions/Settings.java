@@ -1,6 +1,11 @@
 package cardillan.mlogassertions;
 
 import arc.Core;
+import arc.func.Intc;
+import arc.scene.event.Touchable;
+import arc.scene.ui.Label;
+import arc.scene.ui.Slider;
+import arc.scene.ui.layout.Scl;
 import arc.scene.ui.layout.Table;
 import cardillan.mlogassertions.data.Snapshots;
 import cardillan.mlogassertions.ui.Assertions;
@@ -9,13 +14,17 @@ import cardillan.mlogassertions.ui.VarsDialog;
 import mindustry.Vars;
 import mindustry.gen.Icon;
 import mindustry.logic.LExecutor;
+import mindustry.ui.Styles;
+import mindustry.ui.dialogs.SettingsMenuDialog.SettingsTable;
+import mindustry.ui.dialogs.SettingsMenuDialog.SettingsTable.Setting;
+import mindustry.ui.dialogs.SettingsMenuDialog.StringProcessor;
 
 import java.lang.reflect.Modifier;
 
+import static arc.Core.settings;
+
 public class Settings {
     static final int[] UPDATES_PER_TICK = { 1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000 };
-
-    public static Table settingsTable;
 
     public static void init() {
         Core.settings.defaults(
@@ -30,8 +39,6 @@ public class Settings {
         );
 
         Vars.ui.settings.addCategory("Mlog Assertions", Icon.warningSmall, t -> {
-            settingsTable = t;
-
             t.checkPref(Constants.disableBreakpoints, false);
             t.checkPref(Constants.assertsAreBreakpoints, false);
             t.checkPref(Constants.freeCameraOnBreakpoint, true);
@@ -76,10 +83,13 @@ public class Settings {
                         Core.bundle.format("setting.triple-tap-speed.delay", i);
             });
 
-            t.sliderPref(Constants.snapshotLimit, 20, 10, 1000, 10, i -> {
-                Snapshots.maxSnapshots = i;
-                return Integer.toString(i);
-            });
+            steppedPref(t, Constants.snapshotLimit, 20, new int[]{ 0, 5, 10, 20, 50, 100, 200, 500, 1000 },
+                    i -> i == 0 ? Core.bundle.get("setting.snapshot-limit.disabled") : Integer.toString(i),
+                    i -> Snapshots.maxSnapshots = i);
+        });
+
+        Vars.ui.settings.hidden(() -> {
+            Snapshots.updateLimit();
         });
 
         if (canSetInstructions()) {
@@ -90,6 +100,60 @@ public class Settings {
         Assertions.warnEffectFrequency = Core.settings.getInt(Constants.warnEffectFrequency);
         VarsDialog.updateFrequency = Core.settings.getInt(Constants.variableUpdateFrequency);
         Snapshots.maxSnapshots = Core.settings.getInt(Constants.snapshotLimit);
+    }
+
+    private static SteppedSliderSetting steppedPref(SettingsTable t, String name, int def, int[] steps, StringProcessor s, Intc changed) {
+        SteppedSliderSetting res = new SteppedSliderSetting(name, def, steps, s, changed);
+        t.pref(res);
+        settings.defaults(name, def);
+        t.rebuild();
+        return res;
+    }
+
+    public static class SteppedSliderSetting extends Setting {
+        int def;
+        int[] steps;
+        StringProcessor sp;
+        Intc changed;
+
+        public SteppedSliderSetting(String name, int def, int[] steps, StringProcessor s, Intc changed){
+            super(name);
+            this.def = def;
+            this.steps = steps;
+            this.sp = s;
+            this.changed = changed;
+        }
+
+        @Override
+        public void add(SettingsTable table){
+            Slider slider = new Slider(0, steps.length - 1, 1, false);
+
+            int val = settings.getInt(name);
+            int pos;
+            for (pos = 0; pos < steps.length; pos++) {
+                if (steps[pos] >= val) break;
+            }
+            slider.setValue(pos);
+
+            Label value = new Label("", Styles.outlineLabel);
+            Table content = new Table();
+            content.add(title, Styles.outlineLabel).left().growX().wrap();
+            content.add(value).padLeft(10f).right();
+            content.margin(3f, 33f, 3f, 33f);
+            content.touchable = Touchable.disabled;
+
+            slider.changed(() -> {
+                int v = steps[(int)slider.getValue()];
+                settings.put(name, v);
+                value.setText(sp.get(v));
+                if(changed != null) changed.get(v);
+            });
+
+            slider.change();
+
+            addDesc(table.stack(slider, content).width(Math.min(Core.graphics.getWidth() / 1.2f / Scl.scl(1f), 500f)).left().padTop(4f).get());
+            table.row();
+        }
     }
 
     public static boolean disableBreakpoints() {

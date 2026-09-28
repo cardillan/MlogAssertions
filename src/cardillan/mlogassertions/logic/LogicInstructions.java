@@ -235,7 +235,7 @@ public class LogicInstructions {
             if (block.obj() instanceof Building building) {
                 Snapshots.create(building, type, message.isobj && message.objval == null
                         ? "Mlog " + type + " snapshot"
-                        : buildMessage(exec, "Mlog " + type + " snapshot: ", false, message, new Object[0]));
+                        : buildMessage(exec, "", false, message, new Object[0]));
             }
         }
 
@@ -307,7 +307,7 @@ public class LogicInstructions {
                 used |= (1 << index);
             } else {
                 LVar var = exec.optionalVar(sbr.substring(pos + 1, end));
-                str = var == null ? null : var.name.equals("@counter") ? String.valueOf(var.numval - 1) : print(var);
+                str = var == null ? null : var.name.equals("@counter") ? String.valueOf((int) var.numval - 1) : print(var);
             }
             if (str != null) {
                 sbr.replace(pos, end + 1, str);

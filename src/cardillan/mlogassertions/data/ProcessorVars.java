@@ -1,7 +1,6 @@
 package cardillan.mlogassertions.data;
 
 import arc.func.Cons;
-import mindustry.Vars;
 import mindustry.logic.LExecutor;
 import mindustry.logic.LVar;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
@@ -22,28 +21,28 @@ public class ProcessorVars extends BaseVariableValues {
         super(build);
         this.executor = build.executor;
         this.data = new LVar[executor.vars.length + 2 + (executor.privileged ? 1 : 0)];
-        int length = 0;
+        length = 0;
 
         // Copy the original data
-        data[length++] = get(executor.counter);
-        data[length++] = get(executor.unit);
-        data[length++] = get(executor.ipt);
+        copyVar(executor.counter);
+        copyVar(executor.unit);
+        copyVar(executor.ipt);
         if (executor.privileged) {
-            data[length++] = get(executor.queryResult);
+            copyVar(executor.queryResult);
         }
 
         start = length;
 
         for (int i = 1; i < executor.vars.length; i++) {
-            data[length++] = get(executor.vars[i]);
+            copyVar(executor.vars[i]);
             if (executor.vars[i].name.equals("*id")) id = executor.vars[i];
         }
 
         view = Arrays.copyOf(data, length);
     }
 
-    protected LVar get(LVar var) {
-        return var;
+    protected void copyVar(LVar var) {
+        if (var != null) data[length++] = var;
     }
 
     static char[] bufferM = new char[150];
@@ -76,6 +75,11 @@ public class ProcessorVars extends BaseVariableValues {
     }
 
     @Override
+    public BlockDataType dataType() {
+        return BlockDataType.processor;
+    }
+
+    @Override
     public String buildingDesc() {
         if (id == null || !(id.obj() instanceof String text)) return super.buildingDesc();
         if (rawId != text) updateDesc(text);
@@ -88,11 +92,6 @@ public class ProcessorVars extends BaseVariableValues {
 
         if (rawId != text) updateDesc(text);
         return formattedIdMulti;
-    }
-
-    @Override
-    public boolean processor() {
-        return true;
     }
 
     @Override
@@ -141,10 +140,11 @@ public class ProcessorVars extends BaseVariableValues {
     }
 
     @Override
-    public void setView(boolean sorted, boolean hideTemps, boolean hideLinks) {
+    public void setView(boolean sorted, boolean filtered, boolean hideLinks) {
         length = 0;
         for (int i = 0; i < data.length; i++) {
-            if (hideTemps && isTemp(data[i].name)) continue;
+            if (data[i] == null) continue;
+            if (filtered && isTemp(data[i].name)) continue;
             if (hideLinks && data[i].constant && data[i].name.charAt(0) != '@') continue;
             view[length++] = data[i];
         }

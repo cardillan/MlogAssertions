@@ -3,9 +3,7 @@ package cardillan.mlogassertions.ui;
 import arc.Core;
 import arc.struct.Queue;
 import arc.struct.Seq;
-import cardillan.mlogassertions.data.Snapshot;
-import cardillan.mlogassertions.data.Snapshots;
-import cardillan.mlogassertions.data.VariableValues;
+import cardillan.mlogassertions.data.*;
 import mindustry.gen.Building;
 
 interface SnapshotList {
@@ -28,7 +26,7 @@ interface SnapshotList {
 
             @Override
             public String title() {
-                return data.processor() ? "@variables" : "@varsdialog.memory";
+                return data.dataType().name;
             }
 
             @Override
@@ -63,7 +61,7 @@ interface SnapshotList {
 
             @Override
             public String title() {
-                return "Snapshot #" + snapshots.get(0).id() + ": " + snapshots.get(0).type() + " snapshot";
+                return "Snapshot #" + snapshots.get(0).id() + ": " + snapshots.first().name();
             }
 
             @Override

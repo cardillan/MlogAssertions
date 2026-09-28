@@ -8,8 +8,6 @@ import mindustry.gen.Building;
 import mindustry.logic.LAccess;
 import mindustry.logic.LVar;
 import mindustry.logic.Senseable;
-import mindustry.type.Item;
-import mindustry.type.Liquid;
 
 public class SensorVars extends BaseVariableValues {
     protected static String[] accessLabels = new String[LAccess.all.length];
@@ -61,13 +59,13 @@ public class SensorVars extends BaseVariableValues {
     }
 
     @Override
-    public Building building() {
-        return build;
+    public BlockDataType dataType() {
+        return BlockDataType.properties;
     }
 
     @Override
-    public boolean processor() {
-        return true;
+    public Building building() {
+        return build;
     }
 
     @Override
@@ -118,7 +116,7 @@ public class SensorVars extends BaseVariableValues {
     }
 
     @Override
-    public void setView(boolean sorted, boolean hideTemps, boolean hideLinks) {
+    public void setView(boolean sorted, boolean filtered, boolean hideLinks) {
     }
 
     @Override

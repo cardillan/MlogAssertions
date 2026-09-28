@@ -17,6 +17,7 @@ import mindustry.gen.Building;
 import mindustry.gen.Icon;
 import mindustry.gen.Tex;
 import mindustry.graphics.Pal;
+import mindustry.logic.LCanvas;
 import mindustry.ui.Styles;
 import mindustry.ui.dialogs.BaseDialog;
 
@@ -33,11 +34,11 @@ public class VarsDialog extends BaseDialog {
 
     static boolean hex = false;
     static boolean sorted = false;
-    static boolean hideTemps = false;
+    static boolean filtered = false;
     static boolean hideLinks = false;
+    static boolean fullPrecision = false;
 
     private Building building;
-    private boolean processor;
 
     // A list of snapshots that can be browsed through
     private SnapshotList snapshotList;
@@ -67,6 +68,8 @@ public class VarsDialog extends BaseDialog {
         onResize(() -> {
             if (cols != cols() || wasPortrait != Core.graphics.isPortrait()) {
                 setup();
+            } else {
+                rebuildTitle(titleTable);
             }
         });
 
@@ -104,9 +107,10 @@ public class VarsDialog extends BaseDialog {
     public void setup(int index) {
         this.index = Math.min(index, snapshotList.size() - 1);
         view = snapshotList.view(index);
-        view.setView(sorted, hideTemps, hideLinks);
+        view.setView(sorted, filtered, hideLinks);
 
-        if (snapshotList.group()) cont.top(); else cont.center();
+        if (snapshotList.group()) cont.top();
+        else cont.center();
 
         if (view.building() != building || view.size() != length) {
             setup();
@@ -125,32 +129,38 @@ public class VarsDialog extends BaseDialog {
     }
 
     private void rebuildTitle(Table titleTable) {
+        if (Snapshots.maxSnapshots == 0) return;
+        boolean compact = LCanvas.isCompact();
+
         this.titleTable = titleTable;
 
         // Snapshot is null for live view
         Snapshot snapshot = snapshotList.snapshot(index);
-        if (snapshotList.group()) cont.top(); else cont.center();
+        if (snapshotList.group()) cont.top();
+        else cont.center();
 
         // Snapshot navigation
         titleTable.clear();
         titleTable.table(t -> {
             // Previous
-            t.button(Icon.leftOpen, Styles.defaulti, this::prev).size(48f, 64f).pad(5f).disabled(index == 0);
+            if (!compact) {
+                t.button(Icon.leftOpen, Styles.defaulti, this::prev).size(48f, 64f).pad(5f).disabled(index == 0);
+            }
 
             if (snapshotList.group()) {
                 t.image(view.building().block.uiIcon).size(64f).pad(5f);
 
                 t.table(left -> {
                     left.add(view.buildingDescMulti()).growX().ellipsis(true).wrap(false).top().left();
-                }).minWidth(0f).width(300f).pad(5f).padLeft(10f).top().growX();
+                }).minWidth(0f).pad(5f).padLeft(10f).top().growX();
 
                 t.table(right -> {
                     right.add((index + 1) + "/" + snapshotList.size()).color(Pal.accent).top().right().growX().get().setAlignment(Align.right);
                     right.row();
                     right.add(snapshot == null ? "" : snapshot.time()).color(Color.gray).top().right().growX().get().setAlignment(Align.right);
-                }).right().minWidth(0f).width(150f).pad(5f).padLeft(10f).top().growX();
+                }).right().minWidth(0f).pad(5f).padLeft(10f).top().growX();
             } else {
-                float w = 64+5+300+5+150+10;
+                //float w = 64+5+300+5+150+10;
                 t.table(title -> {
                     title.table(tBlock -> {
                         tBlock.image(view.building().block.uiIcon).size(iconLarge).padRight(5f);
@@ -173,7 +183,7 @@ public class VarsDialog extends BaseDialog {
                         } else {
                             tSnapshot.add("#" + snapshot.id() + ": " + snapshot.name()).color(Pal.accent).growX().ellipsis(true).wrap(false).get().setAlignment(Align.left);
 
-                            Label l = tSnapshot.add(index + "/" + (snapshotList.size() - 1)).color(Pal.accent).growX().get();
+                            Label l = tSnapshot.add(index + "/" + (snapshotList.size() - 1)).color(Pal.accent).growX().padLeft(10f).get();
                             l.setAlignment(Align.right);
                             l.update(() -> {
                                 if (index < snapshotList.size() && snapshotList.snapshot(index) == snapshot) {
@@ -194,17 +204,27 @@ public class VarsDialog extends BaseDialog {
                         }
                     }).top().growX();
                     title.row();
-                }).minWidth(0f).width(w).pad(5f);
+                }).growX().minWidth(0f).pad(5f);
             }
 
             // Next snapshot
-            t.button(Icon.rightOpen, Styles.defaulti, this::next).size(48f, 64f).pad(5f).get().setDisabled(() -> index >= snapshotList.size() - 1);
-        }).row();
+            if (!compact) {
+                t.button(Icon.rightOpen, Styles.defaulti, this::next).size(48f, 64f).pad(5f).get().setDisabled(() -> index >= snapshotList.size() - 1);
+            }
+        }).growX().fillX().row();
 
         // View/snapshot commands
         titleTable.table(t -> {
-            ImageButton.ImageButtonStyle style = Styles.cleari;
             t.defaults().size(40f).pad(5f);
+
+            ImageButton.ImageButtonStyle style = Styles.cleari;
+
+            if (compact) {
+                t.button(Icon.leftOpen, style, this::prev).padRight(15f);
+            }
+
+            t.button(Icon.filters, style, this::viewOptions);
+            t.button(Icon.edit, style, this::editCommands);
 
             // Play/pause the game
             Image icon = new Image(state.isPlaying() ? Icon.pause : Icon.play);
@@ -222,16 +242,8 @@ public class VarsDialog extends BaseDialog {
             });
             t.add(b);
 
-            // Restore a snapshot
-            // TODO Group restore
-            t.button(Icon.download, style, () -> {
-                if (snapshot.writeTo(liveData)) {
-                    ui.showInfo("The processor's state has been restored from the snapshot.");
-                    setup(live);
-                } else {
-                    ui.showErrorMessage("Cannot restore this snapshot: either the snapshot is invalid, or the processor's code has been recompiled.");
-                }
-            }).disabled(snapshot == null);
+            t.image().growY().width(4f).pad(6f).color(Pal.gray);
+
 
             // Select a snapshot from the current block's list of snapshots
             t.button(Icon.folderOpen, style,
@@ -243,6 +255,23 @@ public class VarsDialog extends BaseDialog {
                             () -> new SnapshotsDialog(VarsDialog.this, snapshotList.group() ? snapshotList : SnapshotList.list(snapshot.group())).show())
                     .disabled(snapshot == null || snapshot.group() == null);
 
+            // Restore a snapshot
+            // TODO Group restore
+            t.button(Icon.download, style, () -> {
+                if (snapshot.writeTo(liveData)) {
+                    ui.showInfo("The processor's state has been restored from the snapshot.");
+                    setup(live);
+                } else {
+                    ui.showErrorMessage("Cannot restore this snapshot: either the snapshot is invalid, or the processor's code has been recompiled.");
+                }
+            }).disabled(snapshot == null || snapshot.dataType() == BlockDataType.properties);
+
+            // Create a snapshot
+            t.button(Icon.box, style, () -> {
+                Snapshots.create(view.building(), "User snapshot");
+                rebuildTitle(titleTable);
+            }).disabled(snapshot != null);
+
             // Can't remove snapshots from snapshot groups
             t.button(Icon.trash, style, () -> {
                 snapshotList.remove(index);
@@ -250,12 +279,42 @@ public class VarsDialog extends BaseDialog {
                 rebuildTitle(titleTable);
             }).disabled(snapshotList.group() || index == 0);
 
-            // Create a snapshot
-            t.button(Icon.box, style, () -> {
-                Snapshots.create(view.building(), "User snapshot");
-                rebuildTitle(titleTable);
-            }).disabled(snapshot != null);
-        }).left();
+            if (compact) {
+                t.button(Icon.rightOpen, style, this::next).padLeft(15f);
+            }
+        }).growX().fillX();
+
+        titleTable.addListener(new InputListener() {
+            private float startX;
+            private float startY;
+            private boolean dragging;
+
+            @Override
+            public boolean touchDown(InputEvent event, float x, float y, int pointer, KeyCode button) {
+                startX = x;
+                startY = y;
+                dragging = true;
+                return true;
+            }
+
+            @Override
+            public void touchUp(InputEvent event, float x, float y, int pointer, KeyCode button) {
+                if (!dragging) return;
+                dragging = false;
+
+                float dx = x - startX;
+                float dy = y - startY;
+
+                // Only treat predominantly horizontal movement as a swipe.
+                if (Math.abs(dx) < 80f || Math.abs(dx) < 1.5f * Math.abs(dy)) return;
+
+                if (dx < 0) {
+                    next();
+                } else {
+                    prev();
+                }
+            }
+        });
     }
 
     private void setup() {
@@ -271,20 +330,22 @@ public class VarsDialog extends BaseDialog {
         lastMemory = new double[length];
         updated = new boolean[length];
 
-        view.setView(sorted, hideTemps, hideLinks);
+        view.setView(sorted, filtered, hideLinks);
         Arrays.fill(counter, reset);
 
         // Always obtain independent live data
         if (view.building() != building) {
             building = view.building();
             liveData = Snapshots.liveView(building);
-            processor = liveData.processor();
         }
 
         buttons.clear();
         cont.clear();
 
-        cont.table(this::rebuildTitle).row();
+        if (Snapshots.maxSnapshots > 0) {
+            cont.table(this::rebuildTitle).width(Math.min(600f, LCanvas.getTargetWidth())).fillX();
+            cont.row();
+        }
 
         cont.pane(p -> {
             p.margin(10f).marginTop(0f);
@@ -311,9 +372,10 @@ public class VarsDialog extends BaseDialog {
 
                         t.add(new Image(Tex.whiteui, Pal.gray.cpy().mul(mul))).width(stub);
                         Cell<Table> val = t.table(Tex.pane, out -> {
-                            Label label = out.add("").style(Styles.outlineLabel).padLeft(4).padRight(4).width(220f).wrap().get();
+                            Label label = out.add("").style(Styles.outlineLabel).padLeft(4).padRight(4).width(LCanvas.isCompact() ? 140f : 220f).wrap().get();
                             label.setAlignment(Align.right);
                             label.act(1f);
+                            label.setEllipsis(true);
                         }).padRight(pad);
                         Label valueLabel = (Label) val.get().getCells().first().get();
 
@@ -333,7 +395,7 @@ public class VarsDialog extends BaseDialog {
                                     lastObject[index] = objval;
                                     lastMemory[index] = numval;
 
-                                    String text = view.formatted(index, hex);
+                                    String text = view.formatted(index, hex, fullPrecision ? 16 : significantDigits);
                                     ValueType type = view.type(index);
                                     valueLabel.setText(text);
                                     typeLabel.setText(type.paddedTitle);
@@ -359,127 +421,128 @@ public class VarsDialog extends BaseDialog {
 
         // Dialog buttons
         buttons.defaults().size(200f, 64f);
-        buttons.button("@back", Icon.left, this::hide).name("back");
 
-        if (processor) {
-            buttons.button("@varsdialog.options", Icon.filters, () -> {
-                BaseDialog dialog = new BaseDialog("@varsdialog.options");
-                dialog.cont.pane(p -> {
-                    p.margin(10f);
-                    p.table(Tex.button, t -> {
-                        TextButton.TextButtonStyle style = Styles.squareTogglet;
-                        t.defaults().size(160f, 45f).pad(3f).left();
-
-                        ButtonGroup<TextButton> hexGroup = new ButtonGroup<>();
-                        t.button("@varsdialog.dec", style, () -> refreshView(hex = false)).name("dec").group(hexGroup).checked(!hex);
-                        t.button("@varsdialog.hex", style, () -> refreshView(hex = true)).name("hex").group(hexGroup).checked(hex);
-                        t.row();
-                        ButtonGroup<TextButton> sortedGroup = new ButtonGroup<>();
-                        t.button("@varsdialog.unsorted", style, () -> updateView(sorted = false)).name("unsorted").group(sortedGroup).checked(!sorted);
-                        t.button("@varsdialog.sorted", style, () -> updateView(sorted = true)).name("sorted").group(sortedGroup).checked(sorted);
-                        t.row();
-                        ButtonGroup<TextButton> tempsGroup = new ButtonGroup<>();
-                        t.button("@varsdialog.showall", style, () -> updateView(hideTemps = false)).name("showall").group(tempsGroup).checked(!hideTemps);
-                        t.button("@varsdialog.hidetemps", style, () -> updateView(hideTemps = true)).name("hidetemps").group(tempsGroup).checked(hideTemps);
-                        t.row();
-                        ButtonGroup<TextButton> linksGroup = new ButtonGroup<>();
-                        t.button("@varsdialog.showlinks", style, () -> updateView(hideLinks = false)).name("showlinks").group(linksGroup).checked(!hideLinks);
-                        t.button("@varsdialog.hidelinks", style, () -> updateView(hideLinks = true)).name("hidelinks").group(linksGroup).checked(hideLinks);
-                        t.row();
-                        t.defaults().size(323f, 45f).padTop(25f).padBottom(15f);
-                        t.button("@back", Icon.left, Styles.flatt, dialog::hide).colspan(2).name("back");
-                    });
-                });
-
-                dialog.addCloseListener();
-                dialog.show();
-            }).name("options");
+        if (Snapshots.maxSnapshots == 0) {
+            // No snapshots: no commands above the list
+            if (liveData.dataType() == BlockDataType.processor) {
+                buttons.button("@back", Icon.left, this::hide).name("back");
+                buttons.button("@logic.globals", Icon.list, () -> LogicDialogAddon.globalsDialog.show());
+                if (Core.graphics.isPortrait()) buttons.row();
+                buttons.button("@varsdialog.options", Icon.filters, this::viewOptions).name("options");
+                buttons.button("@edit", Icon.edit, this::editCommands).name("edit");
+            } else {
+                buttons.button("@back", Icon.left, this::hide).name("back");
+                buttons.button("@edit", Icon.edit, this::editCommands).name("edit");
+                if (Core.graphics.isPortrait()) buttons.row();
+                buttons.button("@varsdialog.hex", Styles.squareTogglet, () -> refreshView(hex = !hex)).name("hex").checked(hex);
+                if (significantDigits < 16) {
+                    buttons.button("@varsdialog.fullprecision", Styles.squareTogglet, () -> refreshView(fullPrecision = !fullPrecision))
+                            .name("fullprecision").checked(fullPrecision);
+                }
+            }
         } else {
-            buttons.button("@varsdialog.hex", Styles.squareTogglet, () -> refreshView(hex = !hex)).name("hex").checked(hex);
+            // Snapshots are enabled: most commands are displayed above the list
+            buttons.button("@back", Icon.left, this::hide).name("back");
+            if (liveData.dataType() == BlockDataType.processor) {
+                buttons.button("@logic.globals", Icon.list, () -> LogicDialogAddon.globalsDialog.show());
+            }
         }
-
-        if (Core.graphics.isPortrait()) buttons.row();
-
-        if (processor) {
-            buttons.button("@logic.globals", Icon.list, () -> LogicDialogAddon.globalsDialog.show());
-        }
-
-        buttons.button("@edit", Icon.edit, () -> {
-            BaseDialog dialog = new BaseDialog("@edit");
-            dialog.cont.pane(p -> {
-                p.margin(10f);
-                p.table(Tex.button, t -> {
-                    TextButton.TextButtonStyle style = Styles.flatt;
-                    t.defaults().size(360f, 60f).left();
-
-                    if (!processor) {
-                        t.button("@varsdialog.clearmemory", Icon.cancel, style, () -> {
-                            view.clear();
-                            Arrays.fill(counter, reset / 2);
-                            dialog.hide();
-                        }).marginLeft(12f).row();
-                    }
-
-                    t.button("@varsdialog.copyvariables", Icon.copy, style, () -> {
-                        Core.app.setClipboardText(MemoryText.write(view, hex));
-                        dialog.hide();
-                    }).marginLeft(12f).row();
-
-                    if (processor) {
-                        t.button("@varsdialog.copyprintbuffer", Icon.copy, style, () -> {
-                            String text = "Printbuffer contents:\n" + view.textBuffer();
-                            Core.app.setClipboardText(text);
-                            dialog.hide();
-                        }).marginLeft(12f).row();
-                    }
-
-                    if (!processor) {
-                        t.button("@varsdialog.importvariables", Icon.download, style, () -> {
-                            String text = Core.app.getClipboardText();
-                            String error = MemoryText.validate(text, length);
-                            if (error == null) error = MemoryText.read(text, length, view);
-
-                            if (error != null) {
-                                ui.showInfoFade(Core.bundle.format("varsdialog.importfailed", error));
-                                return;
-                            }
-
-                            Arrays.fill(counter, reset / 2);
-                            dialog.hide();
-                        }).marginLeft(12f).row();
-                    }
-
-                    /*
-                    t.button("Create snapshot", Icon.box, style, () -> {
-                        Snapshots.create(view.building(), "User snapshot");
-                        dialog.hide();
-                    }).marginLeft(12f).row();
-
-                    Seq<Snapshot> snapshots = Snapshots.snapshots.get(view.building());
-                    if (snapshots != null) {
-                        t.button("View snapshots", Icon.zoom, style, () -> {
-                            var list = new SnapshotsDialog(VarsDialog.this, snapshots);
-                            list.hidden(() -> dialog.hide());
-                            list.show();
-                        }).marginLeft(12f).row();
-                    }
-                     */
-
-                    t.button("Delete all snapshots", Icon.trash, style, () -> {
-                        Snapshots.deleteBuilding(view.building());
-                        dialog.hide();
-                        setup(live);
-                    }).marginLeft(12f).row();
-
-                });
-            });
-
-            dialog.addCloseButton();
-            dialog.show();
-        }).name("edit");
 
         wasPortrait = Core.graphics.isPortrait();
         addCloseListener();
+    }
+
+    private void viewOptions() {
+        BaseDialog dialog = new BaseDialog("@varsdialog.options");
+        dialog.cont.pane(p -> {
+            p.margin(10f);
+            p.table(Tex.button, t -> {
+                TextButton.TextButtonStyle style = Styles.squareTogglet;
+                t.defaults().size(160f, 45f).pad(3f).left();
+
+                ButtonGroup<TextButton> hexGroup = new ButtonGroup<>();
+                t.button("@varsdialog.dec", style, () -> refreshView(hex = false)).name("dec").group(hexGroup).checked(!hex);
+                t.button("@varsdialog.hex", style, () -> refreshView(hex = true)).name("hex").group(hexGroup).checked(hex);
+                t.row();
+                ButtonGroup<TextButton> sortedGroup = new ButtonGroup<>();
+                t.button("@varsdialog.unsorted", style, () -> updateView(sorted = false)).name("unsorted").group(sortedGroup).checked(!sorted);
+                t.button("@varsdialog.sorted", style, () -> updateView(sorted = true)).name("sorted").group(sortedGroup).checked(sorted);
+                t.row();
+                ButtonGroup<TextButton> tempsGroup = new ButtonGroup<>();
+                t.button("@varsdialog.showall", style, () -> updateView(filtered = false)).name("showall").group(tempsGroup).checked(!filtered);
+                t.button("@varsdialog.hidetemps", style, () -> updateView(filtered = true)).name("hidetemps").group(tempsGroup).checked(filtered);
+                t.row();
+                ButtonGroup<TextButton> linksGroup = new ButtonGroup<>();
+                t.button("@varsdialog.showlinks", style, () -> updateView(hideLinks = false)).name("showlinks").group(linksGroup).checked(!hideLinks);
+                t.button("@varsdialog.hidelinks", style, () -> updateView(hideLinks = true)).name("hidelinks").group(linksGroup).checked(hideLinks);
+                t.row();
+
+                t.defaults().size(323f, 60f).padTop(25f).padBottom(15f);
+                t.button("@back", Icon.left, Styles.flatt, dialog::hide).colspan(2).name("back");
+            });
+        });
+
+        dialog.addCloseListener();
+        dialog.show();
+    }
+
+    private void editCommands() {
+        BaseDialog dialog = new BaseDialog("@edit");
+        dialog.cont.pane(p -> {
+            p.margin(10f);
+            p.table(Tex.button, t -> {
+                TextButton.TextButtonStyle style = Styles.flatt;
+                t.defaults().size(360f, 60f).left();
+
+                if (liveData.dataType() == BlockDataType.memory) {
+                    t.button("@varsdialog.clearmemory", Icon.cancel, style, () -> {
+                        view.clear();
+                        Arrays.fill(counter, reset / 2);
+                        dialog.hide();
+                    }).marginLeft(12f).row();
+                }
+
+                t.button("@varsdialog.copyvariables", Icon.copy, style, () -> {
+                    Core.app.setClipboardText(MemoryText.write(view, hex));
+                    dialog.hide();
+                }).marginLeft(12f).row();
+
+                if (liveData.dataType() == BlockDataType.processor) {
+                    t.button("@varsdialog.copyprintbuffer", Icon.copy, style, () -> {
+                        String text = "Printbuffer contents:\n" + view.textBuffer();
+                        Core.app.setClipboardText(text);
+                        dialog.hide();
+                    }).marginLeft(12f).row();
+                }
+
+                if (liveData.dataType() == BlockDataType.memory) {
+                    t.button("@varsdialog.importvariables", Icon.download, style, () -> {
+                        String text = Core.app.getClipboardText();
+                        String error = MemoryText.validate(text, length);
+                        if (error == null) error = MemoryText.read(text, length, view);
+
+                        if (error != null) {
+                            ui.showInfoFade(Core.bundle.format("varsdialog.importfailed", error));
+                            return;
+                        }
+
+                        Arrays.fill(counter, reset / 2);
+                        dialog.hide();
+                    }).marginLeft(12f).row();
+                }
+
+                t.button("Delete all snapshots", Icon.trash, style, () -> {
+                    Snapshots.deleteBuilding(view.building());
+                    dialog.hide();
+                    setup(live);
+                }).marginLeft(12f).row();
+
+                t.button("@back", Icon.left, style, dialog::hide).padTop(10f).name("back");
+            });
+        });
+
+        dialog.addCloseListener();
+        dialog.show();
     }
 
     private void refreshView(boolean update) {
@@ -487,7 +550,7 @@ public class VarsDialog extends BaseDialog {
     }
 
     private void updateView(boolean update) {
-        view.setView(sorted, hideTemps, hideLinks);
+        view.setView(sorted, filtered, hideLinks);
         if (view.size() != length) {
             setup();
         } else {
