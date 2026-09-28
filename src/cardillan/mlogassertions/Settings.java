@@ -2,6 +2,7 @@ package cardillan.mlogassertions;
 
 import arc.Core;
 import arc.scene.ui.layout.Table;
+import cardillan.mlogassertions.data.Snapshots;
 import cardillan.mlogassertions.ui.Assertions;
 import cardillan.mlogassertions.ui.LogicDialogAddon;
 import cardillan.mlogassertions.ui.VarsDialog;
@@ -22,8 +23,10 @@ public class Settings {
                 Constants.minWaitTimeUpdate, Assertions.minWaitTimeUpdate,
                 Constants.processorUpdatesPerTick, 4,
                 Constants.warnEffectFrequency, Assertions.warnEffectFrequency,
+                Constants.varsSignificantDigits, VarsDialog.significantDigits,
                 Constants.variableUpdateFrequency, VarsDialog.updateFrequency,
-                Constants.tripleTapSpeed, LogicDialogAddon.tripleTapSpeed
+                Constants.tripleTapSpeed, LogicDialogAddon.tripleTapSpeed,
+                Constants.snapshotLimit, Snapshots.maxSnapshots
         );
 
         Vars.ui.settings.addCategory("Mlog Assertions", Icon.warningSmall, t -> {
@@ -57,6 +60,11 @@ public class Settings {
                                 Core.bundle.format("setting.warn-effect-frequency.every", i);
             });
 
+            t.sliderPref(Constants.varsSignificantDigits, 7, 3, 16, 1, i -> {
+                VarsDialog.significantDigits = i;
+                return i == 16 ? Core.bundle.get("setting.vars-significant-digits.full") : Integer.toString(i);
+            });
+
             t.sliderPref(Constants.variableUpdateFrequency, 15, 5, 60, 5, i -> {
                 VarsDialog.updateFrequency = i;
                 return Core.bundle.format("setting.variable-update-frequency.every", i);
@@ -67,6 +75,11 @@ public class Settings {
                 return i == 0 ? Core.bundle.get("setting.triple-tap-speed.disabled") :
                         Core.bundle.format("setting.triple-tap-speed.delay", i);
             });
+
+            t.sliderPref(Constants.snapshotLimit, 20, 10, 1000, 10, i -> {
+                Snapshots.maxSnapshots = i;
+                return Integer.toString(i);
+            });
         });
 
         if (canSetInstructions()) {
@@ -76,6 +89,7 @@ public class Settings {
         Assertions.processorUpdatesPerTick = updatesPerTick(Core.settings.getInt(Constants.processorUpdatesPerTick, 4));
         Assertions.warnEffectFrequency = Core.settings.getInt(Constants.warnEffectFrequency);
         VarsDialog.updateFrequency = Core.settings.getInt(Constants.variableUpdateFrequency);
+        Snapshots.maxSnapshots = Core.settings.getInt(Constants.snapshotLimit);
     }
 
     public static boolean disableBreakpoints() {

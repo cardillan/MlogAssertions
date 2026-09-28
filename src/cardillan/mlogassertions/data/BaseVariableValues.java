@@ -1,5 +1,6 @@
 package cardillan.mlogassertions.data;
 
+import cardillan.mlogassertions.ui.VarsDialog;
 import mindustry.Vars;
 import mindustry.ctype.Content;
 import mindustry.ctype.MappableContent;
@@ -76,6 +77,11 @@ public abstract class BaseVariableValues implements VariableValues {
         return true;
     }
 
+    private static final String[] formats = new String[16];
+    static {
+        for (int i = 0; i < formats.length; i++) formats[i] = "%." + i + "g";
+    }
+
     @Override
     public String formatted(int index, boolean hex) {
         if (isObj(index)) {
@@ -102,7 +108,13 @@ public abstract class BaseVariableValues implements VariableValues {
             } else if ((long) num == num) {
                 return hex ? "0x" + Long.toHexString((long) num).toUpperCase() : Long.toString((long) num);
             } else {
-                return hex ? Double.toHexString(num).toLowerCase() : Double.toString(num).toLowerCase();
+                if (VarsDialog.significantDigits >= formats.length) return Double.toString(num).toLowerCase();
+                String str = String.format(formats[VarsDialog.significantDigits], num);
+                if (str.indexOf('e') > 0) return str;
+                if (str.indexOf('.') == -1) return str + ".0";  // It's NOT an integer
+                int l = str.length() - 1;
+                while (l > 0 && str.charAt(l) == '0') l--;
+                return str.substring(0, l + 1);
             }
         }
     }

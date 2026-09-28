@@ -16,8 +16,8 @@ import mindustry.world.blocks.logic.MemoryBlock;
 import mindustry.world.blocks.logic.MemoryBlock.MemoryBuild;
 
 public class Snapshots {
-    static int maxSnapshots = 1000;
-    static int id = 0;
+    public static int maxSnapshots = 1000;
+    private static int id = 0;
 
     // Snapshots
     private static final ObjectMap<Building, Queue<Snapshot>> snapshots = new ObjectMap<>();

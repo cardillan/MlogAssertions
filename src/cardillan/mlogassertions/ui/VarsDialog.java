@@ -26,6 +26,7 @@ import static mindustry.Vars.*;
 
 public class VarsDialog extends BaseDialog {
     public static int updateFrequency = 15;
+    public static int significantDigits = 7;
 
     public static final float reset = 1e10f;
     private static final int live = 0;
