@@ -20,12 +20,12 @@ public class Constants {
     public static final String processorUpdatesPerTick = "processor-updates-per-tick";
     public static final String warnEffectFrequency = "warn-effect-frequency";
     public static final String tripleTapSpeed = "triple-tap-speed";
-    public static final String snapshotLimit = "snapshot-limit";
+    public static final String snapshotLimit = "snapshot-limit-0";
 
     public static final String snapshotOnBreakpoint = "snapshot-on-breakpoint";
     public static final String snapshotOnAssertion = "snapshot-on-assertion";
 
     public static final String variableUpdateFrequency = "variable-update-frequency";
     public static final String varsSignificantDigits = "vars-significant-digits";
-    public static final String varsAlignment = "vars-alignment";
+    public static final String varsAlignment = "vars-alignment-0";
 }

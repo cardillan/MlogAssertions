@@ -97,9 +97,9 @@ public class Settings {
     }
 
     private static SteppedSliderSetting steppedPref(SettingsTable t, String name, int def, int[] steps, StringProcessor s, Intc changed) {
-        SteppedSliderSetting res = new SteppedSliderSetting(name, def, steps, s, changed);
-        t.pref(res);
         settings.defaults(name, def);
+        SteppedSliderSetting res;
+        t.pref(res = new SteppedSliderSetting(name, def, steps, s, changed));
         t.rebuild();
         return res;
     }
