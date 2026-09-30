@@ -4,7 +4,7 @@ displayName: "Mlog Dev Tools"
 #the internal name of your mod
 name: "mlog-assertions-8"
 
-subtitle: "Easier debugging for mlog",
+subtitle: "Easier debugging and testing for mlog",
 
 #your name
 author: "cardillan"
@@ -16,7 +16,7 @@ main: "cardillan.mlogassertions.MlogAssertions"
 description: "Provides new logic instructions and other tools for easier debugging in Mindustry Logic."
 
 #the mod version
-version: 0.11.0
+version: 0.11.1
 
 #the minimum game build required to run this mod
 minGameVersion: 160.5
