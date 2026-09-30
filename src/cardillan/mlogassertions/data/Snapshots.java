@@ -53,13 +53,19 @@ public class Snapshots {
                 new SensorVars(building);
     }
 
+    public static boolean hasSnapshots(Building building) {
+        Queue<Snapshot> queue = snapshots.get(building);
+        return queue != null && queue.size > 0;
+    }
+
     public static Queue<Snapshot> get(Building building) {
         snapshots.putMissing(building, new Queue<>());
         return snapshots.get(building);
     }
 
+
     public static void create(Building building, String name) {
-        create(building, SnapshotType.isolated, name);
+        create(building, SnapshotType.connected, name);
     }
 
     public static void create(Building building, SnapshotType type, String name) {

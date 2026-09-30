@@ -7,6 +7,7 @@ import arc.scene.ui.Label;
 import arc.scene.ui.Slider;
 import arc.scene.ui.layout.Scl;
 import arc.scene.ui.layout.Table;
+import arc.util.Align;
 import cardillan.mlogassertions.data.Snapshots;
 import cardillan.mlogassertions.ui.Assertions;
 import cardillan.mlogassertions.ui.LogicDialogAddon;
@@ -24,68 +25,58 @@ import java.lang.reflect.Modifier;
 import static arc.Core.settings;
 
 public class Settings {
-    static final int[] UPDATES_PER_TICK = { 1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000 };
+    static final int[] UPDATES_PER_TICK = {1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000};
 
     public static void init() {
-        Core.settings.defaults(
-                Constants.maxInstructions, LExecutor.maxInstructions,
-                Constants.minWaitTimeUpdate, Assertions.minWaitTimeUpdate,
-                Constants.processorUpdatesPerTick, 4,
-                Constants.warnEffectFrequency, Assertions.warnEffectFrequency,
-                Constants.varsSignificantDigits, VarsDialog.significantDigits,
-                Constants.variableUpdateFrequency, VarsDialog.updateFrequency,
-                Constants.tripleTapSpeed, LogicDialogAddon.tripleTapSpeed,
-                Constants.snapshotLimit, Snapshots.maxSnapshots
-        );
-
         Vars.ui.settings.addCategory("Mlog Assertions", Icon.warningSmall, t -> {
             t.checkPref(Constants.disableBreakpoints, false);
             t.checkPref(Constants.assertsAreBreakpoints, false);
             t.checkPref(Constants.freeCameraOnBreakpoint, true);
 
             if (canSetInstructions()) {
-                t.sliderPref(Constants.maxInstructions, 1000, 1000, 2000, 100, i -> {
-                    LExecutor.maxInstructions = i;
-                    return Integer.toString(i);
-                });
+                t.sliderPref(Constants.maxInstructions, 1000, 1000, 2000, 100,
+                        i -> Integer.toString(i),
+                        i -> LExecutor.maxInstructions = i);
             }
 
-            t.sliderPref(Constants.minWaitTimeUpdate, 1000, 0, 10000, 500, i -> {
-                Assertions.minWaitTimeUpdate = i;
-                return i == 0 ? Core.bundle.get("setting.min-wait-time-update.none") : Double.toString(i / 1000.0);
-            });
+            t.sliderPref(Constants.minWaitTimeUpdate, 1000, 0, 10000, 500,
+                    i -> i == 0 ? Core.bundle.get("setting.min-wait-time-update.none") : Double.toString(i / 1000.0),
+                    i -> Assertions.minWaitTimeUpdate = i);
 
-            t.sliderPref(Constants.processorUpdatesPerTick, 4, 0, UPDATES_PER_TICK.length - 1, i -> {
-                Assertions.processorUpdatesPerTick = updatesPerTick(i);
-                return Integer.toString(Assertions.processorUpdatesPerTick);
-            });
+            t.sliderPref(Constants.processorUpdatesPerTick, 4, 0, UPDATES_PER_TICK.length - 1,
+                    i -> Integer.toString(Assertions.processorUpdatesPerTick),
+                    i -> Assertions.processorUpdatesPerTick = updatesPerTick(i));
 
-            t.sliderPref(Constants.warnEffectFrequency, 0, -5, 60, 5, i -> {
-                Assertions.warnEffectFrequency = i;
-                return i < 0 ? Core.bundle.get("setting.warn-effect-frequency.never") :
-                        i == 0 ? Core.bundle.get("setting.warn-effect-frequency.once") :
-                                Core.bundle.format("setting.warn-effect-frequency.every", i);
-            });
+            t.sliderPref(Constants.warnEffectFrequency, 0, -5, 60, 5,
+                    i -> i < 0 ? Core.bundle.get("setting.warn-effect-frequency.never") :
+                            i == 0 ? Core.bundle.get("setting.warn-effect-frequency.once") :
+                                    Core.bundle.format("setting.warn-effect-frequency.every", i),
+                    i -> Assertions.warnEffectFrequency = i);
 
-            t.sliderPref(Constants.varsSignificantDigits, 7, 3, 16, 1, i -> {
-                VarsDialog.significantDigits = i;
-                return i == 16 ? Core.bundle.get("setting.vars-significant-digits.full") : Integer.toString(i);
-            });
+            t.sliderPref(Constants.tripleTapSpeed, 500, 0, 3000, 50,
+                    i -> i == 0 ? Core.bundle.get("setting.triple-tap-speed.disabled") :
+                            Core.bundle.format("setting.triple-tap-speed.delay", i),
+                    i -> LogicDialogAddon.tripleTapSpeed = i);
 
-            t.sliderPref(Constants.variableUpdateFrequency, 15, 5, 60, 5, i -> {
-                VarsDialog.updateFrequency = i;
-                return Core.bundle.format("setting.variable-update-frequency.every", i);
-            });
-
-            t.sliderPref(Constants.tripleTapSpeed, 500, 0, 5000, 50, i -> {
-                LogicDialogAddon.tripleTapSpeed = i;
-                return i == 0 ? Core.bundle.get("setting.triple-tap-speed.disabled") :
-                        Core.bundle.format("setting.triple-tap-speed.delay", i);
-            });
-
-            steppedPref(t, Constants.snapshotLimit, 20, new int[]{ 0, 5, 10, 20, 50, 100, 200, 500, 1000 },
+            steppedPref(t, Constants.snapshotLimit, 20, new int[]{0, 5, 10, 20, 50, 100, 200, 500, 1000},
                     i -> i == 0 ? Core.bundle.get("setting.snapshot-limit.disabled") : Integer.toString(i),
                     i -> Snapshots.maxSnapshots = i);
+
+            t.checkPref(Constants.snapshotOnBreakpoint, false);
+            t.checkPref(Constants.snapshotOnAssertion, false);
+
+            t.sliderPref(Constants.variableUpdateFrequency, 15, 5, 60, 5,
+                    i -> Core.bundle.format("setting.variable-update-frequency.every", i),
+                    i -> VarsDialog.updateFrequency = i);
+
+            t.sliderPref(Constants.varsSignificantDigits, 7, 3, 16, 1,
+                    i -> i == 16 ? Core.bundle.get("setting.vars-significant-digits.full") : Integer.toString(i),
+                    i -> VarsDialog.significantDigits = i);
+
+            steppedPref(t, Constants.varsAlignment, Align.left, new int[]{Align.left, Align.center, Align.right},
+                    i -> Core.bundle.get("setting.vars-alignment." + i),
+                    i -> VarsDialog.alignment = i);
+
         });
 
         Vars.ui.settings.hidden(() -> {
@@ -98,8 +89,11 @@ public class Settings {
         Assertions.minWaitTimeUpdate = Core.settings.getInt(Constants.minWaitTimeUpdate);
         Assertions.processorUpdatesPerTick = updatesPerTick(Core.settings.getInt(Constants.processorUpdatesPerTick, 4));
         Assertions.warnEffectFrequency = Core.settings.getInt(Constants.warnEffectFrequency);
-        VarsDialog.updateFrequency = Core.settings.getInt(Constants.variableUpdateFrequency);
         Snapshots.maxSnapshots = Core.settings.getInt(Constants.snapshotLimit);
+
+        VarsDialog.updateFrequency = Core.settings.getInt(Constants.variableUpdateFrequency);
+        VarsDialog.significantDigits = Core.settings.getInt(Constants.varsSignificantDigits);
+        VarsDialog.alignment = Core.settings.getInt(Constants.varsAlignment);
     }
 
     private static SteppedSliderSetting steppedPref(SettingsTable t, String name, int def, int[] steps, StringProcessor s, Intc changed) {
@@ -116,7 +110,7 @@ public class Settings {
         StringProcessor sp;
         Intc changed;
 
-        public SteppedSliderSetting(String name, int def, int[] steps, StringProcessor s, Intc changed){
+        public SteppedSliderSetting(String name, int def, int[] steps, StringProcessor s, Intc changed) {
             super(name);
             this.def = def;
             this.steps = steps;
@@ -125,13 +119,21 @@ public class Settings {
         }
 
         @Override
-        public void add(SettingsTable table){
+        public void add(SettingsTable table) {
             Slider slider = new Slider(0, steps.length - 1, 1, false);
 
             int val = settings.getInt(name);
-            int pos;
-            for (pos = 0; pos < steps.length; pos++) {
-                if (steps[pos] >= val) break;
+            int pos = 0, minDif = Integer.MAX_VALUE;
+            for (int i = 0; i < steps.length; i++) {
+                if (steps[i] == val) {
+                    pos = i;
+                    break;
+                }
+                int dif = Math.abs(steps[i] - val);
+                if (dif < minDif) {
+                    minDif = dif;
+                    pos = i;
+                }
             }
             slider.setValue(pos);
 
@@ -143,10 +145,10 @@ public class Settings {
             content.touchable = Touchable.disabled;
 
             slider.changed(() -> {
-                int v = steps[(int)slider.getValue()];
+                int v = steps[(int) slider.getValue()];
                 settings.put(name, v);
                 value.setText(sp.get(v));
-                if(changed != null) changed.get(v);
+                if (changed != null) changed.get(v);
             });
 
             slider.change();
@@ -174,6 +176,14 @@ public class Settings {
 
     public static boolean detachCameraOnBreakpoint() {
         return Core.settings.getBool(Constants.freeCameraOnBreakpoint, true);
+    }
+
+    public static boolean snapshotOnBreakpoint() {
+        return Core.settings.getBool(Constants.snapshotOnBreakpoint, false);
+    }
+
+    public static boolean snapshotOnAssertion() {
+        return Core.settings.getBool(Constants.snapshotOnAssertion, false);
     }
 
     public static boolean canSetInstructions() {

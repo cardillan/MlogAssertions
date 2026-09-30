@@ -1,6 +1,7 @@
 package cardillan.mlogassertions.data;
 
 import arc.func.Cons;
+import arc.func.Prov;
 import mindustry.logic.LExecutor;
 import mindustry.logic.LVar;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
@@ -20,28 +21,29 @@ public class ProcessorVars extends BaseVariableValues {
     public ProcessorVars(LogicBuild build) {
         super(build);
         this.executor = build.executor;
-        this.data = new LVar[executor.vars.length + 2 + (executor.privileged ? 1 : 0)];
+        this.data = new LVar[executor.vars.length + 4 + (executor.privileged ? 1 : 0)];
         length = 0;
 
-        // Copy the original data
-        copyVar(executor.counter);
-        copyVar(executor.unit);
-        copyVar(executor.ipt);
+        store(objvar("Text buffer", () -> cachedTextBuffer()));
+        store(numvar("Time waited", () -> (double)timeWaited()));
+        store(executor.counter);
+        store(executor.unit);
+        store(executor.ipt);
         if (executor.privileged) {
-            copyVar(executor.queryResult);
+            store(executor.queryResult);
         }
 
         start = length;
 
         for (int i = 1; i < executor.vars.length; i++) {
-            copyVar(executor.vars[i]);
+            store(executor.vars[i]);
             if (executor.vars[i].name.equals("*id")) id = executor.vars[i];
         }
 
         view = Arrays.copyOf(data, length);
     }
 
-    protected void copyVar(LVar var) {
+    protected void store(LVar var) {
         if (var != null) data[length++] = var;
     }
 
@@ -95,11 +97,6 @@ public class ProcessorVars extends BaseVariableValues {
     }
 
     @Override
-    public float maxColWidth() {
-        return 10000f;
-    }
-
-    @Override
     public int size() {
         return length;
     }
@@ -121,17 +118,28 @@ public class ProcessorVars extends BaseVariableValues {
 
     @Override
     public Object obj(int index) {
-        return view[index].objval;
+        return view[index].obj();
     }
 
     @Override
     public double num(int index) {
-        return view[index].numval;
+        return view[index].num();
+    }
+
+    String lastTextBuffer;
+    private String cachedTextBuffer() {
+        String str = executor.textBuffer.toString();
+        return str.equals(lastTextBuffer) ? lastTextBuffer : (lastTextBuffer = str);
     }
 
     @Override
     public String textBuffer() {
         return executor.textBuffer.toString();
+    }
+
+    protected float timeWaited() {
+        int counter = (int) executor.counter.numval;
+        return counter >= 0 && counter < executor.instructions.length && executor.instructions[counter] instanceof LExecutor.WaitI w ? w.curTime : 0;
     }
 
     @Override
@@ -231,7 +239,32 @@ public class ProcessorVars extends BaseVariableValues {
     @Override
     public void eachObject(Cons<Object> getter) {
         for (int index = 0; index < data.length; index++) {
-            if (data[index].isobj) getter.get(data[index].objval);
+            if (data[index].isobj) getter.get(data[index].obj());
         }
+    }
+
+    private LVar objvar(String name, Prov<Object> prov) {
+        LVar result = new LVar(name) {
+            { isobj = true; }
+            @Override
+            public Object obj() {
+                return objval = prov.get();
+            }
+        };
+        result.obj();
+        return result;
+    }
+
+    private LVar numvar(String name, Prov<Double> prov) {
+        LVar result = new LVar(name) {
+            { isobj = false; }
+
+            @Override
+            public double num() {
+                return numval = prov.get();
+            }
+        };
+        result.num();
+        return result;
     }
 }

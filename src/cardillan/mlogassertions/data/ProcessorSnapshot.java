@@ -5,6 +5,7 @@ import arc.util.Log;
 import arc.util.Time;
 import cardillan.mlogassertions.logic.SnapshotType;
 import mindustry.gen.Building;
+import mindustry.logic.LExecutor;
 import mindustry.logic.LVar;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
 
@@ -17,6 +18,7 @@ public class ProcessorSnapshot extends ProcessorVars implements Snapshot {
     public final Seq<Snapshot> group;
 
     public final String textBuffer;
+    public final float timeWaited;
 
     private float[] typeDistribution = null;
 
@@ -30,6 +32,7 @@ public class ProcessorSnapshot extends ProcessorVars implements Snapshot {
         this.id = id;
         this.group = group;
         this.textBuffer = executor.textBuffer.toString();
+        this.timeWaited = timeWaited();
         this.name = name;
 
         setView(false, false, false);
@@ -37,7 +40,7 @@ public class ProcessorSnapshot extends ProcessorVars implements Snapshot {
     }
 
     @Override
-    protected void copyVar(LVar var) {
+    protected void store(LVar var) {
         if (var != null) {
             LVar copy = new LVar(var.name);
             copy.id = var.id;
@@ -47,6 +50,11 @@ public class ProcessorSnapshot extends ProcessorVars implements Snapshot {
             copy.numval = var.numval;
             data[length++] = copy;
         }
+    }
+
+    @Override
+    public String textBuffer() {
+        return textBuffer;
     }
 
     @Override
@@ -76,10 +84,20 @@ public class ProcessorSnapshot extends ProcessorVars implements Snapshot {
             for (int i = 0; i < data.length; i++) {
                 if (!data[i].name.equals(processor.data[i].name) || data[i].constant != processor.data[i].constant || data[i].id != processor.data[i].id) return false;
             }
+
             for (int i = 0; i < data.length; i++) {
                 processor.data[i].objval = data[i].objval;
                 processor.data[i].numval = data[i].numval;
             }
+
+            processor.executor.textBuffer.setLength(0);
+            processor.executor.textBuffer.append(textBuffer);
+
+            int counter = (int) processor.executor.counter.numval;
+            if (counter >= 0 && counter < executor.instructions.length && executor.instructions[counter] instanceof LExecutor.WaitI w) {
+                w.curTime = (float) timeWaited;
+            }
+
             return true;
         } else {
             return false;

@@ -78,11 +78,6 @@ public class MemoryVars extends BaseVariableValues {
     }
 
     @Override
-    public float maxColWidth() {
-        return 550f;
-    }
-
-    @Override
     public int size() {
         return length;
     }

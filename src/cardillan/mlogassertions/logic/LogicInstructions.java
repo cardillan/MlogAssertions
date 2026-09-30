@@ -269,6 +269,9 @@ public class LogicInstructions {
             breakpoint(exec.build, formatAssertionMessage(exec, bundleKey, message, arguments));
         } else {
             Assertions.setMessage(exec.build, () -> formatAssertionMessage(exec, bundleKey, message, arguments));
+            if (Settings.snapshotOnAssertion() && Snapshots.maxSnapshots > 0) {
+                Snapshots.create(exec.build, SnapshotType.isolated, formatAssertionMessage(exec, bundleKey, message, arguments));
+            }
             exec.counter.numval--;
             exec.yield = true;
         }
@@ -276,6 +279,9 @@ public class LogicInstructions {
 
     private static void breakpoint(LogicBuild build, String message) {
         if (Settings.disableBreakpoints()) return;
+        if (Settings.snapshotOnAssertion() && Snapshots.maxSnapshots > 0) {
+            Snapshots.create(build, SnapshotType.connected, "Breakpoint snapshot at #" + ((int)build.executor.counter.numval - 1));
+        }
         Assertions.breakpoint(build, message);
     }
 

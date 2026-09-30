@@ -25,11 +25,6 @@ public abstract class BaseVariableValues implements VariableValues {
     }
 
     @Override
-    public float maxColWidth() {
-        return 750f;
-    }
-
-    @Override
     public Building building() {
         return build;
     }
@@ -73,6 +68,11 @@ public abstract class BaseVariableValues implements VariableValues {
     }
 
     @Override
+    public boolean live() {
+        return !(this instanceof Snapshot);
+    }
+
+    @Override
     public boolean valid() {
         return true;
     }
@@ -87,7 +87,7 @@ public abstract class BaseVariableValues implements VariableValues {
         if (isObj(index)) {
             Object obj = obj(index);
             if (obj instanceof String str) {
-                return str.length() > 40 ? str.substring(0, 40).trim() + "[gold]..." : str;
+                return str;
             } else {
                 return obj == null ? "null" :
                        obj instanceof MappableContent content ? content.name :
@@ -125,7 +125,7 @@ public abstract class BaseVariableValues implements VariableValues {
     }
 
     public static String pos(float x, float y) {
-        return String.format("\u00a0[gray]%.0f,\u00a0%.0f", x / Vars.tilesize, y / Vars.tilesize);
+        return String.format("\n[gray](%.0f, %.0f)", x / Vars.tilesize, y / Vars.tilesize);
     }
 
     @Override

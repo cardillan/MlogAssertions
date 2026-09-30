@@ -7,6 +7,7 @@ import arc.scene.style.TextureRegionDrawable;
 import arc.scene.ui.Button;
 import arc.scene.ui.Image;
 import arc.scene.ui.layout.Scl;
+import arc.struct.Seq;
 import arc.util.Scaling;
 import cardillan.mlogassertions.data.*;
 import mindustry.Vars;
@@ -21,7 +22,8 @@ import mindustry.world.blocks.logic.MemoryBlock;
 
 public class SnapshotsDialog extends BaseDialog {
     VarsDialog vars;
-    SnapshotList snapshotList;
+    SnapshotList snapshots;
+    Seq<Snapshot> data;
     Snapshot expanded = null;
     boolean group;
 
@@ -29,11 +31,12 @@ public class SnapshotsDialog extends BaseDialog {
     float scroll = 0f;
     float w;
 
-    public SnapshotsDialog(VarsDialog vars, SnapshotList snapshotList) {
+    public SnapshotsDialog(VarsDialog vars, SnapshotList snapshots) {
         super("Snapshots");
         this.vars = vars;
-        this.snapshotList = snapshotList;
-        this.group = snapshotList.group();
+        this.snapshots = snapshots;
+        this.group = snapshots.group();
+        this.data = snapshots.list();
 
         onResize(() -> { if (w != w()) setup(); });
         setup();
@@ -48,19 +51,14 @@ public class SnapshotsDialog extends BaseDialog {
         float w = w();
         float indent = 64f * w / 600f;
 
-        // Skip live view (for now)
-        int start = snapshotList.group() ? 0 : 1;
-
-        if (snapshotList.size() > start) {
+        if (data.size > 0) {
             cont.clear();
             cont.pane(p -> {
                 p.table(list -> {
-                    for (int i = start; i < snapshotList.size(); i++) {
-                        Snapshot snapshot = snapshotList.snapshot(i);
-                        int index = i;
-
+                    for (int i = 0; i < data.size; i++) {
+                        Snapshot snapshot = data.get(i);
                         list.table(t -> {
-                            t.add(createSnapshotButton(snapshot, null, index, group, w))
+                            t.add(createSnapshotButton(snapshot, null, group, w))
                                     .padBottom(8f).height(h);
                         });
                         list.row();
@@ -68,11 +66,9 @@ public class SnapshotsDialog extends BaseDialog {
                         if (snapshot == expanded) {
                             for (int i2 = 0; i2 < expanded.group().size; i2++) {
                                 Snapshot inner = expanded.group().get(i2);
-                                int index2 = i2;
-
                                 list.table(t -> {
                                     t.add().pad(0f).width(indent);
-                                    t.add(createSnapshotButton(inner, expanded, index2, true, w - indent))
+                                    t.add(createSnapshotButton(inner, expanded, true, w - indent))
                                             .padBottom(8f).height(h);
                                 });
                                 list.row();
@@ -89,7 +85,7 @@ public class SnapshotsDialog extends BaseDialog {
         addCloseButton();
     }
 
-    private Button createSnapshotButton(Snapshot snapshot, Snapshot parent, int index, boolean group, float width) {
+    private Button createSnapshotButton(Snapshot snapshot, Snapshot parent, boolean group, float width) {
         Button b = new Button(Styles.grayt);
         b.clearChildren();  // ? - from arc
         b.margin(12f);
@@ -150,9 +146,12 @@ public class SnapshotsDialog extends BaseDialog {
 
         b.clicked(() -> {
             if (parent == null) {
-                vars.setup(snapshotList, index);
+                snapshots.select(snapshot);
+                vars.setup(snapshots);
             } else {
-                vars.setup(SnapshotList.list(parent.group()), index);
+                SnapshotList list = SnapshotList.list(parent.group());
+                list.select(snapshot);
+                vars.setup(list);
             }
             hide();
         });

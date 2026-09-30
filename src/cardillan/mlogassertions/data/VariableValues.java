@@ -13,8 +13,8 @@ public interface VariableValues {
     String buildingPos();
     String buildingDescMulti();
 
+    boolean live();
     boolean valid();
-    float maxColWidth();
 
     int size();
     String label(int index, boolean hex);
