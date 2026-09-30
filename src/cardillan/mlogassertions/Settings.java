@@ -65,8 +65,9 @@ public class Settings {
             t.checkPref(Constants.snapshotOnBreakpoint, false);
             t.checkPref(Constants.snapshotOnAssertion, false);
 
-            t.sliderPref(Constants.variableUpdateFrequency, 15, 5, 60, 5,
-                    i -> Core.bundle.format("setting.variable-update-frequency.every", i),
+            t.sliderPref(Constants.variableUpdateFrequency, 15, 0, 60, 5,
+                    i -> i == 0 ? Core.bundle.get("setting.variable-update-frequency.everyframe")
+                            : Core.bundle.format("setting.variable-update-frequency.ticks", i),
                     i -> VarsDialog.updateFrequency = i);
 
             t.sliderPref(Constants.varsSignificantDigits, 7, 3, 16, 1,
