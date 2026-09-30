@@ -8,7 +8,6 @@ import mindustry.gen.Building;
 
 interface SnapshotList {
     boolean group();
-    BlockDataType dataType();
     String title();
     VariableValues liveData();
 
@@ -41,11 +40,6 @@ interface SnapshotList {
             @Override
             public boolean group() {
                 return false;
-            }
-
-            @Override
-            public BlockDataType dataType() {
-                return live.dataType();
             }
 
             @Override
@@ -192,11 +186,6 @@ interface SnapshotList {
             @Override
             public boolean group() {
                 return true;
-            }
-
-            @Override
-            public BlockDataType dataType() {
-                return snapshots.first().dataType();
             }
 
             @Override

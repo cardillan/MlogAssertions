@@ -28,7 +28,7 @@ public class Settings {
     static final int[] UPDATES_PER_TICK = {1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000};
 
     public static void init() {
-        Vars.ui.settings.addCategory("Mlog Assertions", Icon.warningSmall, t -> {
+        Vars.ui.settings.addCategory("Mlog Dev Tools", Icon.wrench, t -> {
             t.checkPref(Constants.disableBreakpoints, false);
             t.checkPref(Constants.assertsAreBreakpoints, false);
             t.checkPref(Constants.freeCameraOnBreakpoint, true);

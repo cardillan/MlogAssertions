@@ -42,7 +42,7 @@ public class MapIndex {
                 if (tile.build instanceof MemoryBuild memory && seen.add(memory)) memories.add(memory);
             });
 
-            Log.info("[MlogAssertions] found " + processors.size + " processors and " + memories.size + " memory blocks on the map.");
+            Log.info("[Mlog Dev Tools] found " + processors.size + " processors and " + memories.size + " memory blocks on the map.");
         });
 
         Events.on(EventType.BlockBuildEndEvent.class, e -> {

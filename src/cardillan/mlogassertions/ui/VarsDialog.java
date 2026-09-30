@@ -103,7 +103,7 @@ public class VarsDialog extends BaseDialog {
     }
 
     private int cols() {
-        return Math.max(1, (int) (Core.graphics.getWidth() / Scl.scl(snapshots.dataType().maxColWidth)));
+        return Math.max(1, (int) (Core.graphics.getWidth() / Scl.scl(snapshots.view().dataType().maxColWidth)));
     }
 
     private void prev() {
@@ -409,7 +409,7 @@ public class VarsDialog extends BaseDialog {
 
         if (Snapshots.maxSnapshots == 0) {
             // No snapshots: no commands above the list
-            if (snapshots.dataType() == BlockDataType.processor) {
+            if (snapshots.view().dataType() == BlockDataType.processor) {
                 buttons.button("@back", Icon.left, this::hide).name("back");
                 buttons.button("@logic.globals", Icon.list, () -> LogicDialogAddon.globalsDialog.show());
                 if (Core.graphics.isPortrait()) buttons.row();
@@ -428,7 +428,7 @@ public class VarsDialog extends BaseDialog {
         } else {
             // Snapshots are enabled: most commands are displayed above the list
             buttons.button("@back", Icon.left, this::hide).name("back");
-            if (snapshots.dataType() == BlockDataType.processor) {
+            if (snapshots.view().dataType() == BlockDataType.processor) {
                 buttons.button("@logic.globals", Icon.list, () -> LogicDialogAddon.globalsDialog.show());
             }
         }
@@ -545,7 +545,7 @@ public class VarsDialog extends BaseDialog {
                 TextButton.TextButtonStyle style = Styles.flatt;
                 t.defaults().size(360f, 60f).left();
 
-                if (snapshots.dataType() == BlockDataType.memory && snapshots.view().live()) {
+                if (snapshots.view().dataType() == BlockDataType.memory && snapshots.view().live()) {
                     t.button("@varsdialog.clearmemory", Icon.cancel, style, () -> {
                         snapshots.view().clear();
                         Arrays.fill(counter, reset / 2);  // Animate change
@@ -558,7 +558,7 @@ public class VarsDialog extends BaseDialog {
                     dialog.hide();
                 }).marginLeft(12f).row();
 
-                if (snapshots.dataType() == BlockDataType.processor) {
+                if (snapshots.view().dataType() == BlockDataType.processor) {
                     t.button("@varsdialog.copyprintbuffer", Icon.copy, style, () -> {
                         String text = "Printbuffer contents:\n" + snapshots.view().textBuffer();
                         Core.app.setClipboardText(text);
@@ -566,7 +566,7 @@ public class VarsDialog extends BaseDialog {
                     }).marginLeft(12f).row();
                 }
 
-                if (snapshots.dataType() == BlockDataType.memory && snapshots.view().live()) {
+                if (snapshots.view().dataType() == BlockDataType.memory && snapshots.view().live()) {
                     t.button("@varsdialog.importvariables", Icon.download, style, () -> {
                         String text = Core.app.getClipboardText();
                         String error = MemoryText.validate(text, length);
@@ -583,7 +583,7 @@ public class VarsDialog extends BaseDialog {
                 }
 
                 if (compact) {
-                    if (snapshots.dataType() != BlockDataType.properties && snapshots.view() instanceof Snapshot snapshot) {
+                    if (snapshots.view().dataType() != BlockDataType.properties && snapshots.view() instanceof Snapshot snapshot) {
                         t.button("Restore current snapshot", Icon.download, style, this::restoreSnapshot).marginLeft(12f).row();
                     }
 

@@ -17,6 +17,31 @@ public class LogicInstructions {
     public interface AssertInstruction {
     }
 
+    public static class AssertI implements LExecutor.LInstruction, AssertInstruction {
+        public ConditionOp op = ConditionOp.notEqual;
+        public LVar value, compare;
+        public LVar message;
+
+        public AssertI(ConditionOp op, LVar value, LVar compare, LVar message) {
+            this.op = op;
+            this.value = value;
+            this.compare = compare;
+            this.message = message;
+        }
+
+        public AssertI() {
+        }
+
+        @Override
+        public final void run(LExecutor exec) {
+            if (op.test(value, compare)) {
+                Assertions.reset(exec.build);
+            } else {
+                assertion(exec, "assertionFailedWithValues", message, value, compare, op.symbol);
+            }
+        }
+    }
+
     public static class AssertBoundsI implements LExecutor.LInstruction, AssertInstruction {
         public AssertionType type = AssertionType.any;
         public LVar multiple;
@@ -81,7 +106,7 @@ public class LogicInstructions {
             if (ConditionOp.strictEqual.test(expected, actual)) {
                 Assertions.reset(exec.build);
             } else {
-                assertion(exec, "assertionFailedWithValues", message, expected, actual);
+                assertion(exec, "assertionEqualFailedWithValues", message, expected, actual);
             }
         }
     }
@@ -126,7 +151,7 @@ public class LogicInstructions {
                 exec.textBuffer.setLength(flushIndex);
 
                 if (!actual.equals(expected.obj())) {
-                    assertion(exec, "assertionFailedWithValues", message, expected, actual);
+                    assertion(exec, "assertionEqualFailedWithValues", message, expected, actual);
                 } else {
                     Assertions.reset(exec.build);
                 }
@@ -153,7 +178,7 @@ public class LogicInstructions {
             if (expectedType.matches(actualValue)) {
                 Assertions.reset(exec.build);
             } else {
-                assertion(exec, "assertionFailedWithValues", message, expectedType.name(), AssertionDataType.actualType(actualValue));
+                assertion(exec, "assertionEqualFailedWithValues", message, expectedType.name(), AssertionDataType.actualType(actualValue));
             }
         }
     }
@@ -213,7 +238,7 @@ public class LogicInstructions {
 
         @Override
         public final void run(LExecutor exec) {
-            Log.log(level, buildMessage(exec, "[MlogAssertions] ", true, vars[0], vars));
+            Log.log(level, buildMessage(exec, "[Mlog Dev Tools] ", true, vars[0], vars));
         }
     }
 

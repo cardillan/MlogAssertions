@@ -32,7 +32,7 @@ public class MemoryVars extends BaseVariableValues {
             numberField = MemoryBuild.class.getDeclaredField("numberMemory");
             numberField.setAccessible(true);
         } catch (ReflectiveOperationException e) {
-            Log.err("[MlogAssertions] Failed to access MemoryBuild data fields", e);
+            Log.err("[Mlog Dev Tools] Failed to access MemoryBuild data fields", e);
         }
     }
 
@@ -67,7 +67,7 @@ public class MemoryVars extends BaseVariableValues {
             //noinspection unchecked
             return (T) field.get(instance);
         } catch (IllegalAccessException e) {
-            Log.err("[MlogAssertions] Failed to access MemoryBuild data fields", e);
+            Log.err("[Mlog Dev Tools] Failed to access MemoryBuild data fields", e);
             return defaultValue;
         }
     }

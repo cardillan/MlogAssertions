@@ -19,6 +19,7 @@ public class LogicStatements {
     private static final LogicStatementWriter writer = new LogicStatementWriter();
 
     public static void register() {
+        register(AssertStatement::new, AssertStatement.opcode, AssertStatement::read);
         register(AssertBoundsStatement::new, AssertBoundsStatement.opcode, AssertBoundsStatement::read);
         register(AssertEqualsStatement::new, AssertEqualsStatement.opcode, AssertEqualsStatement::read);
         register(AssertFlushStatement::new, AssertFlushStatement.opcode, AssertFlushStatement::read);
@@ -84,11 +85,10 @@ public class LogicStatements {
                     });
                 }, Styles.logict, () -> {
                 }).size(180f, 40f).left().pad(4f).color(t.color);
-
             } else {
                 t.add(label).padLeft(10);
                 // Convert various representations of empty messages to null
-                field(t, message, str -> message = str == null || str.isEmpty() || str.equals("\"\"") || !str.equals("\"") ? "null" : str)
+                field(t, message, str -> message = str == null || str.isEmpty() || str.equals("\"\"") || str.equals("\"") ? "null" : str)
                         .width(LCanvas.getTargetWidth() - Scl.scl(20f)).padRight(3);
                 if (false) {
                     // A delete button - could be activated inadvertently
@@ -183,6 +183,55 @@ public class LogicStatements {
                 if (tokens.length > i) params[j] = tokens[i++];
             }
             return this;
+        }
+    }
+
+    public static class AssertStatement extends AbstractAssertStatement {
+        public static final String opcode = "assert";
+
+        public ConditionOp op = ConditionOp.equal;
+        public String value = "x", compare = "false";
+
+        public AssertStatement() {
+            super("Assert");
+        }
+
+        protected void rebuild(Table t) {
+            t.clearChildren();
+            t.left();
+
+            JumpStatement.addOp(this, t, op, o -> {
+                op = o;
+                rebuild(t);
+            }, value, str -> value = str, compare, str -> compare = str);
+
+            message(t, "message", "Assertion [gold]{1}[] {3} [gold]{2}[] failed.");
+        }
+
+        @Override
+        public LExecutor.LInstruction build(LAssembler builder) {
+            return new LogicInstructions.AssertI(op, builder.var(value), builder.var(compare), builder.var(message));
+        }
+
+        @Override
+        public void write(StringBuilder builder) {
+            writer.start(builder);
+            writer.write(opcode);
+            writer.write(op.name());
+            writer.write(value);
+            writer.write(compare);
+            writer.write(message);
+            writer.end();
+        }
+
+        public static LStatement read(String[] tokens) {
+            AssertStatement stmt = new AssertStatement();
+            int i = 1;
+            if (tokens.length > i) stmt.op = ConditionOp.valueOf(tokens[i++]);
+            if (tokens.length > i) stmt.value = tokens[i++];
+            if (tokens.length > i) stmt.compare = tokens[i++];
+            if (tokens.length > i) stmt.message = tokens[i++];
+            return stmt;
         }
     }
 

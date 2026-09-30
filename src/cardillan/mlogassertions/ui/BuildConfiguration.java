@@ -44,7 +44,7 @@ public class BuildConfiguration {
 
             Vars.content.blocks().each(b -> b instanceof MemoryBlock, b -> b.configurable = true);
         } catch (ReflectiveOperationException e) {
-            Log.err("[MlogAssertions] Failed to replace InputHandler.config", e);
+            Log.err("[Mlog Dev Tools] Failed to replace InputHandler.config", e);
         }
     }
 
@@ -65,7 +65,7 @@ public class BuildConfiguration {
             try {
                 return (Building) configSelected.get(delegate);
             } catch (IllegalAccessException e) {
-                Log.err("[MlogAssertions] Failed to access BlockConfigFragment private fields", e);
+                Log.err("[Mlog Dev Tools] Failed to access BlockConfigFragment private fields", e);
                 return null;
             }
         }
@@ -137,7 +137,7 @@ public class BuildConfiguration {
                         });
                     }
                 } catch (IllegalAccessException e) {
-                    Log.err("[MlogAssertions] Failed to access BlockConfigFragment private fields", e);
+                    Log.err("[Mlog Dev Tools] Failed to access BlockConfigFragment private fields", e);
                 }
             } else {
                 delegate.showConfig(build);

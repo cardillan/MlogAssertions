@@ -9,7 +9,7 @@ public class AssertLogic {
     public static LCategory assertsCategory;
 
     public static void init(){
-        assertsCategory = new LCategory(Constants.assertionsCategory, Color.slate, Icon.warningSmall);
+        assertsCategory = new LCategory(Constants.assertionsCategory, Color.slate, Icon.wrenchSmall);
 
         LogicStatements.register();
     }

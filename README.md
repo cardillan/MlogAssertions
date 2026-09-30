@@ -1,4 +1,6 @@
-# MlogAssertions
+# Mlog Dev Tools
+
+A mod formely known as Mlog Asserions.
 
 > [!TIP]
 > A separate release is made for Mindustry Build 160 and Mindustry Build 154.2 or later (up to 159.7). Use the mod browser to install the correct version of the mod for your version of Mindustry.
@@ -11,6 +13,7 @@ This mod aims to make debugging in Mindustry Logic a bit easier. Provided functi
 * Enhanced **Vars** screen: showing numeric values in full precision and color values, sorting variables by name, copying variables and the text buffer contents to the clipboard.
 * **Memory** screen for inspecting contents of memory blocks, using the same interface as the **Vars** screen. Includes a command to clear (reset) the contents of memory blocks.
 * Settings for overriding instruction limit (the limit can be increased up to 2000 instructions). This allows you to insert debugging code (e.g., additional `print` instructions) into your code, even if the original instruction limit is exceeded.
+* **Snapshots** allow saving, reviewing and restoring the state of logic processors, memory blocks and all other blocks on the map. A snapshot can be created manually or using a logic instruction. A limited number of snapshots is kept for each block, allowing to review the exact block state at the time the smapshot has been created.
 * Custom mlog instructions for performing runtime checks, logging messages, and reporting errors.
 * Indication of stopped processors, processors executing a `wait`, and failed runtime checks.
 
@@ -19,8 +22,8 @@ This mod aims to make debugging in Mindustry Logic a bit easier. Provided functi
 # Vars screen
 
 The **Vars** screen has been enhanced:
-* Additional processor variables (`@unit`, `@ipt`) are included.
-* Numeric values are displayed in full precision. Integer values are clearly distinguished from decimal ones.
+* Additional processor variables (the contents of the text buffer, current wait time, `@unit`, `@ipt`) are included.
+* Numeric values are displayed in configurable precision. Integer values are clearly distinguished from decimal ones.
 * Numeric values in the color range are formatted as color literals (e.g., `%e55454ff`), the color itself is presented using a glyph.
 * Option to choose between formatting the numbers in hexadecimal or decimal base (including memory cell addresses).
 * Option to sort variables by name or revert to their original order.
@@ -33,11 +36,55 @@ By tapping a memory block, a configuration button is now displayed. The button o
 
 The table kept on the clipboard may be modified (for example in a spreadsheet) and imported back into the memory block. The columns of the table are separated by tabs, and the address of a cell is always given in decimal. Strings are written as literals enclosed in quotes, with the characters which would either be lost or break the table encoded using escape sequences (`\n`, `\"`, `\\`, `\uXXXX`). Numbers may be entered in the decimal, color, hexadecimal or binary form, and values which are not finite are written and imported as `null`, as they are not representable in memory blocks. Lines which cannot be parsed are reported and skipped, and the memory block is only changed once the whole table has been parsed. Values having no representation in the text form (references to units, buildings and contents) are exported as well, but cannot be restored.
 
+# Snapshots
+
+A snapshot captures the state of a processor (all its variables), memory block (all cells) or a general block (all senseable properties). The mod allows creating and viewing snapshots.
+
+## Snapshot types
+
+There are three types of snapshots: _isolated_, _connected_ and _global_. Isolated keep a state of just a single block. Connected keeps the state of a block plus the states of all blocks whose references are found in the variables of the central block. A global snapshot holds the state of all _logic_ blocks on the map (i.e., only processors and memory cells, not all blocks in general).
+
+Snapshots are always assigned to a specific block and are kept in a list for that block. When the number of snapshots reaches a (configurable) limit, older snapshots get removed from each block.
+
+Connected and global snaphots are reachable from any block included in them. A snapshot ceases to exist when it ages out of all blocks contained in it.
+
+> [!NOTE]
+> Snapshots aren't saved with the map; when the map is closed, all snapshots are lost.
+
+## Snapshot creation and usage
+
+A connected snapshot can be created from an UI, using the Vars/Memory/Properties screens, or (in case of processors and memory cells) using the block configuration menu.
+
+A `snapshot` instruction can create any type of snapshot, using any block as the central one. There's no rate limit on creating snaphsots, but obviously there can be performance problems when the feature is abused.
+
+Snapshots can be inspected using the Vars/Memory/Properties screens. A processor or memory state can be restored from a snapshot.
+
+A snapshot can be deleted from the UI.
+
+## User interface
+
+The memory block gets a configuration menu for creating and viewing snapshots. The processors' configuration menu is enhanced with buttons for creating and viewing snapshots. The Properties screen for any block can be opened by tripple-tapping the block (the delay is configurable in settings, setting the delay to 0 disables the feature).
+
+A brief help screen is available on the Vars/Memory/Properties screens.
+
+## Settings
+
+Snapshots can be completely deactivated in settings by seting the maximum number of kept snapshots to 0. When disabled, snapshots can'T be created in any wany and no snapshot-related elements appear in the UI.
+
+It is possible to activate creating a snapshot when a breakpoint it hit or an assertion fails.
+
 # Custom instructions
 
 The custom instructions are used by [Mindcode](https://github.com/cardillan/mindcode) to provide debugging support or perform runtime checks. They can be used by other compilers too or by a manually written mlog.
 
 When an assertion fails, the program execution stops at the given instruction, and an accompanying message is displayed above the processor.
+
+## Instruction `assert`
+
+This instruction asserts that the given condition is true. The instruction takes these parameters:
+
+* `value`, `operator`, `comparison`: specifies the condition to be checked. 
+* `message`: the error message to display in case the assertion fails. In the UI, the field is only displayed after tapping a button. The message may contain placeholders in the form `{1}`, `{2}`  or `{3}` for `value`, `comparison` and `operator`. Additionally, a variable name enclosed in curly braces (`{` and `}`) is replaced with the actual variable value. If the message is not a string or is an empty string, a default message is displayed.
 
 ## Instruction `assertbounds` 
 
@@ -55,7 +102,7 @@ This is a complex instruction, most useful to verify the value of a variable use
 * `value`: the value being tested. Corresponds to the `{2}` message placeholder.
 * `opMax`: one of `lessThan` or `lessThanEq`, specifies whether the maximum value is included in the allowed range. Corresponds to the `{5}` message placeholder.
 * `max`: the maximum allowed value. Corresponds to the `{3}` message placeholder.
-* `message`: the error message to display in case the assertion fails. The message may contain placeholders in the form `{1}` to `{5}`, corresponding to the values and instruction parameters described above. If the message is not a string or is an empty string, a default message is displayed.
+* `message`: the error message to display in case the assertion fails. In the UI, the field is only displayed after tapping a button. The message may contain placeholders in the form `{1}` to `{5}`, corresponding to the values and instruction parameters described above. Additionally, a variable name enclosed in curly braces (`{` and `}`) is replaced with the actual variable value. If the message is not a string or is an empty string, a default message is displayed.
 
 ## Instruction `assertequals` 
 
@@ -63,7 +110,7 @@ This instruction compares an actual value to an expected value and displays the 
 
 * `expected`: the expected value.
 * `actual`: the actual value.
-* `message`: the error message to display in case the assertion fails. The message may contain placeholders in the form `{1}` and `{2}` for the expected and actual values. If the message is not a string or is an empty string, a default message is displayed.
+* `message`: the error message to display in case the assertion fails. In the UI, the field is only displayed after tapping a button. The message may contain placeholders in the form `{1}` and `{2}` for the expected and actual values. Additionally, a variable name enclosed in curly braces (`{` and `}`) is replaced with the actual variable value. If the message is not a string or is an empty string, a default message is displayed.
 
 The values are compared using the `strictEqual` mlog operator.
 
@@ -97,7 +144,7 @@ This instruction compares the runtime data type to an expected value and display
   * `writable`
   * `senseable`
 * `actualValue`: the value being tested.
-* `message`: the error message to display in case the assertion fails. The message may contain placeholders in the form `{1}` and `{2}` for the expected and actual values. If the message is not a string or is an empty string, a default message is displayed.
+* `message`: the error message to display in case the assertion fails. In the UI, the field is only displayed after tapping a button. The message may contain placeholders in the form `{1}` and `{2}` for the expected and actual values. Additionally, a variable name enclosed in curly braces (`{` and `}`) is replaced with the actual variable value. If the message is not a string or is an empty string, a default message is displayed.
 
 > [!NOTE]
 > This instruction is still being developed and may not work as expected for some combinations of parameters. 
@@ -114,7 +161,7 @@ This instruction compares the output generated by the program to an expected str
 
 * `position`: the position in the text buffer at the beginning of the tested code (must be the variable used by the `assertflush` instruction).
 * `expected`: the expected string.
-* `message`: the error message to display in case the assertion fails. The message may contain placeholders in the form `{1}` and `{2}` for the expected and actual values. If the message is not a string or is an empty string, a default message is displayed.
+* `message`: the error message to display in case the assertion fails. In the UI, the field is only displayed after tapping a button. The message may contain placeholders in the form `{1}` and `{2}` for the expected and actual values. Additionally, a variable name enclosed in curly braces (`{` and `}`) is replaced with the actual variable value. If the message is not a string or is an empty string, a default message is displayed.
 
 When the instruction finishes, the text buffer is restored to the state of the previous `assertflush` instruction.
 
@@ -137,7 +184,7 @@ This instruction displays an error message and stops the program execution. The 
 * `message`: the error message to display.
 * `p1` .. `p9`: additional parameters to display in the error message.
 
-If the message contains placeholders in the form `{1}` to `{9}`, they are replaced by the corresponding parameters. If there are other parameters not used by the message, whose value is not the literal `null`, they are appended to the message one by one. String values are enclosed in quotes in this case. Numeric values in the color range are formatted as color literals (e.g., %e55454ff`).
+A variable name enclosed in curly braces (`{` and `}`) in the message is replaced with the actual variable value. If the message contains placeholders in the form `{1}` to `{9}`, they are replaced by the corresponding parameters. If there are other parameters not used by the message, whose value is not the literal `null`, they are appended to the message one by one. String values are enclosed in quotes in this case. Numeric values in the color range are formatted as color literals (e.g., `%e55454ff`).
 
 ## Instruction `log`
 
@@ -147,7 +194,20 @@ This instruction writes a message into the game's log file. It is up to the user
 * `message`: the error message to display.
 * `p1` .. `p9`: additional parameters to display in the error message.
 
-If the message contains placeholders in the form `{1}` to `{9}`, they are replaced by the corresponding parameters. If there are other parameters not used by the message, whose value is not the literal `null`, they are appended to the message one by one. String values are enclosed in quotes in this case. Numeric values in the color range are formatted as color literals (e.g., `%e55454ff`).
+A variable name enclosed in curly braces (`{` and `}`) in the message is replaced with the actual variable value. If the message contains placeholders in the form `{1}` to `{9}`, they are replaced by the corresponding parameters. If there are other parameters not used by the message, whose value is not the literal `null`, they are appended to the message one by one. String values are enclosed in quotes in this case. Numeric values in the color range are formatted as color literals (e.g., `%e55454ff`).
+
+## Instruction `snapshot`
+
+Creates a snapshot of a given block. The instruction takes these parameters:
+
+* `type`: the type of snapshot to create:
+  * `isolated`: captures only the state of the target block.
+  * `connected`: captures the state of the target block plus the states of all blocks whose references are found in the variables of the target block - if the target block is a processor or a memory block.
+  * `global`: captures the state of all processors and memory blocks on the map (regular blocks are not included).
+* `target`: the target block (not used for `global` snapshots).
+* `name`: the name of the snapshot.
+
+There's no rate limit on creating snaphsots, but obviously there can be performance problems when the feature is abused.
 
 # Settings
 
@@ -178,3 +238,34 @@ To indicate the stopped and waiting processors, the mod needs to inspect the sta
 ## Visual warning
 
 Governs the use of visual effects on the map itself to draw attention to stopped or failed processors. Effects can be turned off completely, performed just once when the processor is stopped or failed, or performed periodically with a given interval. 
+
+## Tripple tap speed
+
+Triple-tapping a block within the configured interval opens the Sensors/Vars/Memory screen for the block.
+
+## Snapshot limit
+
+The maximum number of snapshots kept **per block**. Setting this value to 0 deactivates snapshots entirely and removes snapshot-related features from the UI.
+
+> [!NOTE]
+> Large values may cause memory or performance issues.
+
+## Take a snapshot on a breakpoint
+
+When enabled, a connected snapshot will be automatically created when a breakpoint is triggered.
+
+## Take a snapshot on a failed assertion
+
+When enabled, an isolated snapshot will be automatically created when an assertion fails.
+
+## Variable updates
+
+Number of game ticks between the frequency of variable updates on the Vars/Memory/Properties screens.
+
+## Significant digits
+
+THe number of significant digits used when displaying decimal numbers in the Vars/Memory/Properties screens.
+
+## Alignment
+
+The default alignment of values displayed on the Vars/Memory/Sensors screens.
