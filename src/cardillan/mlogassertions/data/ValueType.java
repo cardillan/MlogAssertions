@@ -16,6 +16,7 @@ public enum ValueType {
     unit        ("unit",     false, Pal.logicUnits),
     team        ("team",     false, Pal.logicControl),
     enumerated  ("enum",     false, Pal.logicIo),
+    dead        ("dead",     false, Pal.rubble),
     unknown     ("unknown",  false, Color.white),
     ;
 

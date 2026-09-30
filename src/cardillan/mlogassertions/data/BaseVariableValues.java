@@ -91,9 +91,9 @@ public abstract class BaseVariableValues implements VariableValues {
             } else {
                 return obj == null ? "null" :
                        obj instanceof MappableContent content ? content.name :
-                       obj instanceof Content ? "[content]" :
-                       obj instanceof Building build ? build.block.name + pos(build.x(), build.y()) :
-                       obj instanceof Unit unit ? unit.type.name + pos(unit.x(), unit.y()) :
+                       obj instanceof Content c ? "[content]" :
+                       obj instanceof Building build ? build.block.name + pos(build.x(), build.y()) + id(build.id) :
+                       obj instanceof Unit unit ? unit.type.name + pos(unit.x(), unit.y()) + id(unit.id) :
                        obj instanceof Enum<?> e ? e.name() :
                        obj instanceof Team team ? team.name :
                        "[object]";
@@ -125,7 +125,11 @@ public abstract class BaseVariableValues implements VariableValues {
     }
 
     public static String pos(float x, float y) {
-        return String.format("\n[gray](%.0f, %.0f)", x / Vars.tilesize, y / Vars.tilesize);
+        return String.format(" [gray](%.0f,\u00A0%.0f)", x / Vars.tilesize, y / Vars.tilesize);
+    }
+
+    public static String id(int id) {
+        return " #" + Integer.toHexString(id);
     }
 
     @Override
@@ -137,9 +141,9 @@ public abstract class BaseVariableValues implements VariableValues {
             return  objval == null ? ValueType.nothing :
                     objval instanceof String ? ValueType.string :
                     objval instanceof Content ? ValueType.content :
-                    objval instanceof Building ? ValueType.building :
+                    objval instanceof Building b ? b.dead() ? ValueType.dead : ValueType.building :
                     objval instanceof Team ? ValueType.team :
-                    objval instanceof Unit ? ValueType.unit :
+                    objval instanceof Unit u ? u.dead() ? ValueType.dead : ValueType.unit :
                     objval instanceof Enum<?> ? ValueType.enumerated :
                     ValueType.unknown;
         } else {

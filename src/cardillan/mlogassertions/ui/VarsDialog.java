@@ -269,7 +269,7 @@ public class VarsDialog extends BaseDialog {
             t.button(Icon.infoCircle, style, this::help);
 
             if (compact) {
-                t.button(Icon.right, style, this::next).padLeft(15f).get().setDisabled(() -> snapshots.hasNext());
+                t.button(Icon.right, style, this::next).padLeft(15f).get().setDisabled(() -> !snapshots.hasNext());
             }
         }).growX().fillX();
 
@@ -454,9 +454,8 @@ public class VarsDialog extends BaseDialog {
 
     private void help() {
         BaseDialog dialog = new BaseDialog("Help");
-        dialog.titleTable.visible(() -> false);
+        dialog.titleTable.visible(() -> false).setHeight(0f);
         dialog.cont.pane(p -> {
-            p.margin(10f);
             p.table(Tex.button, t -> {
                 TextButton.TextButtonStyle style = Styles.squareTogglet;
                 t.defaults().fillX().pad(6f, 15f, 6f, 15f).left();
@@ -473,13 +472,27 @@ public class VarsDialog extends BaseDialog {
                 help(t, Icon.folderOpen, "Show a list of this block's snapshots.");
                 help(t, Icon.logic, "Navigate to a different block contained in this snapshot.");
                 help(t, Icon.box, "Create a new snapshot of this block and all connected blocks.");
-                help(t, Icon.download, "Restore the current processor or memory block's state from a snapshot.");
-                help(t, Icon.trash, "Delete the current snapshot.");
+                if (!compact) {
+                    help(t, Icon.download, "Restore the current processor or memory block's state from a snapshot.");
+                    help(t, Icon.trash, "Delete the current snapshot.");
+                }
                 help(t, Icon.infoCircle, "Show this help.");
+
+                t.add("Edit commands").colspan(3).color(Pal.accent).center().padBottom(15F).get().setAlignment(Align.center);
+                t.row();
+
+                help(t, Icon.cancel, "Reset memory block to all zeroes.");
+                help(t, Icon.copy, "Copy variable values to Clipboard.");
+                help(t, Icon.download, "Import memory block values from Clipboard.");
+                if (compact) {
+                    help(t, Icon.download, "Restore the current processor or memory block's state from a snapshot.");
+                    help(t, Icon.trash, "Delete the current snapshot.");
+                }
+                help(t, Icon.trash, "Delete all snapshots of this block (they may still be accessible as part of connected or global snapshots).");
 
                 t.defaults().size(180f, 60f).growX().colspan(3).pad(15f);
                 t.button("@back", Icon.left, Styles.flatt, dialog::hide).center().marginLeft(12f).name("back");
-            }).pad(50f);
+            }).pad(10f).padRight(30f);
         });
 
         dialog.addCloseListener();
@@ -558,14 +571,6 @@ public class VarsDialog extends BaseDialog {
                     dialog.hide();
                 }).marginLeft(12f).row();
 
-                if (snapshots.view().dataType() == BlockDataType.processor) {
-                    t.button("@varsdialog.copyprintbuffer", Icon.copy, style, () -> {
-                        String text = "Printbuffer contents:\n" + snapshots.view().textBuffer();
-                        Core.app.setClipboardText(text);
-                        dialog.hide();
-                    }).marginLeft(12f).row();
-                }
-
                 if (snapshots.view().dataType() == BlockDataType.memory && snapshots.view().live()) {
                     t.button("@varsdialog.importvariables", Icon.download, style, () -> {
                         String text = Core.app.getClipboardText();
@@ -593,7 +598,7 @@ public class VarsDialog extends BaseDialog {
                     }
                 }
 
-                t.button("Delete all snapshots", Icon.trash, style, () -> {
+                t.button("Delete all snapshots of this block", Icon.trash, style, () -> {
                     Snapshots.deleteBuilding(snapshots.view().building());
                     dialog.hide();
                     first();
