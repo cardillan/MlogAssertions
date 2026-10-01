@@ -2,6 +2,7 @@ package cardillan.mlogassertions.ui;
 
 import arc.Core;
 import arc.graphics.Color;
+import arc.graphics.g2d.TextureRegion;
 import arc.math.Mathf;
 import arc.scene.style.TextureRegionDrawable;
 import arc.scene.ui.Button;
@@ -14,7 +15,9 @@ import mindustry.Vars;
 import mindustry.gen.Building;
 import mindustry.gen.Icon;
 import mindustry.gen.Tex;
+import mindustry.gen.Unit;
 import mindustry.graphics.Pal;
+import mindustry.logic.Senseable;
 import mindustry.ui.Styles;
 import mindustry.ui.dialogs.BaseDialog;
 import mindustry.world.blocks.logic.LogicBlock;
@@ -90,11 +93,10 @@ public class SnapshotsDialog extends BaseDialog {
         b.clearChildren();  // ? - from arc
         b.margin(12f);
         int groupSize = groupSize(snapshot);
-        Building build = snapshot.building();
 
         b.table(t -> {
             if (group) {
-                Image image = new Image(new TextureRegionDrawable(build.block.uiIcon),
+                Image image = new Image(new TextureRegionDrawable(snapshot.icon()),
                         Vars.mobile ? Color.white : Color.lightGray).setScaling(Scaling.fit);
                 t.add(image).size(40f).right().top().pad(4f).padRight(14f);
             } else {

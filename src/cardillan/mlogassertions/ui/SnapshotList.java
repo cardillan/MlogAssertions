@@ -5,6 +5,7 @@ import arc.struct.Seq;
 import arc.util.Log;
 import cardillan.mlogassertions.data.*;
 import mindustry.gen.Building;
+import mindustry.logic.Senseable;
 
 interface SnapshotList {
     boolean group();
@@ -27,13 +28,13 @@ interface SnapshotList {
 
     Seq<Snapshot> list();
 
-    static SnapshotList forBuild(final Building building) {
+    static SnapshotList forBuild(final Senseable entity) {
         return new SnapshotList() {
             static final int OBSOLETE = -2;
             static final int LIVE = -1;
 
-            final VariableValues live = Snapshots.liveView(building);
-            final Queue<Snapshot> queue = Snapshots.get(building);
+            final VariableValues live = Snapshots.liveView(entity);
+            final Queue<Snapshot> queue = Snapshots.get(entity);
             VariableValues view = live;
             int index = LIVE;
 

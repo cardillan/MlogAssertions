@@ -19,6 +19,7 @@ import mindustry.gen.Icon;
 import mindustry.gen.Tex;
 import mindustry.graphics.Pal;
 import mindustry.logic.LCanvas;
+import mindustry.logic.Senseable;
 import mindustry.ui.Styles;
 import mindustry.ui.dialogs.BaseDialog;
 
@@ -42,7 +43,7 @@ public class VarsDialog extends BaseDialog {
 
     private static int lastSnapshotId = -1;
 
-    private Building building;
+    private Senseable entity;
 
     // A list of snapshots that can be browsed through
     private SnapshotList snapshots;
@@ -56,8 +57,8 @@ public class VarsDialog extends BaseDialog {
     boolean wasPortrait, compact, paused;
     int rows, cols;
 
-    public VarsDialog(Building building) {
-        this(SnapshotList.forBuild(building));
+    public VarsDialog(Building entity) {
+        this(SnapshotList.forBuild(entity));
     }
 
     private VarsDialog(SnapshotList snapshots) {
@@ -123,7 +124,7 @@ public class VarsDialog extends BaseDialog {
     }
 
     private void createSnapshot() {
-        Snapshots.create(snapshots.view().building(), "User snapshot");
+        Snapshots.create(snapshots.view().entity(), "User snapshot");
         rebuildTitle(titleTable);
     }
 
@@ -132,7 +133,7 @@ public class VarsDialog extends BaseDialog {
         if (snapshots.view() instanceof Snapshot snapshot) {
             if (snapshot.writeTo(snapshots.liveData())) {
                 ui.showInfo("The processor's state has been restored from the snapshot.");
-                setup(SnapshotList.forBuild(snapshot.building()));
+                setup(SnapshotList.forBuild(snapshot.entity()));
                 return;
             }
         }
@@ -165,7 +166,7 @@ public class VarsDialog extends BaseDialog {
             }
 
             if (snapshots.group()) {
-                t.image(view.building().block.uiIcon).size(64f).pad(5f);
+                t.image(view.icon()).size(64f).pad(5f);
 
                 t.table(left -> {
                     left.add(view.buildingDescMulti()).growX().ellipsis(true).wrap(false).top().left();
@@ -179,12 +180,12 @@ public class VarsDialog extends BaseDialog {
             } else {
                 t.table(title -> {
                     title.table(tBlock -> {
-                        tBlock.image(view.building().block.uiIcon).size(iconLarge).padRight(5f);
+                        tBlock.image(view.icon()).size(iconLarge).padRight(5f);
                         tBlock.table(text -> {
-                            text.add(view.buildingDesc()).color(Color.white).growX().ellipsis(true).wrap(false).get().setAlignment(Align.left);
+                            text.add(view.entityDesc()).color(Color.white).growX().ellipsis(true).wrap(false).get().setAlignment(Align.left);
                             text.row();
                             text.table(tProperties -> {
-                                tProperties.add(view.buildingPos()).color(Color.gray).growX().ellipsis(true).wrap(false).get().setAlignment(Align.left);
+                                tProperties.add(view.entityPos()).color(Color.gray).growX().ellipsis(true).wrap(false).get().setAlignment(Align.left);
                                 if (snapshot != null) {
                                     tProperties.add(snapshot.time()).color(Color.gray).growX().get().setAlignment(Align.right);
                                 }
@@ -250,8 +251,8 @@ public class VarsDialog extends BaseDialog {
 
             // Select a snapshot from the current block's list of snapshots
             t.button(Icon.folderOpen, style,
-                            () -> new SnapshotsDialog(VarsDialog.this, snapshots.group() ? SnapshotList.forBuild(building) : snapshots).show())
-                    .get().setDisabled(() -> !Snapshots.hasSnapshots(building));
+                            () -> new SnapshotsDialog(VarsDialog.this, snapshots.group() ? SnapshotList.forBuild(entity) : snapshots).show())
+                    .get().setDisabled(() -> !Snapshots.hasSnapshots(entity));
 
             // Select a snapshot from a group snapshot
             t.button(Icon.logic, style,
@@ -262,7 +263,7 @@ public class VarsDialog extends BaseDialog {
             t.button(Icon.box, style, this::createSnapshot).disabled(snapshot != null);
 
             if (!compact) {
-                t.button(Icon.download, style, this::restoreSnapshot).disabled(snapshot == null || snapshot.dataType() == BlockDataType.properties);
+                t.button(Icon.download, style, this::restoreSnapshot).disabled(snapshot == null || snapshot.dataType() == EntityDataType.entity);
                 t.button(Icon.trash, style, this::removeSnapshot).disabled(!snapshots.canRemove());
             }
 
@@ -313,7 +314,7 @@ public class VarsDialog extends BaseDialog {
         VariableValues view = snapshots.view();
         view.setView(false, false, false);
         lastSnapshotId = view instanceof Snapshot s ? s.id() : -1;
-        building = view.building();
+        entity = view.entity();
 
         length = view.size();
         counter = new float[length];
@@ -409,7 +410,7 @@ public class VarsDialog extends BaseDialog {
 
         if (Snapshots.maxSnapshots == 0) {
             // No snapshots: no commands above the list
-            if (snapshots.view().dataType() == BlockDataType.processor) {
+            if (snapshots.view().dataType() == EntityDataType.processor) {
                 buttons.button("@back", Icon.left, this::hide).name("back");
                 buttons.button("@logic.globals", Icon.list, () -> LogicDialogAddon.globalsDialog.show());
                 if (Core.graphics.isPortrait()) buttons.row();
@@ -428,7 +429,7 @@ public class VarsDialog extends BaseDialog {
         } else {
             // Snapshots are enabled: most commands are displayed above the list
             buttons.button("@back", Icon.left, this::hide).name("back");
-            if (snapshots.view().dataType() == BlockDataType.processor) {
+            if (snapshots.view().dataType() == EntityDataType.processor) {
                 buttons.button("@logic.globals", Icon.list, () -> LogicDialogAddon.globalsDialog.show());
             }
         }
@@ -558,7 +559,7 @@ public class VarsDialog extends BaseDialog {
                 TextButton.TextButtonStyle style = Styles.flatt;
                 t.defaults().size(360f, 60f).left();
 
-                if (snapshots.view().dataType() == BlockDataType.memory && snapshots.view().live()) {
+                if (snapshots.view().dataType() == EntityDataType.memory && snapshots.view().live()) {
                     t.button("@varsdialog.clearmemory", Icon.cancel, style, () -> {
                         snapshots.view().clear();
                         Arrays.fill(counter, reset / 2);  // Animate change
@@ -571,7 +572,7 @@ public class VarsDialog extends BaseDialog {
                     dialog.hide();
                 }).marginLeft(12f).row();
 
-                if (snapshots.view().dataType() == BlockDataType.memory && snapshots.view().live()) {
+                if (snapshots.view().dataType() == EntityDataType.memory && snapshots.view().live()) {
                     t.button("@varsdialog.importvariables", Icon.download, style, () -> {
                         String text = Core.app.getClipboardText();
                         String error = MemoryText.validate(text, length);
@@ -588,7 +589,7 @@ public class VarsDialog extends BaseDialog {
                 }
 
                 if (compact) {
-                    if (snapshots.view().dataType() != BlockDataType.properties && snapshots.view() instanceof Snapshot snapshot) {
+                    if (snapshots.view().dataType() != EntityDataType.entity && snapshots.view() instanceof Snapshot snapshot) {
                         t.button("Restore current snapshot", Icon.download, style, this::restoreSnapshot).marginLeft(12f).row();
                     }
 
@@ -599,7 +600,7 @@ public class VarsDialog extends BaseDialog {
                 }
 
                 t.button("Delete all snapshots of this block", Icon.trash, style, () -> {
-                    Snapshots.deleteBuilding(snapshots.view().building());
+                    Snapshots.deleteEntity(snapshots.view().entity());
                     dialog.hide();
                     first();
                 }).marginLeft(12f).row();

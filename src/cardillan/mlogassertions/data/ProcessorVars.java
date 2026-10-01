@@ -73,17 +73,17 @@ public class ProcessorVars extends BaseVariableValues {
 
         rawId = text;
         formattedId = new String(buffer, 0, l);
-        formattedIdMulti = new String(bufferM, 0, l) + " [gray](" + buildingPos() + ")";
+        formattedIdMulti = new String(bufferM, 0, l) + " [gray](" + entityPos() + ")";
     }
 
     @Override
-    public BlockDataType dataType() {
-        return BlockDataType.processor;
+    public EntityDataType dataType() {
+        return EntityDataType.processor;
     }
 
     @Override
-    public String buildingDesc() {
-        if (id == null || !(id.obj() instanceof String text)) return super.buildingDesc();
+    public String entityDesc() {
+        if (id == null || !(id.obj() instanceof String text)) return super.entityDesc();
         if (rawId != text) updateDesc(text);
         return formattedId;
     }

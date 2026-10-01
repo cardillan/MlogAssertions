@@ -7,9 +7,14 @@ import arc.struct.Queue;
 import arc.struct.Seq;
 import arc.util.Log;
 import cardillan.mlogassertions.logic.SnapshotType;
+import mindustry.ai.types.LogicAI;
+import mindustry.entities.units.UnitController;
 import mindustry.game.EventType;
 import mindustry.gen.Building;
+import mindustry.gen.Entityc;
 import mindustry.gen.Groups;
+import mindustry.gen.Unit;
+import mindustry.logic.Senseable;
 import mindustry.world.blocks.logic.LogicBlock;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
 import mindustry.world.blocks.logic.MemoryBlock;
@@ -20,7 +25,7 @@ public class Snapshots {
     private static int id = 0;
 
     // Snapshots
-    private static final ObjectMap<Building, Queue<Snapshot>> snapshots = new ObjectMap<>();
+    private static final ObjectMap<Senseable, Queue<Snapshot>> snapshots = new ObjectMap<>();
 
     public static void init() {
         Events.on(EventType.ResetEvent.class, e -> {
@@ -47,55 +52,63 @@ public class Snapshots {
         }
     }
 
-    public static VariableValues liveView(Building building) {
-        return building instanceof MemoryBlock.MemoryBuild build ? new MemoryVars(build) :
-                building instanceof LogicBlock.LogicBuild build ? new ProcessorVars(build) :
-                new SensorVars(building);
+    public static VariableValues liveView(Senseable entity) {
+        return entity instanceof MemoryBuild build ? new MemoryVars(build) :
+                entity instanceof LogicBuild build ? new ProcessorVars(build) :
+                        new SensorVars(entity);
     }
 
-    public static boolean hasSnapshots(Building building) {
-        Queue<Snapshot> queue = snapshots.get(building);
+    public static boolean hasSnapshots(Senseable entity) {
+        Queue<Snapshot> queue = snapshots.get(entity);
         return queue != null && queue.size > 0;
     }
 
-    public static Queue<Snapshot> get(Building building) {
-        snapshots.putMissing(building, new Queue<>());
-        return snapshots.get(building);
+    public static Queue<Snapshot> get(Senseable entity) {
+        snapshots.putMissing(entity, new Queue<>());
+        return snapshots.get(entity);
     }
 
 
-    public static void create(Building building, String name) {
-        create(building, SnapshotType.connected, name);
+    public static void create(Senseable entity, String name) {
+        create(entity, SnapshotType.connected, name);
     }
 
-    public static void create(Building building, SnapshotType type, String name) {
+    public static void create(Senseable entity, SnapshotType type, String name) {
         if (maxSnapshots == 0) return;
 
-        VariableValues content = liveView(building);
+        VariableValues content = liveView(entity);
         if (!content.valid()) return;
 
         id++;
-        Seq<Building> buildings = new Seq<>();
+        Seq<Senseable> entities = new Seq<>();
         switch (type) {
-            case isolated -> buildings.add(building);
+            case isolated -> entities.add(entity);
             case connected -> {
-                buildings.add(building);
+                entities.add(entity);
                 ObjectSet<Object> set = new ObjectSet<>();
-                content.eachObject(b -> {
-                    if (b instanceof Building build && set.add(b)) buildings.add(build);
+                content.eachObject(o -> {
+                    if (o instanceof Building build && set.add(o)) entities.add(build);
+                    if (o instanceof Unit unit && set.add(o)) entities.add(unit);
                 });
+                if (entity instanceof LogicBuild) {
+                    Groups.unit.each(u -> {
+                        if (u.controller() instanceof LogicAI ai && ai.controller == entity && set.add(u)) {
+                            entities.add(u);
+                        }
+                    });
+                }
             }
             case global -> {
-                buildings.addAll(MapIndex.processors);
-                buildings.addAll(MapIndex.memories);
+                entities.addAll(MapIndex.processors);
+                entities.addAll(MapIndex.memories);
             }
         }
 
         Seq<Snapshot> group = type == SnapshotType.isolated ? null : new Seq<>();
 
-        for (Building b : buildings) {
-            Queue<Snapshot> queue = get(b);
-            Snapshot snapshot = create(b, type, group, name);
+        for (Senseable e : entities) {
+            Queue<Snapshot> queue = get(e);
+            Snapshot snapshot = create(e, type, group, name);
             if (snapshot != null) {
                 queue.addFirst(snapshot);
                 if (queue.size > maxSnapshots) queue.removeLast();
@@ -103,8 +116,8 @@ public class Snapshots {
         }
     }
 
-    public static void deleteBuilding(Building building) {
-        snapshots.get(building).clear();
+    public static void deleteEntity(Senseable entity) {
+        snapshots.get(entity).clear();
     }
 
     public static void deleteAll() {
@@ -112,11 +125,11 @@ public class Snapshots {
         id = 0;
     }
 
-    private static Snapshot create(Building building, SnapshotType type, Seq<Snapshot> group, String name) {
+    private static Snapshot create(Senseable entity, SnapshotType type, Seq<Snapshot> group, String name) {
         Snapshot snapshot =
-                building instanceof MemoryBlock.MemoryBuild build ? MemorySnapshot.create(build, type, id, group, name) :
-                building instanceof LogicBlock.LogicBuild build ? ProcessorSnapshot.create(build, type, id, group, name) :
-                SensorSnapshot.create(building, type, id, group, name);
+                entity instanceof MemoryBlock.MemoryBuild build ? MemorySnapshot.create(build, type, id, group, name) :
+                        entity instanceof LogicBuild build ? ProcessorSnapshot.create(build, type, id, group, name) :
+                                SensorSnapshot.create(entity, type, id, group, name);
 
         if (group != null && snapshot != null) group.add(snapshot);
         return snapshot;
