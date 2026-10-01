@@ -2,8 +2,9 @@ package cardillan.mlogassertions;
 
 import arc.Events;
 import cardillan.mlogassertions.data.MapIndex;
-import cardillan.mlogassertions.data.Snapshots;
+import cardillan.mlogassertions.data.SnapshotManager;
 import cardillan.mlogassertions.logic.AssertLogic;
+import cardillan.mlogassertions.logic.Instrumentation;
 import cardillan.mlogassertions.ui.Assertions;
 import cardillan.mlogassertions.ui.LogicDialogAddon;
 import cardillan.mlogassertions.ui.BuildConfiguration;
@@ -17,12 +18,13 @@ public class MlogAssertions extends Mod {
         Events.on(EventType.ClientLoadEvent.class, e -> {
             Settings.init();
 
-            // Logic statements
+            // Logic
             AssertLogic.init();
+            Instrumentation.init();
 
             // Map
             MapIndex.init();
-            Snapshots.init();
+            SnapshotManager.init();
 
             // UI
             Assertions.init();

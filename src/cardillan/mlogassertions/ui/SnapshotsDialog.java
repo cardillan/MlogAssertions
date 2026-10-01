@@ -11,13 +11,12 @@ import arc.scene.ui.layout.Scl;
 import arc.struct.Seq;
 import arc.util.Scaling;
 import cardillan.mlogassertions.data.*;
+import cardillan.mlogassertions.logic.SnapshotType;
 import mindustry.Vars;
 import mindustry.gen.Building;
 import mindustry.gen.Icon;
 import mindustry.gen.Tex;
-import mindustry.gen.Unit;
 import mindustry.graphics.Pal;
-import mindustry.logic.Senseable;
 import mindustry.ui.Styles;
 import mindustry.ui.dialogs.BaseDialog;
 import mindustry.world.blocks.logic.LogicBlock;
@@ -25,7 +24,7 @@ import mindustry.world.blocks.logic.MemoryBlock;
 
 public class SnapshotsDialog extends BaseDialog {
     VarsDialog vars;
-    SnapshotList snapshots;
+    Snapshots snapshots;
     Seq<Snapshot> data;
     Snapshot expanded = null;
     boolean group;
@@ -34,7 +33,7 @@ public class SnapshotsDialog extends BaseDialog {
     float scroll = 0f;
     float w;
 
-    public SnapshotsDialog(VarsDialog vars, SnapshotList snapshots) {
+    public SnapshotsDialog(VarsDialog vars, Snapshots snapshots) {
         super("Snapshots");
         this.vars = vars;
         this.snapshots = snapshots;
@@ -96,9 +95,12 @@ public class SnapshotsDialog extends BaseDialog {
 
         b.table(t -> {
             if (group) {
-                Image image = new Image(new TextureRegionDrawable(snapshot.icon()),
-                        Vars.mobile ? Color.white : Color.lightGray).setScaling(Scaling.fit);
-                t.add(image).size(40f).right().top().pad(4f).padRight(14f);
+                TextureRegion icon = snapshot.icon();
+                if (icon != null) {
+                    Image image = new Image(new TextureRegionDrawable(icon),
+                            Vars.mobile ? Color.white : Color.lightGray).setScaling(Scaling.fit);
+                    t.add(image).size(40f).right().top().pad(4f).padRight(14f);
+                }
             } else {
                 t.image(snapshot.type().icon).color(Pal.accent).size(48f).right().top().padRight(10f);
             }
@@ -147,11 +149,14 @@ public class SnapshotsDialog extends BaseDialog {
         }).center().width(width).padTop(10f).margin(8f);
 
         b.clicked(() -> {
-            if (parent == null) {
+            if (snapshot.recording() != null) {
+                Snapshots list = Snapshots.list(snapshot.recording());
+                vars.setup(list);
+            } else if (parent == null) {
                 snapshots.select(snapshot);
                 vars.setup(snapshots);
             } else {
-                SnapshotList list = SnapshotList.list(parent.group());
+                Snapshots list = Snapshots.list(parent.group());
                 list.select(snapshot);
                 vars.setup(list);
             }

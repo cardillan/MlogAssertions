@@ -6,7 +6,6 @@ import mindustry.ctype.Content;
 import mindustry.ctype.MappableContent;
 import mindustry.game.Team;
 import mindustry.gen.Building;
-import mindustry.gen.Entityc;
 import mindustry.gen.Posc;
 import mindustry.gen.Unit;
 import mindustry.logic.Senseable;
@@ -96,6 +95,14 @@ public abstract class BaseVariableValues implements VariableValues {
         return true;
     }
 
+    protected interface Formatter {
+        String format(double num);
+    }
+
+    protected Formatter formatter(int index, boolean hex, int significantDigits) {
+        return null;
+    }
+
     private static final String[] formats = new String[16];
     static {
         for (int i = 0; i < formats.length; i++) formats[i] = "%." + i + "g";
@@ -119,7 +126,10 @@ public abstract class BaseVariableValues implements VariableValues {
             }
         } else {
             double num = num(index);
-            if (num <= COLOR_LIMIT && num > 0) {
+            Formatter formatter = formatter(index, hex, significantDigits);
+            if (formatter != null) {
+                return formatter.format(num);
+            } else if (num <= COLOR_LIMIT && num > 0) {
                 long color = Double.doubleToLongBits(num) & 0xFFFFFFFFL;
                 String str = Integer.toHexString((int) color);
                 if (str.length() < 8) str = "0".repeat(8 - str.length()) + str;

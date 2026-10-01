@@ -577,6 +577,7 @@ public class LogicStatements {
 
         public SnapshotType type = SnapshotType.isolated;
         public String block = "@this";
+        public String steps = "10";
 
         public SnapshotStatement() {
             super("Snapshot");
@@ -586,20 +587,24 @@ public class LogicStatements {
             t.clearChildren();
             t.left();
 
-            select(t, "create", SnapshotType.all, type, o -> type = o, 1, 130f);
-            if (type == SnapshotType.global) {
-                t.add(" snapshot");
+            select(t, "create", SnapshotType.all, type, o -> type = o, 2, 130f);
+            if (type == SnapshotType.recording) {
+                fields(t, "snapshot of the next", false, steps, str -> steps = str).width(75f);
+                fields(t, "steps in", false, block, str -> block = str);
             } else {
-                t.add(" snapshot of ");
-                field(t, block, str -> block = str);
-            }
+                if (type == SnapshotType.global) {
+                    t.add("snapshot");
+                } else {
+                    fields(t, "snapshot of", false, block, str -> block = str);
+                }
 
-            message(t, "name", "Snapshot created at #{@counter}.");
+                message(t, "name", "Snapshot created at #{@counter}.");
+            }
         }
 
         @Override
         public LExecutor.LInstruction build(LAssembler builder) {
-            return new LogicInstructions.SnapshotI(type, builder.var(block), builder.var(message));
+            return new LogicInstructions.SnapshotI(type, builder.var(block), builder.var(steps), builder.var(message));
         }
 
         @Override
@@ -608,6 +613,7 @@ public class LogicStatements {
             writer.write(opcode);
             writer.write(type.name());
             writer.write(block);
+            writer.write(steps);
             writer.write(message);
             writer.end();
         }
@@ -617,6 +623,7 @@ public class LogicStatements {
             int i = 1;
             if (tokens.length > i) stmt.type = SnapshotType.valueOf(tokens[i++]);
             if (tokens.length > i) stmt.block = tokens[i++];
+            if (tokens.length > i) stmt.steps = tokens[i++];
             if (tokens.length > i) stmt.message = tokens[i++];
             return stmt;
         }

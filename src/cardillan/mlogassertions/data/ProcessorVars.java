@@ -2,12 +2,15 @@ package cardillan.mlogassertions.data;
 
 import arc.func.Cons;
 import arc.func.Prov;
+import mindustry.logic.GlobalVars;
 import mindustry.logic.LExecutor;
 import mindustry.logic.LVar;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
 
 import java.util.Arrays;
 import java.util.Comparator;
+
+import static mindustry.Vars.state;
 
 public class ProcessorVars extends BaseVariableValues {
     public final LExecutor executor;
@@ -16,14 +19,17 @@ public class ProcessorVars extends BaseVariableValues {
     public final int start;
     public int length;
 
+    public LVar[] selectedVars = null;
+
     LVar id;
 
     public ProcessorVars(LogicBuild build) {
         super(build);
         this.executor = build.executor;
-        this.data = new LVar[executor.vars.length + 4 + (executor.privileged ? 1 : 0)];
+        this.data = new LVar[executor.vars.length + 5 + (executor.privileged ? 1 : 0)];
         length = 0;
 
+        store(numvar("Current tick", () -> state.tick));
         store(objvar("Text buffer", () -> cachedTextBuffer()));
         store(numvar("Time waited", () -> (double)timeWaited()));
         store(executor.counter);
@@ -126,6 +132,11 @@ public class ProcessorVars extends BaseVariableValues {
         return view[index].num();
     }
 
+    @Override
+    protected Formatter formatter(int index, boolean hex, int significantDigits) {
+        return view[index] == data[0]  ? d -> String.format("%,.2f", d) : null;
+    }
+
     String lastTextBuffer;
     private String cachedTextBuffer() {
         String str = executor.textBuffer.toString();
@@ -154,12 +165,21 @@ public class ProcessorVars extends BaseVariableValues {
             if (data[i] == null) continue;
             if (filtered && isTemp(data[i].name)) continue;
             if (hideLinks && data[i].constant && data[i].name.charAt(0) != '@') continue;
+            if (selectedVars != null && i >= start && !foundVar(data[i], selectedVars)) continue;
             view[length++] = data[i];
         }
 
         if (sorted) {
             Arrays.sort(view, start, length, mindcodeOrder);
         }
+    }
+
+    private boolean foundVar(LVar var, LVar[] selectedVars) {
+        // A typical instruction only has a handful of variables
+        for (int i = 0; i < selectedVars.length; i++) {
+            if (selectedVars[i].name.equals(var.name)) return true;
+        }
+        return false;
     }
 
     private enum VariableClass {

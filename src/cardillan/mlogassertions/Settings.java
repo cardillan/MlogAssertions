@@ -8,7 +8,7 @@ import arc.scene.ui.Slider;
 import arc.scene.ui.layout.Scl;
 import arc.scene.ui.layout.Table;
 import arc.util.Align;
-import cardillan.mlogassertions.data.Snapshots;
+import cardillan.mlogassertions.data.SnapshotManager;
 import cardillan.mlogassertions.ui.Assertions;
 import cardillan.mlogassertions.ui.LogicDialogAddon;
 import cardillan.mlogassertions.ui.VarsDialog;
@@ -60,7 +60,7 @@ public class Settings {
 
             steppedPref(t, Constants.snapshotLimit, 20, new int[]{0, 5, 10, 20, 50, 100, 200, 500, 1000},
                     i -> i == 0 ? Core.bundle.get("setting.snapshot-limit.disabled") : Integer.toString(i),
-                    i -> Snapshots.maxSnapshots = i);
+                    i -> SnapshotManager.maxSnapshots = i);
 
             t.checkPref(Constants.snapshotOnBreakpoint, false);
             t.checkPref(Constants.snapshotOnAssertion, false);
@@ -81,7 +81,7 @@ public class Settings {
         });
 
         Vars.ui.settings.hidden(() -> {
-            Snapshots.updateLimit();
+            SnapshotManager.updateLimit();
         });
 
         if (canSetInstructions()) {
@@ -90,7 +90,7 @@ public class Settings {
         Assertions.minWaitTimeUpdate = Core.settings.getInt(Constants.minWaitTimeUpdate);
         Assertions.processorUpdatesPerTick = updatesPerTick(Core.settings.getInt(Constants.processorUpdatesPerTick, 4));
         Assertions.warnEffectFrequency = Core.settings.getInt(Constants.warnEffectFrequency);
-        Snapshots.maxSnapshots = Core.settings.getInt(Constants.snapshotLimit);
+        SnapshotManager.maxSnapshots = Core.settings.getInt(Constants.snapshotLimit);
 
         VarsDialog.updateFrequency = Core.settings.getInt(Constants.variableUpdateFrequency);
         VarsDialog.significantDigits = Core.settings.getInt(Constants.varsSignificantDigits);

@@ -46,7 +46,7 @@ public class VarsDialog extends BaseDialog {
     private Senseable entity;
 
     // A list of snapshots that can be browsed through
-    private SnapshotList snapshots;
+    private Snapshots snapshots;
 
     private Object[] lastObject;
     private double[] lastMemory;
@@ -58,10 +58,10 @@ public class VarsDialog extends BaseDialog {
     int rows, cols;
 
     public VarsDialog(Building entity) {
-        this(SnapshotList.forBuild(entity));
+        this(Snapshots.forBuild(entity));
     }
 
-    private VarsDialog(SnapshotList snapshots) {
+    private VarsDialog(Snapshots snapshots) {
         super(snapshots.title());
         this.snapshots = snapshots;
 
@@ -92,8 +92,8 @@ public class VarsDialog extends BaseDialog {
         setup();
     }
 
-    public void setup(SnapshotList snapshotList) {
-        this.snapshots = snapshotList;
+    public void setup(Snapshots snapshots) {
+        this.snapshots = snapshots;
         setup();
     }
 
@@ -124,7 +124,7 @@ public class VarsDialog extends BaseDialog {
     }
 
     private void createSnapshot() {
-        Snapshots.create(snapshots.view().entity(), "User snapshot");
+        SnapshotManager.create(snapshots.view().entity(), "User snapshot");
         rebuildTitle(titleTable);
     }
 
@@ -133,7 +133,7 @@ public class VarsDialog extends BaseDialog {
         if (snapshots.view() instanceof Snapshot snapshot) {
             if (snapshot.writeTo(snapshots.liveData())) {
                 ui.showInfo("The processor's state has been restored from the snapshot.");
-                setup(SnapshotList.forBuild(snapshot.entity()));
+                setup(Snapshots.forBuild(snapshot.entity()));
                 return;
             }
         }
@@ -146,7 +146,7 @@ public class VarsDialog extends BaseDialog {
 
     private Table titleTable;
     private void rebuildTitle(Table titleTable) {
-        if (Snapshots.maxSnapshots == 0) return;
+        if (SnapshotManager.maxSnapshots == 0) return;
         compact = LCanvas.isCompact();
 
         VariableValues view = snapshots.view();
@@ -165,7 +165,7 @@ public class VarsDialog extends BaseDialog {
                 t.button(Icon.left, Styles.defaulti, this::prev).size(48f, 64f).pad(5f).disabled(!snapshots.hasPrev());
             }
 
-            if (snapshots.group()) {
+            if (snapshots.group() && !snapshots.recording()) {
                 t.image(view.icon()).size(64f).pad(5f);
 
                 t.table(left -> {
@@ -198,7 +198,9 @@ public class VarsDialog extends BaseDialog {
                         if (view.live()) {
                             tSnapshot.add("Live").color(Pal.accent).top().growX().get().setAlignment(Align.left);
                         } else {
-                            tSnapshot.add("#" + snapshot.id() + ": " + snapshot.type().charIcon + " " + snapshot.name()).color(Pal.accent).growX().ellipsis(true).wrap(false).get().setAlignment(Align.left);
+                            String name = snapshots.recording() ? snapshot.name()
+                                    : "#" + snapshot.id() + ": " + snapshot.type().charIcon + " " + snapshot.name();
+                            tSnapshot.add(name).color(Pal.accent).growX().ellipsis(true).wrap(false).get().setAlignment(Align.left);
 
                             Label l = tSnapshot.add(snapshots.pos()).color(Pal.accent).growX().padLeft(10f).get();
                             l.setAlignment(Align.right);
@@ -251,12 +253,12 @@ public class VarsDialog extends BaseDialog {
 
             // Select a snapshot from the current block's list of snapshots
             t.button(Icon.folderOpen, style,
-                            () -> new SnapshotsDialog(VarsDialog.this, snapshots.group() ? SnapshotList.forBuild(entity) : snapshots).show())
-                    .get().setDisabled(() -> !Snapshots.hasSnapshots(entity));
+                            () -> new SnapshotsDialog(VarsDialog.this, snapshots.group() ? Snapshots.forBuild(entity) : snapshots).show())
+                    .get().setDisabled(() -> !SnapshotManager.hasSnapshots(entity));
 
             // Select a snapshot from a group snapshot
             t.button(Icon.logic, style,
-                            () -> new SnapshotsDialog(VarsDialog.this, snapshots.group() ? snapshots : SnapshotList.list(snapshot.group())).show())
+                            () -> new SnapshotsDialog(VarsDialog.this, snapshots.group() ? snapshots : Snapshots.list(snapshot.group())).show())
                     .disabled(snapshot == null || snapshot.group() == null);
 
             // Create a snapshot
@@ -328,7 +330,7 @@ public class VarsDialog extends BaseDialog {
         buttons.clear();
         cont.clear();
 
-        if (Snapshots.maxSnapshots > 0) {
+        if (SnapshotManager.maxSnapshots > 0) {
             cont.table(this::rebuildTitle).width(Math.min(700f, LCanvas.getTargetWidth())).fillX();
             cont.row();
         }
@@ -408,7 +410,7 @@ public class VarsDialog extends BaseDialog {
         // Dialog buttons
         buttons.defaults().size(200f, 64f);
 
-        if (Snapshots.maxSnapshots == 0) {
+        if (SnapshotManager.maxSnapshots == 0) {
             // No snapshots: no commands above the list
             if (snapshots.view().dataType() == EntityDataType.processor) {
                 buttons.button("@back", Icon.left, this::hide).name("back");
@@ -600,7 +602,7 @@ public class VarsDialog extends BaseDialog {
                 }
 
                 t.button("Delete all snapshots of this block", Icon.trash, style, () -> {
-                    Snapshots.deleteEntity(snapshots.view().entity());
+                    SnapshotManager.deleteEntity(snapshots.view().entity());
                     dialog.hide();
                     first();
                 }).marginLeft(12f).row();

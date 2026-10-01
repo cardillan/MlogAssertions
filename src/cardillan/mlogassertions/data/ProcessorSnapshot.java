@@ -16,6 +16,7 @@ public class ProcessorSnapshot extends ProcessorVars implements Snapshot {
     public final SnapshotType type;
     public final int id;
     public final Seq<Snapshot> group;
+    public final Seq<Snapshot> recording;
 
     public final String textBuffer;
     public final float timeWaited;
@@ -31,6 +32,7 @@ public class ProcessorSnapshot extends ProcessorVars implements Snapshot {
         this.type = type;
         this.id = id;
         this.group = group;
+        this.recording = type == SnapshotType.recording ? new Seq<>() : null;
         this.textBuffer = executor.textBuffer.toString();
         this.timeWaited = timeWaited();
         this.name = name;
@@ -78,6 +80,11 @@ public class ProcessorSnapshot extends ProcessorVars implements Snapshot {
     }
 
     @Override
+    public Seq<Snapshot> recording() {
+        return recording;
+    }
+
+    @Override
     public boolean writeTo(VariableValues liveData) {
         if (liveData instanceof ProcessorVars processor) {
             if (processor.data.length != data.length) return false;
@@ -107,5 +114,10 @@ public class ProcessorSnapshot extends ProcessorVars implements Snapshot {
     @Override
     public float[] typeDistribution() {
         return typeDistribution;
+    }
+
+    @Override
+    public void setDefaultFilter(LVar[] vars) {
+        selectedVars = vars;
     }
 }

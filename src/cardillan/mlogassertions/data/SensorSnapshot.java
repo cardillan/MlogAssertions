@@ -72,7 +72,10 @@ public class SensorSnapshot extends SensorVars implements Snapshot{
         return group;
     }
 
-
+    @Override
+    public Seq<Snapshot> recording() {
+        return null;
+    }
 
     @Override
     public boolean writeTo(VariableValues liveData) {
@@ -81,6 +84,12 @@ public class SensorSnapshot extends SensorVars implements Snapshot{
 
     @Override
     public float[] typeDistribution() {
+        if (typeDistribution == null) typeDistribution = computeTypeDistribution();
         return typeDistribution;
+    }
+
+    @Override
+    public void setDefaultFilter(LVar[] vars) {
+        // Do nothing
     }
 }
