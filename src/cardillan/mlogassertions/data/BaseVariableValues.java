@@ -13,16 +13,11 @@ import mindustry.logic.Senseable;
 import static cardillan.mlogassertions.Constants.COLOR_LIMIT;
 
 public abstract class BaseVariableValues implements VariableValues {
-    public final long timestamp = (long) (Vars.state.tick / 60.0 * 1000.0);
+    public final double tick = Vars.state.tick;
     public final Senseable entity;
 
     public BaseVariableValues(Senseable entity) {
         this.entity = entity;
-    }
-
-    @Override
-    public long timestamp() {
-        return timestamp;
     }
 
     @Override
@@ -73,15 +68,7 @@ public abstract class BaseVariableValues implements VariableValues {
     private String time;
     @Override
     public String time() {
-        if (time == null) {
-            if (timestamp > 86_400_000) {
-                int days = (int) (timestamp / 86_400_000);
-                long millis = timestamp % 86_400_000;
-                time = String.format("%dd %d:%02d:%02d.%03d", days, millis / 3_600_000, millis / 60_000 % 60, millis / 1000 % 60, millis % 1000);
-            } else {
-                time = String.format("%d:%02d:%02d.%03d", timestamp / 3_600_000, timestamp / 60_000 % 60, timestamp / 1000 % 60, timestamp % 1000);
-            }
-        }
+        if (time == null) time = String.format("%,.2f", tick);
         return time;
     }
 
@@ -93,14 +80,6 @@ public abstract class BaseVariableValues implements VariableValues {
     @Override
     public boolean valid() {
         return true;
-    }
-
-    protected interface Formatter {
-        String format(double num);
-    }
-
-    protected Formatter formatter(int index, boolean hex, int significantDigits) {
-        return null;
     }
 
     private static final String[] formats = new String[16];
@@ -126,10 +105,7 @@ public abstract class BaseVariableValues implements VariableValues {
             }
         } else {
             double num = num(index);
-            Formatter formatter = formatter(index, hex, significantDigits);
-            if (formatter != null) {
-                return formatter.format(num);
-            } else if (num <= COLOR_LIMIT && num > 0) {
+            if (num <= COLOR_LIMIT && num > 0) {
                 long color = Double.doubleToLongBits(num) & 0xFFFFFFFFL;
                 String str = Integer.toHexString((int) color);
                 if (str.length() < 8) str = "0".repeat(8 - str.length()) + str;

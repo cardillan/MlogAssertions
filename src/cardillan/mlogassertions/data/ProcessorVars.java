@@ -26,10 +26,9 @@ public class ProcessorVars extends BaseVariableValues {
     public ProcessorVars(LogicBuild build) {
         super(build);
         this.executor = build.executor;
-        this.data = new LVar[executor.vars.length + 5 + (executor.privileged ? 1 : 0)];
+        this.data = new LVar[executor.vars.length + 4 + (executor.privileged ? 1 : 0)];
         length = 0;
 
-        store(numvar("Current tick", () -> state.tick));
         store(objvar("Text buffer", () -> cachedTextBuffer()));
         store(numvar("Time waited", () -> (double)timeWaited()));
         store(executor.counter);
@@ -130,11 +129,6 @@ public class ProcessorVars extends BaseVariableValues {
     @Override
     public double num(int index) {
         return view[index].num();
-    }
-
-    @Override
-    protected Formatter formatter(int index, boolean hex, int significantDigits) {
-        return view[index] == data[0]  ? d -> String.format("%,.2f", d) : null;
     }
 
     String lastTextBuffer;

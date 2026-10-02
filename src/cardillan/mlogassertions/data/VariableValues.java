@@ -2,11 +2,9 @@ package cardillan.mlogassertions.data;
 
 import arc.func.Cons;
 import arc.graphics.g2d.TextureRegion;
-import mindustry.gen.Entityc;
 import mindustry.logic.Senseable;
 
 public interface VariableValues {
-    long timestamp();
     String time();
 
     EntityDataType dataType();
