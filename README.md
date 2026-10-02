@@ -1,5 +1,7 @@
 # Mlog Dev Tools
 
+[中文介绍](README_zh.md)
+
 A mod formely known as Mlog Asserions.
 
 > [!TIP]
