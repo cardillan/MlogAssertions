@@ -289,6 +289,71 @@ public class LogicInstructions {
         }
     }
 
+    public static class ProfileI implements DevToolsInstruction {
+        public ProfilingCommand type = ProfilingCommand.start;
+        public LVar target;
+
+        public ProfileI(ProfilingCommand type, LVar target) {
+            this.type = type;
+            this.target = target;
+        }
+
+        public ProfileI() {
+        }
+
+        @Override
+        public LVar[] vars() {
+            return new LVar[] {target };
+        }
+
+        @Override
+        public void run(LExecutor exec) {
+            if (target.obj() instanceof LogicBuild build) {
+                switch (type) {
+                    case start -> InstrumentationEngine.startProfiling(build);
+                    case stop -> InstrumentationEngine.stopProfiling(build);
+                    case clear -> InstrumentationEngine.clearProfilingData(build);
+                }
+            }
+        }
+    }
+
+    public static class RestartI implements DevToolsInstruction {
+        public LVar target;
+
+        public RestartI(LVar target) {
+            this.target = target;
+        }
+
+        public RestartI() {
+        }
+
+        @Override
+        public LVar[] vars() {
+            return new LVar[] {target };
+        }
+
+        @Override
+        public void run(LExecutor exec) {
+            if (target.obj() instanceof LogicBuild build) {
+                if (build.accumulator < 2f) {
+                    // Make sure the accumulator allows executing this instruciotn and the following one
+                    // Allows resetting a processor and activating snapshotting on it.
+                    exec.counter.numval --;
+                    exec.yield = true;
+                    return;
+                }
+
+                // 'build.updateCode' doesn't trigger the ConfigEvent, must restart profiling explicitly
+                Instrumentation instrumentation = InstrumentationEngine.getInstrumentation(build);
+                build.updateCode(build.code);
+                if (instrumentation != null && instrumentation.profiling) {
+                    InstrumentationEngine.startProfiling(build);
+                }
+            }
+        }
+    }
+
     public static class SnapshotI implements DevToolsInstruction {
         public SnapshotType type = SnapshotType.isolated;
         public LVar target, steps, message;
@@ -316,31 +381,9 @@ public class LogicInstructions {
                         : buildMessage(exec, "", false, message, new Object[0]));
 
                 if (type == SnapshotType.recording && target.obj() instanceof LogicBuild build) {
-                    Instrumentation.startInstructionSnapshots(build.executor, steps.numi(), master);
+                    master.recording().add(master);
+                    InstrumentationEngine.startInstructionSnapshots(build, steps.numi(), master);
                 }
-            }
-        }
-
-        private String message(LExecutor exec) {
-            if (message.obj() instanceof String str) {
-                int pos = str.indexOf("{");
-                if (pos < 0) return str;
-
-                StringBuilder sbr = new StringBuilder(str);
-                while (pos >= 0) {
-                    int end = sbr.indexOf("}", pos);
-                    if (end < 0) break;
-                    LVar var = exec.optionalVar(sbr.substring(pos + 1, end));
-                    if (var != null) {
-                        String replacement = print(var);
-                        sbr.replace(pos, end + 1, replacement);
-                        end = pos + replacement.length();
-                    }
-                    pos = end < sbr.length() ? sbr.indexOf("{", end) : -1;
-                }
-                return sbr.toString();
-            } else {
-                return print(message);
             }
         }
     }

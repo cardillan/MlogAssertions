@@ -4,7 +4,7 @@ import arc.Events;
 import cardillan.mlogassertions.data.MapIndex;
 import cardillan.mlogassertions.data.SnapshotManager;
 import cardillan.mlogassertions.logic.AssertLogic;
-import cardillan.mlogassertions.logic.Instrumentation;
+import cardillan.mlogassertions.logic.InstrumentationEngine;
 import cardillan.mlogassertions.ui.Assertions;
 import cardillan.mlogassertions.ui.LogicDialogAddon;
 import cardillan.mlogassertions.ui.BuildConfiguration;
@@ -20,7 +20,7 @@ public class MlogAssertions extends Mod {
 
             // Logic
             AssertLogic.init();
-            Instrumentation.init();
+            InstrumentationEngine.init();
 
             // Map
             MapIndex.init();

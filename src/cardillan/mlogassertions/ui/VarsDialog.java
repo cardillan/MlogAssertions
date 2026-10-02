@@ -11,8 +11,11 @@ import arc.scene.ui.layout.Cell;
 import arc.scene.ui.layout.Scl;
 import arc.scene.ui.layout.Table;
 import arc.util.Align;
+import arc.util.Log;
 import arc.util.Time;
 import cardillan.mlogassertions.data.*;
+import cardillan.mlogassertions.logic.InstrumentationEngine;
+import mindustry.Vars;
 import mindustry.core.GameState;
 import mindustry.gen.Building;
 import mindustry.gen.Icon;
@@ -20,8 +23,10 @@ import mindustry.gen.Tex;
 import mindustry.graphics.Pal;
 import mindustry.logic.LCanvas;
 import mindustry.logic.Senseable;
+import mindustry.ui.FileChooser;
 import mindustry.ui.Styles;
 import mindustry.ui.dialogs.BaseDialog;
+import mindustry.world.blocks.logic.LogicBlock;
 
 import java.util.Arrays;
 
@@ -90,6 +95,10 @@ public class VarsDialog extends BaseDialog {
         });
 
         setup();
+    }
+
+    public static String escape(String s) {
+        return s.indexOf('[') < 0 ? s : s.replace("[", "[[");
     }
 
     public void setup(Snapshots snapshots) {
@@ -229,6 +238,9 @@ public class VarsDialog extends BaseDialog {
 
             t.button(Icon.filters, style, this::viewOptions);
             t.button(Icon.edit, style, this::editCommands);
+            t.button(Icon.chartBar, style, () -> {
+                if (entity instanceof LogicBlock.LogicBuild build) new ProfileDialog(build).show();
+            }).get().setDisabled(() -> view.dataType() != EntityDataType.processor);
 
             // Play/pause the game
             Image icon = new Image(state.isPlaying() ? Icon.pause : Icon.play);
@@ -263,12 +275,6 @@ public class VarsDialog extends BaseDialog {
 
             // Create a snapshot
             t.button(Icon.box, style, this::createSnapshot).disabled(snapshot != null);
-
-            if (!compact) {
-                t.button(Icon.download, style, this::restoreSnapshot).disabled(snapshot == null || snapshot.dataType() == EntityDataType.entity);
-                t.button(Icon.trash, style, this::removeSnapshot).disabled(!snapshots.canRemove());
-            }
-
             t.button(Icon.infoCircle, style, this::help);
 
             if (compact) {
@@ -384,7 +390,7 @@ public class VarsDialog extends BaseDialog {
 
                                     String text = view.formatted(index, hex, fullPrecision ? 16 : significantDigits);
                                     ValueType type = view.type(index);
-                                    valueLabel.setText(text);
+                                    valueLabel.setText(type == ValueType.string ? escape(text) : text);
                                     valueLabel.setAlignment(alignment);
                                     typeLabel.setText(type.paddedTitle);
 
@@ -471,30 +477,27 @@ public class VarsDialog extends BaseDialog {
                         : "Navigate to the previous/next snapshot (also the PgUp/PgDn and Home/End keys).");
                 help(t, Icon.filters, "Customize the view (for the duration of the session).");
                 help(t, Icon.edit, "Export, import or modify the data of this block.");
+                help(t, Icon.chartBar, "Profile the current processor's execution.");
                 help(t, Icon.pause, Icon.play, "Pause/resume the game.");
                 help(t, Icon.folderOpen, "Show a list of this block's snapshots.");
                 help(t, Icon.logic, "Navigate to a different block contained in this snapshot.");
                 help(t, Icon.box, "Create a new snapshot of this block and all connected blocks.");
-                if (!compact) {
-                    help(t, Icon.download, "Restore the current processor or memory block's state from a snapshot.");
-                    help(t, Icon.trash, "Delete the current snapshot.");
-                }
                 help(t, Icon.infoCircle, "Show this help.");
 
                 t.add("Edit commands").colspan(3).color(Pal.accent).center().padBottom(15F).get().setAlignment(Align.center);
                 t.row();
 
                 help(t, Icon.cancel, "Reset memory block to all zeroes.");
-                help(t, Icon.copy, "Copy variable values to Clipboard.");
-                help(t, Icon.download, "Import memory block values from Clipboard.");
-                if (compact) {
-                    help(t, Icon.download, "Restore the current processor or memory block's state from a snapshot.");
-                    help(t, Icon.trash, "Delete the current snapshot.");
-                }
+                help(t, Icon.copy, "Copy values to the clipboard.");
+                help(t, Icon.upload, "Export values to a file.");
+                help(t, Icon.paste, "Import memory block values from Clipboard.");
+                help(t, Icon.download, "Import memory block values from a file.");
+                help(t, Icon.undo, "Restore the current processor or memory block's state from the selected snapshot.");
+                help(t, Icon.trash, "Delete the current snapshot.");
                 help(t, Icon.trash, "Delete all snapshots of this block (they may still be accessible as part of connected or global snapshots).");
 
                 t.defaults().size(180f, 60f).growX().colspan(3).pad(15f);
-                t.button("@back", Icon.left, Styles.flatt, dialog::hide).center().marginLeft(12f).name("back");
+                t.button("@back", Icon.left, Styles.defaultt, dialog::hide).center().marginLeft(12f).name("back");
             }).pad(10f).padRight(30f);
         });
 
@@ -574,31 +577,55 @@ public class VarsDialog extends BaseDialog {
                     dialog.hide();
                 }).marginLeft(12f).row();
 
-                if (snapshots.view().dataType() == EntityDataType.memory && snapshots.view().live()) {
-                    t.button("@varsdialog.importvariables", Icon.download, style, () -> {
-                        String text = Core.app.getClipboardText();
-                        String error = MemoryText.validate(text, length);
-                        if (error == null) error = MemoryText.read(text, length, snapshots.view());
-
-                        if (error != null) {
-                            ui.showInfoFade(Core.bundle.format("varsdialog.importfailed", error));
-                            return;
+                t.button("@varsdialog.exportvariablesfile", Icon.upload, style, () -> {
+                    FileChooser.save("txt").name("memory_export.txt").submit(file -> {
+                        try {
+                            file.writeString(MemoryText.write(snapshots.view(), hex));
+                        } catch (Exception e) {
+                            Log.err("[Mlog Dev Tools] Error writing file: ", e);
+                            ui.showErrorMessage("Error writing file " + file.absolutePath());
                         }
+                    });
+                    dialog.hide();
+                }).marginLeft(12f).row();
 
-                        Arrays.fill(counter, reset / 2);
+                if (snapshots.view().dataType() == EntityDataType.memory && snapshots.view().live()) {
+                    t.button("@varsdialog.importvariables", Icon.paste, style, () -> {
+                        String text = Core.app.getClipboardText();
+                        if (text == null || text.length() == 0) {
+                            ui.showErrorMessage("The clipboard is empty.");
+                        } else {
+                            importData(text);
+                        }
+                        dialog.hide();
+                    }).marginLeft(12f).row();
+
+                    t.button("@varsdialog.importvariablesfile", Icon.download, style, () -> {
+                        FileChooser.open("txt").submit(file -> {
+                            try {
+                                String text = file.readString();
+
+                                if (text == null) {
+                                    ui.showErrorMessage("Error reading file " + file.absolutePath());
+                                } else {
+                                    importData(text);
+                                }
+                            } catch (Exception e) {
+                                Log.err("[Mlog Dev Tools] Error reading file: ", e);
+                                ui.showErrorMessage("Error reading file " + file.absolutePath());
+                            }
+                        });
                         dialog.hide();
                     }).marginLeft(12f).row();
                 }
 
-                if (compact) {
-                    if (snapshots.view().dataType() != EntityDataType.entity && snapshots.view() instanceof Snapshot snapshot) {
-                        t.button("Restore current snapshot", Icon.download, style, this::restoreSnapshot).marginLeft(12f).row();
-                    }
+                if (snapshots.view().dataType() != EntityDataType.entity && snapshots.view() instanceof Snapshot snapshot) {
+                    t.button("Restore current snapshot", Icon.undo, style, this::restoreSnapshot).marginLeft(12f).row();
+                }
 
-                    if (snapshots.canRemove()) {
-                        // Can't remove snapshots from snapshot groups
-                        t.button("Delete current snapshot", Icon.trash, style, this::removeSnapshot).marginLeft(12f).row();
-                    }
+                if (snapshots.canRemove()) {
+                    // Can't remove snapshots from snapshot groups
+                    t.button("Delete current snapshot", Icon.trash, style, this::removeSnapshot).marginLeft(12f).row();
                 }
 
                 t.button("Delete all snapshots of this block", Icon.trash, style, () -> {
@@ -613,6 +640,19 @@ public class VarsDialog extends BaseDialog {
 
         dialog.addCloseListener();
         dialog.show();
+    }
+
+    private void importData(String text) {
+        String error = MemoryText.validate(text, length);
+        if (error == null) {
+            error = MemoryText.read(text, length, snapshots.view());
+        }
+
+        if (error != null) {
+            ui.showErrorMessage(Core.bundle.format("varsdialog.importfailed", error));
+        } else {
+            Arrays.fill(counter, reset / 2);
+        }
     }
 
     private void refreshView(boolean update) {

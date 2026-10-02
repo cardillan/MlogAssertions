@@ -13,7 +13,27 @@ author: "cardillan"
 main: "cardillan.mlogassertions.MlogAssertions"
 
 #the mod description as seen in the mod dialog
-description: "Provides new logic instructions and other tools for easier debugging in Mindustry Logic."
+description: '''
+This mod aims to make debugging in Mindustry Logic a bit easier:[[]lightgray]
+
+Enhanced [[]accent]Vars[[]] screen: showing numeric values in full precision and color values, sorting variables by name, copying variables and the text buffer contents to the clipboard.
+
+[[]accent]Memory[[]] screen for inspecting contents of memory blocks, using the same interface as the [[]accent]Vars[[]] screen. Includes a command to clear (reset) the contents of memory blocks.
+
+Settings for overriding instruction limit, by up to 1000 instructions. This allows you to insert debugging code (e.g., additional [[]accent]print[[]] or [[]accent]assert[[]] instructions) into your code, even if the original instruction limit is exceeded.
+
+[[]accent]Snapshots[[]] allow saving, reviewing and restoring the state of logic processors, memory blocks and all other blocks on the map. A snapshot can be created manually or using a [[]accent]snapshot[[]] instruction. A limited number of snapshots is kept for each block, allowing to review the exact block state at the time the smapshot has been created.
+
+A [[]accent]profiler[[]] for gathering statistics about individual processor instructions execution.
+
+Custom mlog instructions for performing runtime checks, logging messages, reporting errors, triggering a bbreakpoint, taking snaphots and managing profiling.
+
+Visual indication of stopped processors, processors executing a [[]accent]wait[[]] instruction, and failed runtime checks, directly on the map.
+
+[[]white]Using this mod on maps with lots of processors may impact the game's performance.[[]]
+
+See the [[]accent]README.md[[]] file in the mod's GitHub repository for more information.
+'''
 
 #the mod version
 version: 0.11.1

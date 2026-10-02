@@ -40,7 +40,7 @@ public class Settings {
             }
 
             t.sliderPref(Constants.minWaitTimeUpdate, 1000, 0, 10000, 500,
-                    i -> i == 0 ? Core.bundle.get("setting.min-wait-time-update.none") : Double.toString(i / 1000.0),
+                    i -> i == 0 ? bundle(Constants.minWaitTimeUpdate, "none") : Double.toString(i / 1000.0),
                     i -> Assertions.minWaitTimeUpdate = i);
 
             t.sliderPref(Constants.processorUpdatesPerTick, 4, 0, UPDATES_PER_TICK.length - 1,
@@ -48,36 +48,37 @@ public class Settings {
                     i -> Assertions.processorUpdatesPerTick = updatesPerTick(i));
 
             t.sliderPref(Constants.warnEffectFrequency, 0, -5, 60, 5,
-                    i -> i < 0 ? Core.bundle.get("setting.warn-effect-frequency.never") :
-                            i == 0 ? Core.bundle.get("setting.warn-effect-frequency.once") :
-                                    Core.bundle.format("setting.warn-effect-frequency.every", i),
+                    i -> i < 0 ? bundle(Constants.warnEffectFrequency, "never") :
+                            i == 0 ? bundle(Constants.warnEffectFrequency, "once") :
+                                    format(Constants.warnEffectFrequency, "every", i),
                     i -> Assertions.warnEffectFrequency = i);
 
             t.sliderPref(Constants.tripleTapSpeed, 500, 0, 3000, 50,
-                    i -> i == 0 ? Core.bundle.get("setting.triple-tap-speed.disabled") :
-                            Core.bundle.format("setting.triple-tap-speed.delay", i),
+                    i -> i == 0 ? bundle(Constants.tripleTapSpeed, "disabled") :
+                            format(Constants.tripleTapSpeed, "delay", i),
                     i -> LogicDialogAddon.tripleTapSpeed = i);
 
             steppedPref(t, Constants.snapshotLimit, 20, new int[]{0, 5, 10, 20, 50, 100, 200, 500, 1000},
-                    i -> i == 0 ? Core.bundle.get("setting.snapshot-limit.disabled") : Integer.toString(i),
+                    i -> i == 0 ? bundle(Constants.snapshotLimit, "disabled") : Integer.toString(i),
                     i -> SnapshotManager.maxSnapshots = i);
 
             t.checkPref(Constants.snapshotOnBreakpoint, false);
             t.checkPref(Constants.snapshotOnAssertion, false);
 
             t.sliderPref(Constants.variableUpdateFrequency, 15, 0, 60, 5,
-                    i -> i == 0 ? Core.bundle.get("setting.variable-update-frequency.everyframe")
-                            : Core.bundle.format("setting.variable-update-frequency.ticks", i),
+                    i -> i == 0 ? bundle(Constants.variableUpdateFrequency, "everyframe")
+                            : format(Constants.variableUpdateFrequency, "ticks", i),
                     i -> VarsDialog.updateFrequency = i);
 
             t.sliderPref(Constants.varsSignificantDigits, 7, 3, 16, 1,
-                    i -> i == 16 ? Core.bundle.get("setting.vars-significant-digits.full") : Integer.toString(i),
+                    i -> i == 16 ? bundle(Constants.varsSignificantDigits, "full") : Integer.toString(i),
                     i -> VarsDialog.significantDigits = i);
 
             steppedPref(t, Constants.varsAlignment, Align.left, new int[]{Align.left, Align.center, Align.right},
-                    i -> Core.bundle.get("setting.vars-alignment." + i),
+                    i -> bundle(Constants.varsAlignment, String.valueOf(i)),
                     i -> VarsDialog.alignment = i);
 
+            t.checkPref(Constants.startProfilerImmediatelly, false);
         });
 
         Vars.ui.settings.hidden(() -> {
@@ -95,6 +96,18 @@ public class Settings {
         VarsDialog.updateFrequency = Core.settings.getInt(Constants.variableUpdateFrequency);
         VarsDialog.significantDigits = Core.settings.getInt(Constants.varsSignificantDigits);
         VarsDialog.alignment = Core.settings.getInt(Constants.varsAlignment);
+    }
+
+    private static String bundle(String key) {
+        return Core.bundle.get("setting." + key);
+    }
+
+    private static String bundle(String key, String suffix) {
+        return Core.bundle.get("setting." + key + "." + suffix);
+    }
+
+    private static String format(String key, String suffix, Object... args) {
+        return Core.bundle.format("setting." + key + "." + suffix, args);
     }
 
     private static SteppedSliderSetting steppedPref(SettingsTable t, String name, int def, int[] steps, StringProcessor s, Intc changed) {

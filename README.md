@@ -1,21 +1,19 @@
 # Mlog Dev Tools
 
-A mod formely known as Mlog Asserions.
-
-> [!TIP]
-> A separate release is made for Mindustry Build 160 and Mindustry Build 154.2 or later (up to 159.7). Use the mod browser to install the correct version of the mod for your version of Mindustry.
+A mod formely known as Mlog Assertions.
 
 > [!NOTE]
-> Using this mod on maps with lots of processors may have a negative performance impact on the game.
+> Using this mod on maps with lots of processors may impact the game's performance.
 
 This mod aims to make debugging in Mindustry Logic a bit easier. Provided functionality:
 
 * Enhanced **Vars** screen: showing numeric values in full precision and color values, sorting variables by name, copying variables and the text buffer contents to the clipboard.
 * **Memory** screen for inspecting contents of memory blocks, using the same interface as the **Vars** screen. Includes a command to clear (reset) the contents of memory blocks.
-* Settings for overriding instruction limit (the limit can be increased up to 2000 instructions). This allows you to insert debugging code (e.g., additional `print` instructions) into your code, even if the original instruction limit is exceeded.
+* Settings for overriding instruction limit, by up to 1000 instructions. This allows you to insert debugging code (e.g., additional `print` instructions) into your code, even if the original instruction limit is exceeded.
 * **Snapshots** allow saving, reviewing and restoring the state of logic processors, memory blocks and all other blocks on the map. A snapshot can be created manually or using a logic instruction. A limited number of snapshots is kept for each block, allowing to review the exact block state at the time the smapshot has been created.
-* Custom mlog instructions for performing runtime checks, logging messages, and reporting errors.
-* Indication of stopped processors, processors executing a `wait`, and failed runtime checks.
+* A **profiler** for gathering statistics about individual processor instructions execution.  
+* Custom mlog instructions for performing runtime checks, logging messages, reporting errors, triggering a bbreakpoint, taking snaphots and managing profiling.
+* Visual indication of stopped processors, processors executing a `wait` instruction, and failed runtime checks, directly on the map.
 
 ![Screenshot of state indicated on processors](processors.png)
 
@@ -25,16 +23,21 @@ The **Vars** screen has been enhanced:
 * Additional processor variables (the contents of the text buffer, current wait time, `@unit`, `@ipt`) are included.
 * Numeric values are displayed in configurable precision. Integer values are clearly distinguished from decimal ones.
 * Numeric values in the color range are formatted as color literals (e.g., `%e55454ff`), the color itself is presented using a glyph.
+* String values no longer cause overflow and are correctly rendered, including the color tags. 
 * Option to choose between formatting the numbers in hexadecimal or decimal base (including memory cell addresses).
 * Option to sort variables by name or revert to their original order.
 * Option to hide temporary variables and processor links.
-* Commands to copy the variable list or the contents of the text buffer to the clipboard (in previous versions of this mod, these buttons have been included directly on the processor screen).
+* Commands to copy the variable list or the contents of the text buffer to the clipboard (in previous versions of this mod, these buttons have been included directly on the processor screen) or to write it into a file.
 
-# Displaying the content of memory blocks
+# Inspecting memory blocks
 
-By tapping a memory block, a configuration button is now displayed. The button opens a **Memory** screen, similar to the **Vars** screen described above. All options relevant to the specifics of memory blocks are available. Furthermore, the **Edit** button allows you to clear the contents of memory blocks, copy them to the clipboard, and import them back.
+By tapping a memory block, a configuration menu is now displayed. The button opens a **Memory** screen, similar to the **Vars** screen described above. All options relevant to the specifics of memory blocks are available. Furthermore, the **Edit** button allows you to clear the contents of memory blocks, export them to the clipboard or a file, and import them back.
 
-The table kept on the clipboard may be modified (for example in a spreadsheet) and imported back into the memory block. The columns of the table are separated by tabs, and the address of a cell is always given in decimal. Strings are written as literals enclosed in quotes, with the characters which would either be lost or break the table encoded using escape sequences (`\n`, `\"`, `\\`, `\uXXXX`). Numbers may be entered in the decimal, color, hexadecimal or binary form, and values which are not finite are written and imported as `null`, as they are not representable in memory blocks. Lines which cannot be parsed are reported and skipped, and the memory block is only changed once the whole table has been parsed. Values having no representation in the text form (references to units, buildings and contents) are exported as well, but cannot be restored.
+The exported data  may be modified (for example in a spreadsheet) and imported back into the memory block. The columns of the table are separated by tabs, and the address of a cell is always given in decimal. Strings are written as literals enclosed in quotes, with the characters which would either be lost or break the table encoded using escape sequences (`\n`, `\"`, `\\`, `\uXXXX`). Numbers may be entered in the decimal, color, hexadecimal or binary form, and values which are not finite are written and imported as `null`, as they are not representable in memory blocks. Lines which cannot be parsed are reported and skipped, and the memory block is only changed once the whole table has been parsed. Values having no representation in the text form (references to units, buildings and contents) are exported as well, but cannot be restored.
+
+# Inspecting other blocks
+
+By tripple-tapping any blok, the **Properties** screen is displayed. The screen contains a list of all properties of the block in real-time in a format similar to the **Vars**/**Memory** screens. 
 
 # Snapshots
 
@@ -42,18 +45,23 @@ A snapshot captures the state of a processor (all its variables), memory block (
 
 ## Snapshot types
 
-There are three types of snapshots: _isolated_, _connected_ and _global_. Isolated keep a state of just a single block. Connected keeps the state of a block plus the states of all blocks whose references are found in the variables of the central block. A global snapshot holds the state of all _logic_ blocks on the map (i.e., only processors and memory cells, not all blocks in general).
+There are several types of snapshots:
+
+* _isolated_: keep a state of just a single block. Can be created using the `snapshot` instruction.
+* _connected_: keep a state of a central block and related entities (blocks and units). Related blocks and units are those which are stored in any of the variables of the central block (typically a processor or a memory block). in case of processors, all units controlled by the processor at the time of the snapshot's creation are also included. 
+* _recording_: a special snapshot which records the execution of several instructions. It can be created using the `snapshot` instruction, which specifies the target (either `@this`, or some other processor) and the number of steps to record. A recording snapshot shows the initial state of the processor and any connected blocks, and when selected in the snapshot list, allows navigation thorugh individual instruction-related snapshots. Each instruction snapshot shows the variables and contains any objects used by the instruction. The number of individual snapshots stored in a recording snapshot is subject to the snapshot limit in the settings.
+* _global_: a global snapshot holds the state of all _logic_ blocks on the map (i.e., only processors and memory cells, not all blocks in general).
 
 Snapshots are always assigned to a specific block and are kept in a list for that block. When the number of snapshots reaches a (configurable) limit, older snapshots get removed from each block.
 
-Connected and global snaphots are reachable from any block included in them. A snapshot ceases to exist when it ages out of all blocks contained in it.
+Connected, recording and global snaphots are reachable from any block included in them. A snapshot ceases to exist when it ages out of all blocks contained in it.
 
 > [!NOTE]
 > Snapshots aren't saved with the map; when the map is closed, all snapshots are lost.
 
 ## Snapshot creation and usage
 
-A connected snapshot can be created from an UI, using the Vars/Memory/Properties screens, or (in case of processors and memory cells) using the block configuration menu.
+A connected snapshot can be created from an UI, using the **Vars**/**Memory**/**Properties** screens, or (in case of processors and memory cells) using the block configuration menu.
 
 A `snapshot` instruction can create any type of snapshot, using any block as the central one. There's no rate limit on creating snaphsots, but obviously there can be performance problems when the feature is abused.
 
@@ -63,15 +71,21 @@ A snapshot can be deleted from the UI.
 
 ## User interface
 
-The memory block gets a configuration menu for creating and viewing snapshots. The processors' configuration menu is enhanced with buttons for creating and viewing snapshots. The Properties screen for any block can be opened by tripple-tapping the block (the delay is configurable in settings, setting the delay to 0 disables the feature).
+The memory block gets a configuration menu for creating and viewing snapshots. The processors' configuration menu is enhanced with buttons for creating and viewing snapshots.
 
-A brief help screen is available on the Vars/Memory/Properties screens.
+A brief help is available on the **Vars**/**Memory**/**Properties** screens.
 
 ## Settings
 
 Snapshots can be completely deactivated in settings by seting the maximum number of kept snapshots to 0. When disabled, snapshots can'T be created in any wany and no snapshot-related elements appear in the UI.
 
 It is possible to activate creating a snapshot when a breakpoint it hit or an assertion fails.
+
+# Profiler
+
+By activating a profiler, it is possible to get execution statistics for the processor, i.e. the number of times each instruction has been executed. The profiling data are displaed on the **Profiler** screen available from the **Vars** screen. When the processor is running, the profiling data are uptated in real-time. They can also be copied to the clipboard for later analysis. Profiling can be started and stopped from the **Profiler** screen, or using the `profile` instruction.
+
+Profiling a program allows you to identify the instructions the processor has spent the most time executing. Profiling is relatively low-cost (at least compared to the snapshotting), and can be safely left active on many processors for long periods of time.
 
 # Custom instructions
 
@@ -196,6 +210,23 @@ This instruction writes a message into the game's log file. It is up to the user
 
 A variable name enclosed in curly braces (`{` and `}`) in the message is replaced with the actual variable value. If the message contains placeholders in the form `{1}` to `{9}`, they are replaced by the corresponding parameters. If there are other parameters not used by the message, whose value is not the literal `null`, they are appended to the message one by one. String values are enclosed in quotes in this case. Numeric values in the color range are formatted as color literals (e.g., `%e55454ff`).
 
+## Instruction `profile`
+
+Starts, stops or clears the profiling data of a given processor, including `@this`.
+
+## Instruction `restart`
+
+Fully restarts the target processor, resetting all processor variables to `null`. This instruction is intendedd to allow profiling or snapshot recording of processor's initialization code from another processor, e.g.:
+
+```
+restart processor1
+snapshot recording processor1 100
+```
+
+The instruction ensures that at least one other instruction will be executed after it in the same frame, so that profiling or snapshotting of the target processor is guaranteed to start from the very first instruction.
+
+If the goal is to activate profiling or snapshotting of teh current processor, a better way would be to add the `profile` or `snapshot` instruction at the beginning of the processor's code, unless the processor uses the implicit loop and cannot be easily modified.
+
 ## Instruction `snapshot`
 
 Creates a snapshot of a given block. The instruction takes these parameters:
@@ -203,6 +234,7 @@ Creates a snapshot of a given block. The instruction takes these parameters:
 * `type`: the type of snapshot to create:
   * `isolated`: captures only the state of the target block.
   * `connected`: captures the state of the target block plus the states of all blocks whose references are found in the variables of the target block - if the target block is a processor or a memory block.
+  * `recording`: creates an initial connected snapshot, followed by the specified number of instruction snapshots. The number of steps is limited by the meximum number of snapshots configured in settings. 
   * `global`: captures the state of all processors and memory blocks on the map (regular blocks are not included).
 * `target`: the target block (not used for `global` snapshots).
 * `name`: the name of the snapshot.
