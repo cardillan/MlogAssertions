@@ -1,18 +1,13 @@
-#the mod name as displayed in-game
 displayName: "Mlog Dev Tools"
-
-#the internal name of your mod
 name: "mlog-assertions-8"
-
-subtitle: "Easier debugging and testing for mlog",
-
-#your name
+subtitle: "Mlog development made easy",
 author: "cardillan"
-
-#the fully qualified main class of the mod
 main: "cardillan.mlogassertions.MlogAssertions"
+version: 0.11.2
+minGameVersion: 160.5
+java: true
+hidden: true
 
-#the mod description as seen in the mod dialog
 description: '''
 This mod aims to make debugging in Mindustry Logic a bit easier:[[]lightgray]
 
@@ -34,15 +29,3 @@ Visual indication of stopped processors, processors executing a [[]accent]wait[[
 
 See the [[]accent]README.md[[]] file in the mod's GitHub repository for more information.
 '''
-
-#the mod version
-version: 0.11.1
-
-#the minimum game build required to run this mod
-minGameVersion: 160.5
-
-#this is a java mod
-java: true
-
-#the mod doesn't add new content
-hidden: true
