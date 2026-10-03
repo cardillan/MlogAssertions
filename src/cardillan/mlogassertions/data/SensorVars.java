@@ -5,8 +5,6 @@ import mindustry.Vars;
 import mindustry.ctype.Content;
 import mindustry.ctype.MappableContent;
 import mindustry.gen.Building;
-import mindustry.gen.Entityc;
-import mindustry.gen.Unit;
 import mindustry.logic.LAccess;
 import mindustry.logic.LVar;
 import mindustry.logic.Senseable;

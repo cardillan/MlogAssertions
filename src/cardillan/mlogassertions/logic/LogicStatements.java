@@ -13,8 +13,6 @@ import mindustry.logic.*;
 import mindustry.logic.LStatements.JumpStatement;
 import mindustry.ui.Styles;
 
-import static mindustry.logic.LCanvas.tooltip;
-
 public class LogicStatements {
     private static final LogicStatementWriter writer = new LogicStatementWriter();
 
@@ -657,7 +655,7 @@ public class LogicStatements {
 
         public SnapshotType type = SnapshotType.isolated;
         public String block = "@this";
-        public String steps = "10";
+        public String steps = "20";
 
         public SnapshotStatement() {
             super("Snapshot");

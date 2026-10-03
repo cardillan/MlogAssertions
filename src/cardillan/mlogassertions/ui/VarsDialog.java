@@ -14,8 +14,6 @@ import arc.util.Align;
 import arc.util.Log;
 import arc.util.Time;
 import cardillan.mlogassertions.data.*;
-import cardillan.mlogassertions.logic.InstrumentationEngine;
-import mindustry.Vars;
 import mindustry.core.GameState;
 import mindustry.gen.Building;
 import mindustry.gen.Icon;
@@ -563,6 +561,13 @@ public class VarsDialog extends BaseDialog {
             p.table(Tex.button, t -> {
                 TextButton.TextButtonStyle style = Styles.flatt;
                 t.defaults().size(360f, 60f).left();
+
+                if (SnapshotManager.maxSnapshots <= 0 && entity instanceof LogicBlock.LogicBuild build) {
+                    t.button("Profiler", Icon.chartBar, style, () -> {
+                        new ProfileDialog(build).show();
+                        dialog.hide();
+                    }).marginLeft(12f).row();
+                }
 
                 if (snapshots.view().dataType() == EntityDataType.memory && snapshots.view().live()) {
                     t.button("@varsdialog.clearmemory", Icon.cancel, style, () -> {

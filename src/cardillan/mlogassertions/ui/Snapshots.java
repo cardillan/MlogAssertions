@@ -2,7 +2,9 @@ package cardillan.mlogassertions.ui;
 
 import arc.struct.Queue;
 import arc.struct.Seq;
-import cardillan.mlogassertions.data.*;
+import cardillan.mlogassertions.data.Snapshot;
+import cardillan.mlogassertions.data.SnapshotManager;
+import cardillan.mlogassertions.data.VariableValues;
 import cardillan.mlogassertions.logic.SnapshotType;
 import mindustry.logic.Senseable;
 

@@ -1,13 +1,9 @@
 package cardillan.mlogassertions.data;
 
 import arc.struct.Seq;
-import arc.util.Time;
 import cardillan.mlogassertions.logic.SnapshotType;
-import mindustry.gen.Building;
-import mindustry.logic.LAccess;
 import mindustry.logic.LVar;
 import mindustry.logic.Senseable;
-import mindustry.world.blocks.logic.LogicBlock;
 
 public class SensorSnapshot extends SensorVars implements Snapshot{
     public String name;

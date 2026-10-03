@@ -2,15 +2,12 @@ package cardillan.mlogassertions.data;
 
 import arc.func.Cons;
 import arc.func.Prov;
-import mindustry.logic.GlobalVars;
 import mindustry.logic.LExecutor;
 import mindustry.logic.LVar;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
 
 import java.util.Arrays;
 import java.util.Comparator;
-
-import static mindustry.Vars.state;
 
 public class ProcessorVars extends BaseVariableValues {
     public final LExecutor executor;

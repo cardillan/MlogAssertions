@@ -16,9 +16,7 @@ import arc.scene.ui.TextButton;
 import arc.scene.ui.layout.Scl;
 import arc.scene.ui.layout.Table;
 import arc.util.Align;
-import arc.util.Log;
 import cardillan.mlogassertions.Constants;
-import cardillan.mlogassertions.data.MemoryText;
 import cardillan.mlogassertions.logic.Instrumentation;
 import cardillan.mlogassertions.logic.InstrumentationEngine;
 import mindustry.gen.Icon;
@@ -29,8 +27,6 @@ import mindustry.ui.dialogs.BaseDialog;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
 
 import java.util.Arrays;
-
-import static mindustry.Vars.mobile;
 
 public class ProfileDialog extends BaseDialog {
     static boolean totals = true;

@@ -5,7 +5,6 @@ import arc.graphics.g2d.Font;
 import arc.graphics.g2d.GlyphLayout;
 import arc.scene.ui.Label;
 import arc.util.Align;
-import arc.util.Log;
 
 public class EllipsisLabel extends Label {
 

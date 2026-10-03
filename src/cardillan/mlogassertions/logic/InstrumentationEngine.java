@@ -2,16 +2,18 @@ package cardillan.mlogassertions.logic;
 
 import arc.Events;
 import arc.func.Cons;
-import arc.graphics.Color;
 import arc.struct.ObjectMap;
 import arc.struct.Seq;
 import arc.util.Log;
 import cardillan.mlogassertions.data.Snapshot;
+import cardillan.mlogassertions.data.SnapshotManager;
 import mindustry.game.EventType;
-import mindustry.logic.*;
+import mindustry.logic.LCategory;
 import mindustry.logic.LExecutor.*;
+import mindustry.logic.LParser;
+import mindustry.logic.LStatement;
+import mindustry.logic.LVar;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
-import mindustry.world.blocks.logic.MemoryBlock;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -19,7 +21,6 @@ import java.lang.reflect.InaccessibleObjectException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
-import static arc.Core.executor;
 import static mindustry.logic.LStatements.*;
 
 public class InstrumentationEngine {
@@ -134,7 +135,7 @@ public class InstrumentationEngine {
 
     public static void startInstructionSnapshots(LogicBuild build, int steps, Snapshot master) {
         getInstrumentation(build, true, instrumentation -> {
-            instrumentation.snapshotSteps = steps;
+            instrumentation.snapshotSteps = Math.min(steps, SnapshotManager.maxSnapshots);
             instrumentation.master = master;
         });
     }

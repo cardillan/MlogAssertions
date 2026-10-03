@@ -25,8 +25,6 @@ import java.lang.reflect.Modifier;
 import static arc.Core.settings;
 
 public class Settings {
-    static final int[] UPDATES_PER_TICK = {1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000};
-
     public static void init() {
         Vars.ui.settings.addCategory("Mlog Dev Tools", Icon.wrench, t -> {
             t.checkPref(Constants.disableBreakpoints, false);
@@ -43,9 +41,9 @@ public class Settings {
                     i -> i == 0 ? bundle(Constants.minWaitTimeUpdate, "none") : Double.toString(i / 1000.0),
                     i -> Assertions.minWaitTimeUpdate = i);
 
-            t.sliderPref(Constants.processorUpdatesPerTick, 4, 0, UPDATES_PER_TICK.length - 1,
-                    i -> Integer.toString(Assertions.processorUpdatesPerTick),
-                    i -> Assertions.processorUpdatesPerTick = updatesPerTick(i));
+            steppedPref(t,Constants.processorUpdatesPerTick, 50, new int[]{1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000},
+                    i -> Integer.toString(i),
+                    i -> Assertions.processorUpdatesPerTick = i);
 
             t.sliderPref(Constants.warnEffectFrequency, 0, -5, 60, 5,
                     i -> i < 0 ? bundle(Constants.warnEffectFrequency, "never") :
@@ -89,7 +87,7 @@ public class Settings {
             LExecutor.maxInstructions = Core.settings.getInt(Constants.maxInstructions);
         }
         Assertions.minWaitTimeUpdate = Core.settings.getInt(Constants.minWaitTimeUpdate);
-        Assertions.processorUpdatesPerTick = updatesPerTick(Core.settings.getInt(Constants.processorUpdatesPerTick, 4));
+        Assertions.processorUpdatesPerTick = Core.settings.getInt(Constants.processorUpdatesPerTick, 50);
         Assertions.warnEffectFrequency = Core.settings.getInt(Constants.warnEffectFrequency);
         SnapshotManager.maxSnapshots = Core.settings.getInt(Constants.snapshotLimit);
 
@@ -174,14 +172,6 @@ public class Settings {
 
     public static boolean disableBreakpoints() {
         return Core.settings.getBool(Constants.disableBreakpoints, false);
-    }
-
-    public static int updatesPerTick(int index) {
-        if (index >= 0 && index < UPDATES_PER_TICK.length) return UPDATES_PER_TICK[index];
-        for (int i = UPDATES_PER_TICK.length - 1; i >= 0; i--) {
-            if (UPDATES_PER_TICK[i] <= index) return UPDATES_PER_TICK[i];
-        }
-        return UPDATES_PER_TICK[UPDATES_PER_TICK.length - 1];
     }
 
     public static boolean assertsAreBreakpoints() {

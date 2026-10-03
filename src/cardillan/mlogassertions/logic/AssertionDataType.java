@@ -2,9 +2,9 @@ package cardillan.mlogassertions.logic;
 
 import mindustry.ai.UnitCommand;
 import mindustry.ai.UnitStance;
+import mindustry.ctype.Content;
 import mindustry.entities.bullet.BulletType;
 import mindustry.game.Team;
-import mindustry.ctype.Content;
 import mindustry.gen.Building;
 import mindustry.gen.Unit;
 import mindustry.logic.*;
@@ -13,7 +13,6 @@ import mindustry.world.Block;
 import mindustry.world.blocks.logic.*;
 
 import java.util.Arrays;
-import java.util.Comparator;
 
 public enum AssertionDataType {
     // Basic types

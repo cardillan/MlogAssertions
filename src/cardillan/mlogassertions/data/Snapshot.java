@@ -2,11 +2,7 @@ package cardillan.mlogassertions.data;
 
 import arc.struct.Seq;
 import cardillan.mlogassertions.logic.SnapshotType;
-import mindustry.gen.Building;
 import mindustry.logic.LVar;
-
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 
 public interface Snapshot extends VariableValues {
     SnapshotType type();

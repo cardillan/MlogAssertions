@@ -6,7 +6,7 @@ import arc.scene.actions.Actions;
 import arc.scene.ui.layout.Table;
 import arc.util.Align;
 import arc.util.Log;
-import cardillan.mlogassertions.data.*;
+import cardillan.mlogassertions.data.SnapshotManager;
 import mindustry.Vars;
 import mindustry.content.Blocks;
 import mindustry.gen.Building;

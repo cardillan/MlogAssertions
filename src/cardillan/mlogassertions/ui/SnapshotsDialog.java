@@ -11,7 +11,6 @@ import arc.scene.ui.layout.Scl;
 import arc.struct.Seq;
 import arc.util.Scaling;
 import cardillan.mlogassertions.data.*;
-import cardillan.mlogassertions.logic.SnapshotType;
 import mindustry.Vars;
 import mindustry.gen.Building;
 import mindustry.gen.Icon;

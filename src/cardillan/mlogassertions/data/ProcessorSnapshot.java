@@ -1,15 +1,10 @@
 package cardillan.mlogassertions.data;
 
 import arc.struct.Seq;
-import arc.util.Log;
-import arc.util.Time;
 import cardillan.mlogassertions.logic.SnapshotType;
-import mindustry.gen.Building;
 import mindustry.logic.LExecutor;
 import mindustry.logic.LVar;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
-
-import java.util.Arrays;
 
 public class ProcessorSnapshot extends ProcessorVars implements Snapshot {
     public String name;
