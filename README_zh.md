@@ -1,9 +1,6 @@
 # Mlog Dev Tools
 
-一个原先名为 Mlog Asserions 的模组。
-
-> [!TIP]
-> 针对 Mindustry 160 和 Mindustry 154.2 或更高版本（最高到 159.7）分别发布了单独的版本。使用模组浏览器安装与你的 Mindustry 版本对应的正确模组版本。
+一个原先名为 Mlog Assertions 的模组。
 
 > [!NOTE]
 > 在拥有大量处理器的地图上使用此模组可能会对游戏性能产生负面影响。
