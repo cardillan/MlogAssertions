@@ -1,5 +1,11 @@
 # Mlog Dev Tools
 
+[中文介绍](README_zh.md)
+
+A mod formely known as Mlog Asserions.
+
+> [!TIP]
+> A separate release is made for Mindustry Build 160 and Mindustry Build 154.2 or later (up to 159.7). Use the mod browser to install the correct version of the mod for your version of Mindustry.
 A mod formely known as Mlog Assertions.
 
 > [!NOTE]
