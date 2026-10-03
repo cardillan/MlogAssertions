@@ -2,12 +2,15 @@ package cardillan.mlogassertions.ui;
 
 import arc.struct.Queue;
 import arc.struct.Seq;
-import arc.util.Log;
-import cardillan.mlogassertions.data.*;
-import mindustry.gen.Building;
+import cardillan.mlogassertions.data.Snapshot;
+import cardillan.mlogassertions.data.SnapshotManager;
+import cardillan.mlogassertions.data.VariableValues;
+import cardillan.mlogassertions.logic.SnapshotType;
+import mindustry.logic.Senseable;
 
-interface SnapshotList {
+interface Snapshots {
     boolean group();
+    boolean recording();
     String title();
     VariableValues liveData();
 
@@ -20,25 +23,30 @@ interface SnapshotList {
     boolean last();
     boolean hasNext();
     boolean hasPrev();
-    SnapshotList select(VariableValues var);
+    Snapshots select(VariableValues var);
 
     boolean canRemove();
     boolean remove();
 
     Seq<Snapshot> list();
 
-    static SnapshotList forBuild(final Building building) {
-        return new SnapshotList() {
+    static Snapshots forBuild(final Senseable entity) {
+        return new Snapshots() {
             static final int OBSOLETE = -2;
             static final int LIVE = -1;
 
-            final VariableValues live = Snapshots.liveView(building);
-            final Queue<Snapshot> queue = Snapshots.get(building);
+            final VariableValues live = SnapshotManager.liveView(entity);
+            final Queue<Snapshot> queue = SnapshotManager.get(entity);
             VariableValues view = live;
             int index = LIVE;
 
             @Override
             public boolean group() {
+                return false;
+            }
+
+            @Override
+            public boolean recording() {
                 return false;
             }
 
@@ -115,7 +123,7 @@ interface SnapshotList {
             }
 
             @Override
-            public SnapshotList select(VariableValues var) {
+            public Snapshots select(VariableValues var) {
                 if (var instanceof Snapshot snapshot) {
                     for (int i = 0; i < queue.size; i++) {
                         if (queue.get(i) == snapshot) {
@@ -137,7 +145,7 @@ interface SnapshotList {
             public boolean remove() {
                 if (updateIndex() < 0) return false;
 
-                queue.removeIndex(index);
+                SnapshotManager.delete(queue.removeIndex(index));
                 if (index > queue.size) index--;
                 return true;
             }
@@ -155,32 +163,29 @@ interface SnapshotList {
             }
 
             private int updateIndex() {
-                Log.info("updateIndex: current = " + index);
                 // Just to be sure
                 if (!(view instanceof Snapshot)) return index = LIVE;
 
                 if (index > LIVE) {
                     for (int i = index; i < queue.size; i++) {
                         if (queue.get(i) == view) {
-                            Log.info("updateIndex: found " + i);
                             return index = i;
                         }
                     }
-                    Log.info("updateIndex: obsolete");
 
                     // Obsolete
                     return index = -2;
                 }
 
-                Log.info("updateIndex: fixed index " + index);
                 // Live and obsolete indexes can't change
                 return index;
             }
         };
     }
 
-    static SnapshotList list(Seq<Snapshot> snapshots) {
-        return new SnapshotList() {
+    static Snapshots list(Seq<Snapshot> snapshots) {
+        return new Snapshots() {
+            boolean recording = snapshots.size > 0 && snapshots.first().type() == SnapshotType.recording;
             int index = 0;
 
             @Override
@@ -189,8 +194,13 @@ interface SnapshotList {
             }
 
             @Override
+            public boolean recording() {
+                return recording;
+            }
+
+            @Override
             public String title() {
-                return "Snapshot #" + snapshots.get(0).id() + ": " + snapshots.first().name();
+                return "Snapshot #" + snapshots.first().id() + ": " + snapshots.first().name();
             }
 
             @Override
@@ -200,7 +210,9 @@ interface SnapshotList {
 
             @Override
             public String pos() {
-                return (index + 1) + "/" + snapshots.size ;
+                return recording
+                        ? index + "/" + (snapshots.size - 1)
+                        : (index + 1) + "/" + snapshots.size ;
             }
 
             @Override
@@ -247,7 +259,7 @@ interface SnapshotList {
             }
 
             @Override
-            public SnapshotList select(VariableValues var) {
+            public Snapshots select(VariableValues var) {
                 index = 0;
                 for (int i = 0; i < snapshots.size; i++) {
                     if (snapshots.get(i) == var) {

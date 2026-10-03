@@ -43,7 +43,7 @@ public class LogicDialogAddon {
             wasPausedField = BaseDialog.class.getDeclaredField("wasPaused");
             wasPausedField.setAccessible(true);
         } catch (NoSuchFieldException | IllegalAccessException e) {
-            Log.err("Cannot access LogicDialog fields", e);
+            Log.err("[Mlog Dev Tools] Cannot access LogicDialog fields", e);
 
             // No point modifying the Logic dialog if we can't fully operate it
             return;
@@ -97,7 +97,7 @@ public class LogicDialogAddon {
             executor = (LExecutor) executorField.get(Vars.ui.logic);
             wasPaused = (boolean) wasPausedField.get(Vars.ui.logic);
         } catch (IllegalAccessException e) {
-            Log.err("Cannot access LogicDialog fields", e);
+            Log.err("[Mlog Dev Tools] Cannot access LogicDialog fields", e);
             return;
         }
 

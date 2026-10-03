@@ -6,6 +6,7 @@ import mindustry.gen.Icon;
 public enum SnapshotType {
     isolated    (Icon.logic,    (char)59406),
     connected   (Icon.sitemap,  (char)61672),
+    recording   (Icon.layers,   (char)59455),
     global      (Icon.planet,   (char)59443),
     ;
 

@@ -11,7 +11,6 @@ import arc.struct.FloatSeq;
 import arc.struct.ObjectMap;
 import arc.struct.Seq;
 import arc.util.Align;
-import arc.util.Log;
 import arc.util.pooling.Pools;
 import cardillan.mlogassertions.Constants;
 import cardillan.mlogassertions.Settings;
@@ -21,7 +20,6 @@ import mindustry.Vars;
 import mindustry.content.Fx;
 import mindustry.core.GameState;
 import mindustry.game.EventType;
-import mindustry.gen.Groups;
 import mindustry.graphics.Drawf;
 import mindustry.graphics.Layer;
 import mindustry.logic.LExecutor;
@@ -228,7 +226,7 @@ public class Assertions {
 
         if (ix >= 0 && ix < instructions.length) {
             LExecutor.LInstruction instruction = instructions[ix];
-            if (instruction instanceof LogicInstructions.AssertInstruction) {
+            if (instruction instanceof LogicInstructions.DevToolsInstruction) {
                 // These are handled in the instruction itself
                 return;
             }

@@ -35,37 +35,45 @@ public class SensorVars extends BaseVariableValues {
     public final Content[] contents;
     public final String[] labels;
 
-    public SensorVars(Building build) {
-        super(build);
+    public SensorVars(Senseable entity) {
+        super(entity);
 
         length = accessLabels.length
-                + (build.block.hasItems ? itemLabels.length : 0)
-                + (build.block.hasLiquids ? liquidLabels.length : 0);
+                + (hasItems() ? itemLabels.length : 0)
+                + (hasLiquids() ? liquidLabels.length : 0);
 
         contents = new Content[length - accessLabels.length];
         labels = new String[length];
 
         System.arraycopy(accessLabels, 0, labels, 0, accessLabels.length);
         int index = 0;
-        if (build.block.hasItems) {
+        if (hasItems()) {
             System.arraycopy(items, 0, contents, index, items.length);
             System.arraycopy(itemLabels, 0, labels, accessLabels.length + index, itemLabels.length);
             index += itemLabels.length;
         }
-        if (build.block.hasLiquids) {
+        if (hasLiquids()) {
             System.arraycopy(liquids, 0, contents, index, liquids.length);
             System.arraycopy(liquidLabels, 0, labels, accessLabels.length + index, liquidLabels.length);
         }
     }
 
-    @Override
-    public BlockDataType dataType() {
-        return BlockDataType.properties;
+    private boolean hasItems() {
+        return entity instanceof Building && ((Building)entity).block.hasItems || entity instanceof Senseable;
+    }
+
+    private boolean hasLiquids() {
+        return entity instanceof Building && ((Building)entity).block.hasLiquids;
     }
 
     @Override
-    public Building building() {
-        return build;
+    public EntityDataType dataType() {
+        return EntityDataType.entity;
+    }
+
+    @Override
+    public Senseable entity() {
+        return entity;
     }
 
     @Override
@@ -80,8 +88,8 @@ public class SensorVars extends BaseVariableValues {
 
     @Override
     public boolean isObj(int index) {
-        return index >= accessLabels.length ? LVar.invalid(build.sense(contents[index - accessLabels.length]))
-                : build.senseObject(LAccess.all[index]) != Senseable.noSensed || LVar.invalid(build.sense(LAccess.all[index]));
+        return index >= accessLabels.length ? LVar.invalid(entity.sense(contents[index - accessLabels.length]))
+                : entity.senseObject(LAccess.all[index]) != Senseable.noSensed || LVar.invalid(entity.sense(LAccess.all[index]));
     }
 
     @Override
@@ -94,14 +102,14 @@ public class SensorVars extends BaseVariableValues {
         if (index >= accessLabels.length) {
             return null;
         } else {
-            Object result = build.senseObject(LAccess.all[index]);
+            Object result = entity.senseObject(LAccess.all[index]);
             return result == Senseable.noSensed ? null : result;
         }
     }
 
     @Override
     public double num(int index) {
-        double value = index >= accessLabels.length ? build.sense(contents[index - accessLabels.length]) : build.sense(LAccess.all[index]);
+        double value = index >= accessLabels.length ? entity.sense(contents[index - accessLabels.length]) : entity.sense(LAccess.all[index]);
         return Double.isNaN(value) ? 0 : value;
     }
 

@@ -1,13 +1,9 @@
 package cardillan.mlogassertions.data;
 
 import arc.struct.Seq;
-import arc.util.Time;
 import cardillan.mlogassertions.logic.SnapshotType;
-import mindustry.gen.Building;
-import mindustry.logic.LAccess;
 import mindustry.logic.LVar;
 import mindustry.logic.Senseable;
-import mindustry.world.blocks.logic.LogicBlock;
 
 public class SensorSnapshot extends SensorVars implements Snapshot{
     public String name;
@@ -19,12 +15,12 @@ public class SensorSnapshot extends SensorVars implements Snapshot{
 
     private float[] typeDistribution = null;
 
-    public static SensorSnapshot create(Building build, SnapshotType type, int id, Seq<Snapshot> group, String name) {
-        return new SensorSnapshot(build, type, id, group, name);
+    public static SensorSnapshot create(Senseable entity, SnapshotType type, int id, Seq<Snapshot> group, String name) {
+        return new SensorSnapshot(entity, type, id, group, name);
     }
 
-    private SensorSnapshot(Building build, SnapshotType type, int id, Seq<Snapshot> group, String name) {
-        super(build);
+    private SensorSnapshot(Senseable entity, SnapshotType type, int id, Seq<Snapshot> group, String name) {
+        super(entity);
         this.type = type;
         this.id = id;
         this.group = group;
@@ -72,7 +68,10 @@ public class SensorSnapshot extends SensorVars implements Snapshot{
         return group;
     }
 
-
+    @Override
+    public Seq<Snapshot> recording() {
+        return null;
+    }
 
     @Override
     public boolean writeTo(VariableValues liveData) {
@@ -81,6 +80,12 @@ public class SensorSnapshot extends SensorVars implements Snapshot{
 
     @Override
     public float[] typeDistribution() {
+        if (typeDistribution == null) typeDistribution = computeTypeDistribution();
         return typeDistribution;
+    }
+
+    @Override
+    public void setDefaultFilter(LVar[] vars) {
+        // Do nothing
     }
 }

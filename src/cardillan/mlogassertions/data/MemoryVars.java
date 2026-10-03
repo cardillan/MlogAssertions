@@ -73,8 +73,8 @@ public class MemoryVars extends BaseVariableValues {
     }
 
     @Override
-    public BlockDataType dataType() {
-        return BlockDataType.memory;
+    public EntityDataType dataType() {
+        return EntityDataType.memory;
     }
 
     @Override

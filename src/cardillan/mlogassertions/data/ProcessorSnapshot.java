@@ -1,21 +1,17 @@
 package cardillan.mlogassertions.data;
 
 import arc.struct.Seq;
-import arc.util.Log;
-import arc.util.Time;
 import cardillan.mlogassertions.logic.SnapshotType;
-import mindustry.gen.Building;
 import mindustry.logic.LExecutor;
 import mindustry.logic.LVar;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
-
-import java.util.Arrays;
 
 public class ProcessorSnapshot extends ProcessorVars implements Snapshot {
     public String name;
     public final SnapshotType type;
     public final int id;
     public final Seq<Snapshot> group;
+    public final Seq<Snapshot> recording;
 
     public final String textBuffer;
     public final float timeWaited;
@@ -31,6 +27,7 @@ public class ProcessorSnapshot extends ProcessorVars implements Snapshot {
         this.type = type;
         this.id = id;
         this.group = group;
+        this.recording = type == SnapshotType.recording ? new Seq<>() : null;
         this.textBuffer = executor.textBuffer.toString();
         this.timeWaited = timeWaited();
         this.name = name;
@@ -78,6 +75,11 @@ public class ProcessorSnapshot extends ProcessorVars implements Snapshot {
     }
 
     @Override
+    public Seq<Snapshot> recording() {
+        return recording;
+    }
+
+    @Override
     public boolean writeTo(VariableValues liveData) {
         if (liveData instanceof ProcessorVars processor) {
             if (processor.data.length != data.length) return false;
@@ -107,5 +109,10 @@ public class ProcessorSnapshot extends ProcessorVars implements Snapshot {
     @Override
     public float[] typeDistribution() {
         return typeDistribution;
+    }
+
+    @Override
+    public void setDefaultFilter(LVar[] vars) {
+        selectedVars = vars;
     }
 }

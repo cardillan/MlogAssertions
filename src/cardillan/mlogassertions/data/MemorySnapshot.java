@@ -1,15 +1,9 @@
 package cardillan.mlogassertions.data;
 
 import arc.struct.Seq;
-import arc.util.Time;
 import cardillan.mlogassertions.logic.SnapshotType;
-import mindustry.Vars;
-import mindustry.logic.GlobalVars;
+import mindustry.logic.LVar;
 import mindustry.world.blocks.logic.MemoryBlock.MemoryBuild;
-
-import java.util.Arrays;
-import java.util.Date;
-import java.util.ResourceBundle;
 
 public class MemorySnapshot extends MemoryVars implements Snapshot {
     public String name;
@@ -49,6 +43,11 @@ public class MemorySnapshot extends MemoryVars implements Snapshot {
     }
 
     @Override
+    public Seq<Snapshot> recording() {
+        return null;
+    }
+
+    @Override
     public boolean writeTo(VariableValues liveData) {
         if (liveData instanceof MemoryVars memory) {
             if (memory.length != length) return false;
@@ -66,5 +65,10 @@ public class MemorySnapshot extends MemoryVars implements Snapshot {
     public float[] typeDistribution() {
         if (typeDistribution == null) typeDistribution = computeTypeDistribution();
         return typeDistribution;
+    }
+
+    @Override
+    public void setDefaultFilter(LVar[] vars) {
+        // Do nothing
     }
 }

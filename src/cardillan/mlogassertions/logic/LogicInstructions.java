@@ -4,20 +4,22 @@ import arc.Core;
 import arc.util.Log;
 import cardillan.mlogassertions.Constants;
 import cardillan.mlogassertions.Settings;
-import cardillan.mlogassertions.data.Snapshots;
+import cardillan.mlogassertions.data.Snapshot;
+import cardillan.mlogassertions.data.SnapshotManager;
 import cardillan.mlogassertions.ui.Assertions;
-import mindustry.gen.Building;
 import mindustry.logic.ConditionOp;
 import mindustry.logic.LExecutor;
 import mindustry.logic.LVar;
+import mindustry.logic.Senseable;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
 
 public class LogicInstructions {
 
-    public interface AssertInstruction {
+    public interface DevToolsInstruction extends LExecutor.LInstruction {
+        LVar[] vars();
     }
 
-    public static class AssertI implements LExecutor.LInstruction, AssertInstruction {
+    public static class AssertI implements DevToolsInstruction {
         public ConditionOp op = ConditionOp.notEqual;
         public LVar value, compare;
         public LVar message;
@@ -33,6 +35,11 @@ public class LogicInstructions {
         }
 
         @Override
+        public LVar[] vars() {
+            return new LVar[] { value, compare, message };
+        }
+
+        @Override
         public final void run(LExecutor exec) {
             if (op.test(value, compare)) {
                 Assertions.reset(exec.build);
@@ -42,7 +49,7 @@ public class LogicInstructions {
         }
     }
 
-    public static class AssertBoundsI implements LExecutor.LInstruction, AssertInstruction {
+    public static class AssertBoundsI implements DevToolsInstruction {
         public AssertionType type = AssertionType.any;
         public LVar multiple;
         public LVar min;
@@ -67,6 +74,11 @@ public class LogicInstructions {
         }
 
         @Override
+        public LVar[] vars() {
+            return new LVar[] { multiple, min, value, max, message };
+        }
+
+        @Override
         public final void run(LExecutor exec) {
             if ((value.isobj ? type.objFunction.get(value.objval) : type.function.get(value.num()))
                     && (type != AssertionType.multiple || (value.num() % multiple.num() == 0))
@@ -87,7 +99,7 @@ public class LogicInstructions {
         }
     }
 
-    public static class AssertEqualsI implements LExecutor.LInstruction, AssertInstruction {
+    public static class AssertEqualsI implements DevToolsInstruction {
         public LVar expected;
         public LVar actual;
         public LVar message;
@@ -102,6 +114,11 @@ public class LogicInstructions {
         }
 
         @Override
+        public LVar[] vars() {
+            return new LVar[] { expected, actual, message };
+        }
+
+        @Override
         public final void run(LExecutor exec) {
             if (ConditionOp.strictEqual.test(expected, actual)) {
                 Assertions.reset(exec.build);
@@ -111,7 +128,7 @@ public class LogicInstructions {
         }
     }
 
-    public static class AssertFlushI implements LExecutor.LInstruction {
+    public static class AssertFlushI implements DevToolsInstruction {
         public LVar flushIndex;
 
         public AssertFlushI(LVar flushIndex) {
@@ -122,12 +139,17 @@ public class LogicInstructions {
         }
 
         @Override
+        public LVar[] vars() {
+            return new LVar[] { flushIndex };
+        }
+
+        @Override
         public final void run(LExecutor exec) {
             flushIndex.setnum(exec.textBuffer.length());
         }
     }
 
-    public static class AssertPrintsI implements LExecutor.LInstruction, AssertInstruction {
+    public static class AssertPrintsI implements DevToolsInstruction {
         public LVar flushIndex;
         public LVar expected;
         public LVar message;
@@ -139,6 +161,11 @@ public class LogicInstructions {
         }
 
         public AssertPrintsI() {
+        }
+
+        @Override
+        public LVar[] vars() {
+            return new LVar[] { flushIndex, expected, message };
         }
 
         @Override
@@ -159,7 +186,7 @@ public class LogicInstructions {
         }
     }
 
-    public static class AssertTypeI implements LExecutor.LInstruction, AssertInstruction {
+    public static class AssertTypeI implements DevToolsInstruction {
         public AssertionDataType expectedType = AssertionDataType.number;
         public LVar actualValue;
         public LVar message;
@@ -174,6 +201,11 @@ public class LogicInstructions {
         }
 
         @Override
+        public LVar[] vars() {
+            return new LVar[] { actualValue, message };
+        }
+
+        @Override
         public final void run(LExecutor exec) {
             if (expectedType.matches(actualValue)) {
                 Assertions.reset(exec.build);
@@ -183,7 +215,7 @@ public class LogicInstructions {
         }
     }
 
-    public static class BreakpointI implements LExecutor.LInstruction, AssertInstruction {
+    public static class BreakpointI implements DevToolsInstruction {
         public ConditionOp op = ConditionOp.notEqual;
         public LVar value, compare;
 
@@ -197,6 +229,11 @@ public class LogicInstructions {
         }
 
         @Override
+        public LVar[] vars() {
+            return new LVar[] { value, compare };
+        }
+
+        @Override
         public void run(LExecutor exec) {
             if (op.test(value, compare)) {
                 breakpoint(exec.build, Core.bundle.format("breakpoint.message", exec.counter.numval - 1));
@@ -204,7 +241,7 @@ public class LogicInstructions {
         }
     }
 
-    public static class ErrorI implements LExecutor.LInstruction, AssertInstruction {
+    public static class ErrorI implements DevToolsInstruction {
         public LVar[] vars = new LVar[10];
 
         public ErrorI(LVar[] vars) {
@@ -212,6 +249,11 @@ public class LogicInstructions {
         }
 
         public ErrorI() {
+        }
+
+        @Override
+        public LVar[] vars() {
+            return vars;
         }
 
         @Override
@@ -224,7 +266,7 @@ public class LogicInstructions {
         }
     }
 
-    public static class LogI implements LExecutor.LInstruction, AssertInstruction {
+    public static class LogI implements DevToolsInstruction {
         Log.LogLevel level = Log.LogLevel.info;
         public LVar[] vars = new LVar[10];
 
@@ -237,18 +279,89 @@ public class LogicInstructions {
         }
 
         @Override
+        public LVar[] vars() {
+            return vars;
+        }
+
+        @Override
         public final void run(LExecutor exec) {
             Log.log(level, buildMessage(exec, "[Mlog Dev Tools] ", true, vars[0], vars));
         }
     }
 
-    public static class SnapshotI implements LExecutor.LInstruction, AssertInstruction {
-        public SnapshotType type = SnapshotType.isolated;
-        public LVar block, message;
+    public static class ProfileI implements DevToolsInstruction {
+        public ProfilingCommand type = ProfilingCommand.start;
+        public LVar target;
 
-        public SnapshotI(SnapshotType type, LVar block, LVar message) {
+        public ProfileI(ProfilingCommand type, LVar target) {
             this.type = type;
-            this.block = block;
+            this.target = target;
+        }
+
+        public ProfileI() {
+        }
+
+        @Override
+        public LVar[] vars() {
+            return new LVar[] {target };
+        }
+
+        @Override
+        public void run(LExecutor exec) {
+            if (target.obj() instanceof LogicBuild build) {
+                switch (type) {
+                    case start -> InstrumentationEngine.startProfiling(build);
+                    case stop -> InstrumentationEngine.stopProfiling(build);
+                    case clear -> InstrumentationEngine.clearProfilingData(build);
+                }
+            }
+        }
+    }
+
+    public static class RestartI implements DevToolsInstruction {
+        public LVar target;
+
+        public RestartI(LVar target) {
+            this.target = target;
+        }
+
+        public RestartI() {
+        }
+
+        @Override
+        public LVar[] vars() {
+            return new LVar[] {target };
+        }
+
+        @Override
+        public void run(LExecutor exec) {
+            if (target.obj() instanceof LogicBuild build) {
+                if (build.accumulator < 2f) {
+                    // Make sure the accumulator allows executing this instruciotn and the following one
+                    // Allows resetting a processor and activating snapshotting on it.
+                    exec.counter.numval --;
+                    exec.yield = true;
+                    return;
+                }
+
+                // 'build.updateCode' doesn't trigger the ConfigEvent, must restart profiling explicitly
+                Instrumentation instrumentation = InstrumentationEngine.getInstrumentation(build);
+                build.updateCode(build.code);
+                if (instrumentation != null && instrumentation.profiling) {
+                    InstrumentationEngine.startProfiling(build);
+                }
+            }
+        }
+    }
+
+    public static class SnapshotI implements DevToolsInstruction {
+        public SnapshotType type = SnapshotType.isolated;
+        public LVar target, steps, message;
+
+        public SnapshotI(SnapshotType type, LVar target, LVar steps, LVar message) {
+            this.type = type;
+            this.target = target;
+            this.steps = steps;
             this.message = message;
         }
 
@@ -256,34 +369,21 @@ public class LogicInstructions {
         }
 
         @Override
-        public void run(LExecutor exec) {
-            if (block.obj() instanceof Building building) {
-                Snapshots.create(building, type, message.isobj && message.objval == null
-                        ? "Mlog " + type + " snapshot"
-                        : buildMessage(exec, "", false, message, new Object[0]));
-            }
+        public LVar[] vars() {
+            return new LVar[] {target, steps, message };
         }
 
-        private String message(LExecutor exec) {
-            if (message.obj() instanceof String str) {
-                int pos = str.indexOf("{");
-                if (pos < 0) return str;
+        @Override
+        public void run(LExecutor exec) {
+            if (target.obj() instanceof Senseable senseable) {
+                Snapshot master = SnapshotManager.create(senseable, type, message.isobj && message.objval == null
+                        ? "Mlog " + type + " snapshot"
+                        : buildMessage(exec, "", false, message, new Object[0]));
 
-                StringBuilder sbr = new StringBuilder(str);
-                while (pos >= 0) {
-                    int end = sbr.indexOf("}", pos);
-                    if (end < 0) break;
-                    LVar var = exec.optionalVar(sbr.substring(pos + 1, end));
-                    if (var != null) {
-                        String replacement = print(var);
-                        sbr.replace(pos, end + 1, replacement);
-                        end = pos + replacement.length();
-                    }
-                    pos = end < sbr.length() ? sbr.indexOf("{", end) : -1;
+                if (type == SnapshotType.recording && target.obj() instanceof LogicBuild build) {
+                    master.recording().add(master);
+                    InstrumentationEngine.startInstructionSnapshots(build, steps.numi(), master);
                 }
-                return sbr.toString();
-            } else {
-                return print(message);
             }
         }
     }
@@ -294,8 +394,8 @@ public class LogicInstructions {
             breakpoint(exec.build, formatAssertionMessage(exec, bundleKey, message, arguments));
         } else {
             Assertions.setMessage(exec.build, () -> formatAssertionMessage(exec, bundleKey, message, arguments));
-            if (Settings.snapshotOnAssertion() && Snapshots.maxSnapshots > 0) {
-                Snapshots.create(exec.build, SnapshotType.isolated, formatAssertionMessage(exec, bundleKey, message, arguments));
+            if (Settings.snapshotOnAssertion() && SnapshotManager.maxSnapshots > 0) {
+                SnapshotManager.create(exec.build, SnapshotType.isolated, formatAssertionMessage(exec, bundleKey, message, arguments));
             }
             exec.counter.numval--;
             exec.yield = true;
@@ -304,8 +404,8 @@ public class LogicInstructions {
 
     private static void breakpoint(LogicBuild build, String message) {
         if (Settings.disableBreakpoints()) return;
-        if (Settings.snapshotOnAssertion() && Snapshots.maxSnapshots > 0) {
-            Snapshots.create(build, SnapshotType.connected, "Breakpoint snapshot at #" + ((int)build.executor.counter.numval - 1));
+        if (Settings.snapshotOnAssertion() && SnapshotManager.maxSnapshots > 0) {
+            SnapshotManager.create(build, SnapshotType.connected, "Breakpoint snapshot at #" + ((int)build.executor.counter.numval - 1));
         }
         Assertions.breakpoint(build, message);
     }

@@ -13,8 +13,6 @@ import mindustry.logic.*;
 import mindustry.logic.LStatements.JumpStatement;
 import mindustry.ui.Styles;
 
-import static mindustry.logic.LCanvas.tooltip;
-
 public class LogicStatements {
     private static final LogicStatementWriter writer = new LogicStatementWriter();
 
@@ -28,6 +26,8 @@ public class LogicStatements {
         register(BreakpointStatement::new, BreakpointStatement.opcode, BreakpointStatement::read);
         register(ErrorStatement::new, ErrorStatement.opcode, ErrorStatement::read);
         register(LogStatement::new, LogStatement.opcode, LogStatement::read);
+        register(ProfileStatement::new, ProfileStatement.opcode, ProfileStatement::read);
+        register(RestartStatement::new, RestartStatement.opcode, RestartStatement::read);
         register(SnapshotStatement::new, SnapshotStatement.opcode, SnapshotStatement::read);
     }
 
@@ -572,11 +572,90 @@ public class LogicStatements {
         }
     }
 
+    public static class ProfileStatement extends AbstractAssertStatement {
+        public static final String opcode = "profile";
+
+        public ProfilingCommand command = ProfilingCommand.start;
+        public String block = "@this";
+
+        public ProfileStatement() {
+            super("Profile");
+        }
+
+        protected void rebuild(Table t) {
+            t.clearChildren();
+            t.left();
+
+            select(t, "", ProfilingCommand.all, command, o -> command = o, 1, 70f);
+            fields(t, "profiling of", false, block, str -> block = str);
+        }
+
+        @Override
+        public LExecutor.LInstruction build(LAssembler builder) {
+            return new LogicInstructions.ProfileI(command, builder.var(block));
+        }
+
+        @Override
+        public void write(StringBuilder builder) {
+            writer.start(builder);
+            writer.write(opcode);
+            writer.write(command.name());
+            writer.write(block);
+            writer.end();
+        }
+
+        public static LStatement read(String[] tokens) {
+            ProfileStatement stmt = new ProfileStatement();
+            int i = 1;
+            if (tokens.length > i) stmt.command = ProfilingCommand.valueOf(tokens[i++]);
+            if (tokens.length > i) stmt.block = tokens[i++];
+            return stmt;
+        }
+    }
+
+    public static class RestartStatement extends AbstractAssertStatement {
+        public static final String opcode = "restart";
+
+        public String block = "@this";
+
+        public RestartStatement() {
+            super("Restart");
+        }
+
+        protected void rebuild(Table t) {
+            t.clearChildren();
+            t.left();
+
+            fields(t, block, str -> block = str);
+        }
+
+        @Override
+        public LExecutor.LInstruction build(LAssembler builder) {
+            return new LogicInstructions.RestartI(builder.var(block));
+        }
+
+        @Override
+        public void write(StringBuilder builder) {
+            writer.start(builder);
+            writer.write(opcode);
+            writer.write(block);
+            writer.end();
+        }
+
+        public static LStatement read(String[] tokens) {
+            RestartStatement stmt = new RestartStatement();
+            int i = 1;
+            if (tokens.length > i) stmt.block = tokens[i++];
+            return stmt;
+        }
+    }
+
     public static class SnapshotStatement extends AbstractAssertStatement {
         public static final String opcode = "snapshot";
 
         public SnapshotType type = SnapshotType.isolated;
         public String block = "@this";
+        public String steps = "20";
 
         public SnapshotStatement() {
             super("Snapshot");
@@ -586,20 +665,24 @@ public class LogicStatements {
             t.clearChildren();
             t.left();
 
-            select(t, "create", SnapshotType.all, type, o -> type = o, 1, 130f);
-            if (type == SnapshotType.global) {
-                t.add(" snapshot");
+            select(t, "create", SnapshotType.all, type, o -> type = o, 2, 130f);
+            if (type == SnapshotType.recording) {
+                fields(t, "snapshot of the next", false, steps, str -> steps = str).width(75f);
+                fields(t, "steps in", false, block, str -> block = str);
             } else {
-                t.add(" snapshot of ");
-                field(t, block, str -> block = str);
-            }
+                if (type == SnapshotType.global) {
+                    t.add("snapshot");
+                } else {
+                    fields(t, "snapshot of", false, block, str -> block = str);
+                }
 
-            message(t, "name", "Snapshot created at #{@counter}.");
+                message(t, "name", "Snapshot created at #{@counter}.");
+            }
         }
 
         @Override
         public LExecutor.LInstruction build(LAssembler builder) {
-            return new LogicInstructions.SnapshotI(type, builder.var(block), builder.var(message));
+            return new LogicInstructions.SnapshotI(type, builder.var(block), builder.var(steps), builder.var(message));
         }
 
         @Override
@@ -608,6 +691,7 @@ public class LogicStatements {
             writer.write(opcode);
             writer.write(type.name());
             writer.write(block);
+            writer.write(steps);
             writer.write(message);
             writer.end();
         }
@@ -617,6 +701,7 @@ public class LogicStatements {
             int i = 1;
             if (tokens.length > i) stmt.type = SnapshotType.valueOf(tokens[i++]);
             if (tokens.length > i) stmt.block = tokens[i++];
+            if (tokens.length > i) stmt.steps = tokens[i++];
             if (tokens.length > i) stmt.message = tokens[i++];
             return stmt;
         }

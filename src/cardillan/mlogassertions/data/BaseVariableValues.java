@@ -1,44 +1,46 @@
 package cardillan.mlogassertions.data;
 
-import cardillan.mlogassertions.ui.VarsDialog;
+import arc.graphics.g2d.TextureRegion;
 import mindustry.Vars;
 import mindustry.ctype.Content;
 import mindustry.ctype.MappableContent;
 import mindustry.game.Team;
 import mindustry.gen.Building;
-import mindustry.gen.Iconc;
+import mindustry.gen.Posc;
 import mindustry.gen.Unit;
+import mindustry.logic.Senseable;
 
 import static cardillan.mlogassertions.Constants.COLOR_LIMIT;
 
 public abstract class BaseVariableValues implements VariableValues {
-    public final long timestamp = (long) (Vars.state.tick / 60.0 * 1000.0);
-    public final Building build;
+    public final double tick = Vars.state.tick;
+    public final Senseable entity;
 
-    public BaseVariableValues(Building build) {
-        this.build = build;
+    public BaseVariableValues(Senseable entity) {
+        this.entity = entity;
     }
 
     @Override
-    public long timestamp() {
-        return timestamp;
+    public Senseable entity() {
+        return entity;
     }
 
     @Override
-    public Building building() {
-        return build;
-    }
-
-    @Override
-    public String buildingDesc() {
-        return build.block.localizedName;
+    public String entityDesc() {
+        if (entity instanceof Building b) return b.block.localizedName;
+        if (entity instanceof Unit u) return u.type.localizedName;
+        return entity.getClass().getSimpleName();
     }
 
     private String buildingPos;
     @Override
-    public String buildingPos() {
+    public String entityPos() {
         if (buildingPos == null) {
-            buildingPos = String.format("%.0f,\u00a0%.0f", build.x() / Vars.tilesize, build.y() / Vars.tilesize);
+            if (entity instanceof Posc p) {
+                buildingPos = String.format("%.0f,\u00a0%.0f", p.x() / Vars.tilesize, p.y() / Vars.tilesize);
+            } else {
+                buildingPos = "";
+            }
         }
         return buildingPos;
     }
@@ -47,23 +49,26 @@ public abstract class BaseVariableValues implements VariableValues {
     @Override
     public String buildingDescMulti() {
         if (buildingDescMulti == null) {
-            buildingDescMulti = String.format("%s\n[gray](%.0f,\u00a0%.0f)", build.block.localizedName, build.x() / Vars.tilesize, build.y() / Vars.tilesize);
+            if (entity instanceof Posc p) {
+                buildingDescMulti = String.format("%s\n[gray](%.0f,\u00a0%.0f)", entityDesc(), p.x() / Vars.tilesize, p.y() / Vars.tilesize);
+            } else {
+                buildingPos = entityDesc();
+            }
         }
         return buildingDescMulti;
+    }
+
+    @Override
+    public TextureRegion icon() {
+        return entity instanceof Building b ? b.block.uiIcon :
+                entity instanceof Unit unit ? unit.type.uiIcon :
+                        null;
     }
 
     private String time;
     @Override
     public String time() {
-        if (time == null) {
-            if (timestamp > 86_400_000) {
-                int days = (int) (timestamp / 86_400_000);
-                long millis = timestamp % 86_400_000;
-                time = String.format("%dd %d:%02d:%02d.%03d", days, millis / 3_600_000, millis / 60_000 % 60, millis / 1000 % 60, millis % 1000);
-            } else {
-                time = String.format("%d:%02d:%02d.%03d", timestamp / 3_600_000, timestamp / 60_000 % 60, timestamp / 1000 % 60, timestamp % 1000);
-            }
-        }
+        if (time == null) time = String.format("%,.2f", tick);
         return time;
     }
 

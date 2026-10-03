@@ -16,6 +16,8 @@ public class ProcessorVars extends BaseVariableValues {
     public final int start;
     public int length;
 
+    public LVar[] selectedVars = null;
+
     LVar id;
 
     public ProcessorVars(LogicBuild build) {
@@ -73,17 +75,17 @@ public class ProcessorVars extends BaseVariableValues {
 
         rawId = text;
         formattedId = new String(buffer, 0, l);
-        formattedIdMulti = new String(bufferM, 0, l) + " [gray](" + buildingPos() + ")";
+        formattedIdMulti = new String(bufferM, 0, l) + " [gray](" + entityPos() + ")";
     }
 
     @Override
-    public BlockDataType dataType() {
-        return BlockDataType.processor;
+    public EntityDataType dataType() {
+        return EntityDataType.processor;
     }
 
     @Override
-    public String buildingDesc() {
-        if (id == null || !(id.obj() instanceof String text)) return super.buildingDesc();
+    public String entityDesc() {
+        if (id == null || !(id.obj() instanceof String text)) return super.entityDesc();
         if (rawId != text) updateDesc(text);
         return formattedId;
     }
@@ -154,12 +156,21 @@ public class ProcessorVars extends BaseVariableValues {
             if (data[i] == null) continue;
             if (filtered && isTemp(data[i].name)) continue;
             if (hideLinks && data[i].constant && data[i].name.charAt(0) != '@') continue;
+            if (selectedVars != null && i >= start && !foundVar(data[i], selectedVars)) continue;
             view[length++] = data[i];
         }
 
         if (sorted) {
             Arrays.sort(view, start, length, mindcodeOrder);
         }
+    }
+
+    private boolean foundVar(LVar var, LVar[] selectedVars) {
+        // A typical instruction only has a handful of variables
+        for (int i = 0; i < selectedVars.length; i++) {
+            if (selectedVars[i].name.equals(var.name)) return true;
+        }
+        return false;
     }
 
     private enum VariableClass {

@@ -1,22 +1,14 @@
 package cardillan.mlogassertions.data;
 
 import arc.Events;
-import arc.struct.ObjectMap;
 import arc.struct.ObjectSet;
 import arc.struct.Seq;
 import arc.util.Log;
-import cardillan.mlogassertions.ui.Assertions;
 import mindustry.Vars;
-import mindustry.core.GameState;
 import mindustry.game.EventType;
 import mindustry.gen.Groups;
-import mindustry.world.blocks.logic.LogicBlock;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
-import mindustry.world.blocks.logic.MemoryBlock;
 import mindustry.world.blocks.logic.MemoryBlock.MemoryBuild;
-
-import static arc.Core.camera;
-import static mindustry.Vars.tilesize;
 
 public class MapIndex {
     // Keeps a current list of all processors and memory blocks on the map

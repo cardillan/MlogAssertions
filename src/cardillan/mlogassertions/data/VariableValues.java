@@ -1,17 +1,18 @@
 package cardillan.mlogassertions.data;
 
 import arc.func.Cons;
-import mindustry.gen.Building;
+import arc.graphics.g2d.TextureRegion;
+import mindustry.logic.Senseable;
 
 public interface VariableValues {
-    long timestamp();
     String time();
 
-    BlockDataType dataType();
-    Building building();
-    String buildingDesc();
-    String buildingPos();
+    EntityDataType dataType();
+    Senseable entity();
+    String entityDesc();
+    String entityPos();
     String buildingDescMulti();
+    TextureRegion icon();
 
     boolean live();
     boolean valid();
