@@ -152,6 +152,10 @@ public class InstrumentationEngine {
         return getInstrumentation(build, false, Instrumentation::stopProfiling);
     }
 
+    public static Instrumentation stopAll(LogicBuild build) {
+        return getInstrumentation(build, false, Instrumentation::stopAll);
+    }
+
     public static Instrumentation clearProfilingData(LogicBuild build) {
         return getInstrumentation(build, false, Instrumentation::clearProfilingData);
     }

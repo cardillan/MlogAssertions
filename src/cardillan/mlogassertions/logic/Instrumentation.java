@@ -10,6 +10,7 @@ import mindustry.logic.LVar;
 import mindustry.world.blocks.logic.LogicBlock;
 
 import java.util.Arrays;
+import java.util.BitSet;
 
 public class Instrumentation {
     public final LExecutor executor;
@@ -23,6 +24,7 @@ public class Instrumentation {
 
     // Profiling: live data
     public boolean profiling = false;
+    public final BitSet covered;
     public final int[] branching;
     public final int[] steps;
     public final float[] time;
@@ -43,9 +45,10 @@ public class Instrumentation {
         this.instructions = executor.instructions;
         this.maxInstructionScale = ((LogicBlock)executor.build.block).maxInstructionScale;
 
+        this.covered = new BitSet(size);
+        this.branching = new int[size];
         this.steps = new int[size];
         this.time = new float[size];
-        this.branching = new int[size];
         this.colors = new Color[size];
         this.source = new String[size];
 
@@ -54,7 +57,7 @@ public class Instrumentation {
         for (int i = 0; i < instructions.length; i++) {
             LExecutor.LInstruction instruction = instructions[i];
             source[i] = i < parsedSeq.size ? printInstruction(parsedSeq.get(i)) : "unknown instruction";
-            colors[i] = InstrumentationEngine.getCategory(instruction).color;
+            colors[i] = InstrumentationEngine.getCategory(instruction).color.cpy().mul(0.8f);
             branching[i] = instruction instanceof LExecutor.JumpI ? 0 : -1;
             instructions[i] = instrument(instruction);
         }
@@ -66,6 +69,11 @@ public class Instrumentation {
 
     public void stopProfiling() {
         profiling = false;
+    }
+
+    public void stopAll() {
+        profiling = false;
+        snapshotSteps = 0;
     }
 
     public void clearProfilingData() {
@@ -82,6 +90,11 @@ public class Instrumentation {
 
     private void recordStep(LExecutor exec, int index) {
         if (profiling && index >= 0 && index < steps.length) {
+            if (!covered.get(index)) {
+                covered.set(index);
+                coverage++;
+            }
+
             int newCounter = (int) (exec.counter.numval);
             if (newCounter != index + 1 && branching[index] >= 0) branching[index]++;
 
@@ -105,11 +118,11 @@ public class Instrumentation {
                 if (updatedSteps > maxSteps) maxSteps = updatedSteps;
             }
 
-            if (time[index] == 0 && curTime > 0) coverage++;
-
-            totalTime += curTime;
-            float updatedTime = time[index] += curTime;
-            if (updatedTime > maxTime) maxTime = updatedTime;
+            if (curTime > 0) {
+                totalTime += curTime;
+                float updatedTime = time[index] += curTime;
+                if (updatedTime > maxTime) maxTime = updatedTime;
+            }
         }
     }
 
@@ -133,7 +146,7 @@ public class Instrumentation {
         return sbr.toString();
     }
 
-    private interface InstrumentedInstruction extends LExecutor.LInstruction {
+    public static interface InstrumentedInstruction extends LExecutor.LInstruction {
         LExecutor.LInstruction instruction();
     }
 
@@ -171,6 +184,11 @@ public class Instrumentation {
             if (snapshotSteps > 0) {
                 snapshotSteps--;
                 createSnapshot(index, vars());
+            }
+
+            if (exec.stop) {
+                profiling = false;
+                snapshotSteps = 0;
             }
         }
     }

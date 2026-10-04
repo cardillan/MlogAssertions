@@ -263,6 +263,7 @@ public class LogicInstructions {
             Assertions.setMessage(building, () -> buildMessage(exec, "", true, vars[0], vars));
             exec.counter.numval--;
             exec.yield = true;
+            exec.stop = true;
         }
     }
 
@@ -399,6 +400,7 @@ public class LogicInstructions {
             }
             exec.counter.numval--;
             exec.yield = true;
+            exec.stop = true;
         }
     }
 

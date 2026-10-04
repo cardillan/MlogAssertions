@@ -15,6 +15,7 @@ import arc.util.pooling.Pools;
 import cardillan.mlogassertions.Constants;
 import cardillan.mlogassertions.Settings;
 import cardillan.mlogassertions.data.MapIndex;
+import cardillan.mlogassertions.logic.Instrumentation;
 import cardillan.mlogassertions.logic.LogicInstructions;
 import mindustry.Vars;
 import mindustry.content.Fx;
@@ -226,6 +227,8 @@ public class Assertions {
 
         if (ix >= 0 && ix < instructions.length) {
             LExecutor.LInstruction instruction = instructions[ix];
+            if (instruction instanceof Instrumentation.InstrumentedInstruction instr) instruction = instr.instruction();
+
             if (instruction instanceof LogicInstructions.DevToolsInstruction) {
                 // These are handled in the instruction itself
                 return;
