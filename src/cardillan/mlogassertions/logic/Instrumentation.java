@@ -23,11 +23,15 @@ public class Instrumentation {
 
     // Profiling: live data
     public boolean profiling = false;
-    public final int[] executions;
     public final int[] branching;
+    public final int[] steps;
+    public final float[] time;
     public int coverage = 0;
-    public int totalSteps = 0;
     public int maxSteps = 0;
+    public int totalSteps = 0;
+    public float maxTime = 0;
+    public float totalTime = 0;
+    public float lostQuota = 0;
 
     // Snapshotting
     public Snapshot master;
@@ -35,24 +39,25 @@ public class Instrumentation {
 
     public Instrumentation(LExecutor executor) {
         this.executor = executor;
-        instructions = executor.instructions;
-        maxInstructionScale = ((LogicBlock)executor.build.block).maxInstructionScale;
-        executions = new int[executor.instructions.length];
-        branching = new int[executor.instructions.length];
-        colors = new Color[executor.instructions.length];
+        this.size = executor.instructions.length;
+        this.instructions = executor.instructions;
+        this.maxInstructionScale = ((LogicBlock)executor.build.block).maxInstructionScale;
+
+        this.steps = new int[size];
+        this.time = new float[size];
+        this.branching = new int[size];
+        this.colors = new Color[size];
+        this.source = new String[size];
+
+        Seq<LStatement> parsedSeq = InstrumentationEngine.parse(executor.build.code, executor.privileged);
 
         for (int i = 0; i < instructions.length; i++) {
             LExecutor.LInstruction instruction = instructions[i];
+            source[i] = i < parsedSeq.size ? printInstruction(parsedSeq.get(i)) : "unknown instruction";
             colors[i] = InstrumentationEngine.getCategory(instruction).color;
             branching[i] = instruction instanceof LExecutor.JumpI ? 0 : -1;
             instructions[i] = instrument(instruction);
         }
-
-        size = executions.length;
-
-        Seq<LStatement> parsedSeq = InstrumentationEngine.parse(executor.build.code, executor.privileged);
-        source = new String[size];
-        for (int i = 0; i < size; i++) source[i] = i < parsedSeq.size ? printInstruction(parsedSeq.get(i)) : "unknown instruction";
     }
 
     public void startProfiling() {
@@ -64,19 +69,47 @@ public class Instrumentation {
     }
 
     public void clearProfilingData() {
-        Arrays.fill(executions, 0);
+        Arrays.fill(steps, 0);
+        Arrays.fill(time, 0f);
         for (int i = 0; i < branching.length; i++) branching[i] = Math.min(branching[i], 0);
         coverage = 0;
         maxSteps = 0;
         totalSteps = 0;
+        maxTime = 0;
+        totalTime = 0;
+        lostQuota = 0;
     }
 
-    private void recordStep(int index, int steps) {
-        if (profiling && steps > 0 && index >= 0 && index < executions.length) {
-            totalSteps += steps;
-            if (executions[index] == 0) coverage++;
-            int num = executions[index] += steps;
-            if (num > maxSteps) maxSteps = num;
+    private void recordStep(LExecutor exec, int index) {
+        if (profiling && index >= 0 && index < steps.length) {
+            int newCounter = (int) (exec.counter.numval);
+            if (newCounter != index + 1 && branching[index] >= 0) branching[index]++;
+
+            boolean step = true;
+            float curTime = 1f;
+            if (exec.yield) {
+                // Yielding: account for possibly lost execution quota
+                LogicBlock.LogicBuild build = exec.build;
+                float futureAccumulator = build.accumulator + build.edelta() * build.ipt;
+                float loss = futureAccumulator - maxInstructionScale * build.ipt;
+                curTime = Math.max(0, loss);
+                lostQuota += curTime;
+
+                // Detect wait 0: the instruction yields, but makes a step
+                step = newCounter != index;
+            }
+
+            if (step) {
+                if (steps[index] == 0) coverage++;
+
+                totalSteps++;
+                int updatedSteps = steps[index]++;
+                if (updatedSteps > maxSteps) maxSteps = updatedSteps;
+            }
+
+            totalTime += curTime;
+            float updatedTime = time[index] += curTime;
+            if (updatedTime > maxTime) maxTime = updatedTime;
         }
     }
 
@@ -122,18 +155,18 @@ public class Instrumentation {
         }
 
         public LVar[] vars() {
-            if (vars == null) vars = InstrumentationEngine.getVars(instruction, implicitUnit ? 1 : 0);
-            if (implicitUnit && vars != null) vars[0] = executor.unit;
+            if (vars == null) {
+                vars = InstrumentationEngine.getVars(instruction, implicitUnit ? 1 : 0);
+                if (implicitUnit) vars[0] = executor.unit;
+            }
             return vars;
         }
 
         @Override
         public void run(LExecutor exec) {
             int index = (int) (exec.counter.numval - 1);
-            recordStep(index, 1);
-
             instruction.run(exec);
-            if (index != (int) (exec.counter.numval - 1) && branching[index] >= 0) branching[index]++;
+            recordStep(exec, index);
 
             if (snapshotSteps > 0) {
                 snapshotSteps--;
@@ -145,7 +178,6 @@ public class Instrumentation {
     private class InstrumentedWait extends LExecutor.WaitI implements InstrumentedInstruction {
         LExecutor.WaitI instruction;
         LVar[] vars = null;
-        float lostAccumulator = 0f;
 
         public InstrumentedWait(LExecutor.WaitI instruction) {
             this.instruction = instruction;
@@ -165,29 +197,13 @@ public class Instrumentation {
         @Override
         public void run(LExecutor exec) {
             int index = (int) (exec.counter.numval - 1);
-
             instruction.run(exec);
-            this.curTime = instruction.curTime;
+            recordStep(exec, index);
 
-            if (instruction.curTime == 0) {
-                // Wait ended: the accumulator is going to be consumed.
-                // Zero-length wait doesn't consume the accumulator,
-                // but not acknowledging that would make it appear the instruction isn't executed at all
-                recordStep(index, 1);
-
-                if (snapshotSteps > 0) {
-                    snapshotSteps--;
-                    createSnapshot(index, vars());
-                }
-            } else {
-                LogicBlock.LogicBuild build = exec.build;
-                float futureAccumulator = build.accumulator + build.edelta() * build.ipt;
-                if (futureAccumulator > maxInstructionScale * build.ipt) {
-                    lostAccumulator += futureAccumulator - maxInstructionScale * build.ipt;
-                    int lostSteps = (int) lostAccumulator;
-                    recordStep(index, lostSteps);
-                    lostAccumulator -= lostSteps;
-                }
+            curTime = instruction.curTime;
+            if (curTime == 0 && snapshotSteps > 0) {
+                snapshotSteps--;
+                createSnapshot(index, vars());
             }
         }
     }

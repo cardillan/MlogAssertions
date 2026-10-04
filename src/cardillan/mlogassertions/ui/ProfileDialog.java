@@ -33,7 +33,8 @@ public class ProfileDialog extends BaseDialog {
     static boolean percents = false;
     static boolean sorted = false;
     static boolean branches = false;
-    static boolean colors = false;
+    static boolean colors = true;
+    static boolean execTime = false;
 
     Instrumentation instrumentation = null;
     LogicBuild build;
@@ -48,7 +49,7 @@ public class ProfileDialog extends BaseDialog {
         super("Profiler", Styles.fullDialog);
         this.build = build;
 
-        instrumentation = InstrumentationEngine.getInstrumentation(build);
+        Instrumentation instrumentation = InstrumentationEngine.getInstrumentation(build);
         if (instrumentation == null && Core.settings.getBool(Constants.startProfilerImmediatelly)) {
             instrumentation = InstrumentationEngine.startProfiling(build);
         }
@@ -56,7 +57,7 @@ public class ProfileDialog extends BaseDialog {
         onResize(() -> {
             if (w != w()) setup();
         });
-        setup();
+        setup(instrumentation);
     }
 
     private float w() {
@@ -84,6 +85,10 @@ public class ProfileDialog extends BaseDialog {
         cont.clear();
 
         Color basicColor = Color.slate.cpy().mul(0.8f);
+        Color barColor = basicColor.cpy().mul(0.66f);
+        Color fillColor = basicColor.cpy().mul(0.33f);
+        Color barColor2 = barColor.cpy().lerp(Color.lightGray, 0.5f);
+
         w = w();
         float labelPad = 8f;
         float iWidth = branches ? w - 90f : w;
@@ -94,9 +99,16 @@ public class ProfileDialog extends BaseDialog {
 
             if (sorted) {
                 lastSort = System.currentTimeMillis();
-                for (int i = 0; i < size; i++) indexes[i] = -(instrumentation.executions[i] * size + (size - i - 1));
-                Arrays.sort(indexes);
-                for (int i = 0; i < size; i++) indexes[i] = size - -indexes[i] % size - 1;
+                if (execTime) {
+                    Integer[] ind = new Integer[size];
+                    for (int i = 0; i < size; i++) ind[i] = i;
+                    Arrays.sort(ind, (i1, i2) -> (int) (instrumentation.time[i2] - instrumentation.time[i1]));
+                    for (int i = 0; i < size; i++) indexes[i] = ind[i];
+                } else {
+                    for (int i = 0; i < size; i++) indexes[i] = -(instrumentation.steps[i] * size + (size - i - 1));
+                    Arrays.sort(indexes);
+                    for (int i = 0; i < size; i++) indexes[i] = size - -indexes[i] % size - 1;
+                }
             } else {
                 for (int i = 0; i < size; i++) indexes[i] = i;
             }
@@ -110,10 +122,11 @@ public class ProfileDialog extends BaseDialog {
                 t.button(Icon.copy, style, this::copyToClipboard);
                 t.button(Icon.cancel, style, () -> setup(InstrumentationEngine.clearProfilingData(build)));
                 t.image().growY().width(4f).pad(6f).color(Pal.gray);
-                t.button(Icon2.sum, Styles.clearTogglei, () -> setup(totals = !totals)).checked(totals);
+                t.button(Icon2.time, Styles.clearTogglei, () -> setup(execTime = !execTime)).checked(execTime);
                 t.button(Icon2.sortDesc, Styles.clearTogglei, () -> { scroll = 0; setup(sorted = !sorted); }).checked(sorted);
                 t.button(Icon2.percent, Styles.clearTogglei, () -> setup(percents = !percents)).checked(percents);
                 t.button(Icon2.branching, Styles.clearTogglei, () -> setup(branches = !branches)).checked(branches);
+                t.button(Icon2.sum, Styles.clearTogglei, () -> setup(totals = !totals)).checked(totals);
                 t.button(Icon.tag, Styles.clearTogglei, () -> setup(colors = !colors)).checked(colors);
                 t.button(Icon.infoCircle, style, this::help);
             }).top().growX().fillX().row();
@@ -131,7 +144,7 @@ public class ProfileDialog extends BaseDialog {
                                 l.add(String.valueOf(index)).color(Color.white).padLeft(labelPad).padRight(labelPad);
                             })).minWidth(65f).width(65f);
 
-                            ProgressBackground ratio = new ProgressBackground(basicColor, basicColor);
+                            ProgressBackground ratio = new ProgressBackground(barColor, barColor2, fillColor);
                             Label source = new Label(VarsDialog.escape(instrumentation.source[index]));
                             t.stack(ratio, new Table(l -> {
                                 l.add(source).color(Color.lightGray)
@@ -141,7 +154,7 @@ public class ProfileDialog extends BaseDialog {
 
                             if (branches) {
                                 Label branchLabel = instrumentation.branching[index] < 0 ? new Label("") :
-                                        new Label(() -> formatPercent(instrumentation.branching[index], instrumentation.executions[index], "%.1f%%"));
+                                        new Label(() -> formatPercent(instrumentation.branching[index], instrumentation.steps[index], "%.1f%%"));
                                 t.stack(new Image(Tex.whiteui, basicColor), new Table(l -> {
                                     l.add(branchLabel).color(Pal.accent).padLeft(labelPad).padRight(labelPad);
                                 })).minWidth(86f).width(86f);
@@ -149,17 +162,21 @@ public class ProfileDialog extends BaseDialog {
                             }
 
                             Label countLabel = new Label("");
-                            if (percents) {
+                            if (execTime) {
                                 countLabel.update(() -> {
-                                    if (instrumentation.executions[index] > 0) source.setColor(Color.white);
-                                    countLabel.setText(formatPercent(instrumentation.executions[index], instrumentation.totalSteps, "%.2f%%"));
-                                    ratio.progress = instrumentation.executions[index] / (float) instrumentation.maxSteps;
+                                    if (instrumentation.steps[index] > 0) source.setColor(Color.white);
+                                    countLabel.setText(percents
+                                            ? formatPercent(instrumentation.time[index], instrumentation.totalTime, "%.2f%%")
+                                            : formatNumber(instrumentation.time[index]));
+                                    ratio.progress = instrumentation.time[index] / instrumentation.maxTime;
                                 });
                             } else {
                                 countLabel.update(() -> {
-                                    if (instrumentation.executions[index] > 0) source.setColor(Color.white);
-                                    countLabel.setText(formatNumber(instrumentation.executions[index]));
-                                    ratio.progress = instrumentation.executions[index] / (float) instrumentation.maxSteps;
+                                    if (instrumentation.steps[index] > 0) source.setColor(Color.white);
+                                    countLabel.setText(percents
+                                            ? formatPercent(instrumentation.steps[index], instrumentation.totalSteps, "%.2f%%")
+                                            : formatNumber(instrumentation.steps[index]));
+                                    ratio.progress = instrumentation.steps[index] / (float) instrumentation.maxSteps;
                                 });
                             }
                             t.stack(new Image(Tex.whiteui, basicColor), new Table(l -> {
@@ -175,12 +192,14 @@ public class ProfileDialog extends BaseDialog {
                     main.row();
                     main.table(t -> {
                         String[] titles = {
-                                "Total instruction executions recorded",
+                                execTime ? "Total execution quota spent" : "Total instructions executed",
+                                "Execution quota lost to yields",
                                 "Code coverage"
                         };
                         Prov[] values = {
-                                () -> formatNumber(instrumentation.totalSteps),
-                                () -> formatPercent( instrumentation.coverage, instrumentation.size, "%.1f%%")
+                                execTime ? () -> formatNumber(instrumentation.totalTime) : () -> formatNumber(instrumentation.totalSteps),
+                                () -> formatNumber((int) instrumentation.lostQuota),
+                                () -> formatPercent(instrumentation.coverage, instrumentation.size, "%.1f%%")
                         };
 
                         t.defaults().fillX().height(35f).padRight(4f).padTop(4f);
@@ -206,18 +225,33 @@ public class ProfileDialog extends BaseDialog {
             });
 
             if (sorted) {
-                cont.update(() -> {
-                    if (lastCheck < System.currentTimeMillis() - 500) {
-                        lastCheck = System.currentTimeMillis();
-                        int diff = System.currentTimeMillis() - lastSort > 1500 ? 0 : 5;
-                        for (int i = 1; i < size; i++) {
-                            if (instrumentation.executions[indexes[i]] - instrumentation.executions[indexes[i - 1]] > diff) {
-                                Core.app.post(this::setup);
-                                break;
+                if (execTime) {
+                    cont.update(() -> {
+                        if (lastCheck < System.currentTimeMillis() - 500) {
+                            lastCheck = System.currentTimeMillis();
+                            int diff = System.currentTimeMillis() - lastSort > 1500 ? 1 : 5;
+                            for (int i = 1; i < size; i++) {
+                                if (instrumentation.time[indexes[i]] - instrumentation.time[indexes[i - 1]] > diff) {
+                                    Core.app.post(this::setup);
+                                    break;
+                                }
                             }
                         }
-                    }
-                });
+                    });
+                } else {
+                    cont.update(() -> {
+                        if (lastCheck < System.currentTimeMillis() - 500) {
+                            lastCheck = System.currentTimeMillis();
+                            int diff = System.currentTimeMillis() - lastSort > 1500 ? 1 : 5;
+                            for (int i = 1; i < size; i++) {
+                                if (instrumentation.steps[indexes[i]] - instrumentation.steps[indexes[i - 1]] > diff) {
+                                    Core.app.post(this::setup);
+                                    break;
+                                }
+                            }
+                        }
+                    });
+                }
             } else {
                 cont.update(() -> {});
             }
@@ -242,7 +276,22 @@ public class ProfileDialog extends BaseDialog {
     }
 
     private String formatPercent(int part, int total, String format) {
-        return total == 0 ? "-" : part >= total ? "100%" : String.format(format, 100d * part / total);
+        if (total <= 0 || part <= 0) return "-";
+        if (part >= total) return "100%";
+        String result = String.format(format, 100d * part / total);
+        return result.startsWith("100.") ? result.substring(1, result.length()).replace('0', '9') : result;
+    }
+
+    private String formatNumber(float number) {
+        return formatNumber((int) number);
+    }
+
+    private String formatPercent(float part, float total, String format) {
+        if (total <= 0 || part <= 0) return "-";
+        if (part >= total) return "100%";
+        return String.format(format, 100 * part / total);
+        //String result = String.format(format, 100 * part / total);
+        //return result.startsWith("100.") ? result.substring(1, result.length()).replace('0', '9') : result;
     }
 
     private void restart() {
@@ -257,7 +306,7 @@ public class ProfileDialog extends BaseDialog {
         for (int i = 0; i < instrumentation.size; i++) {
             sb.append(i)
                     .append("\t").append(instrumentation.source[i])
-                    .append("\t").append(instrumentation.executions[i])
+                    .append("\t").append(instrumentation.steps[i])
                     .append("\n");
         }
         Core.app.setClipboardText(sb.toString());
@@ -279,14 +328,15 @@ public class ProfileDialog extends BaseDialog {
                 t.add("Available commands").colspan(3).color(Pal.accent).center().padBottom(10f).get().setAlignment(Align.center);
                 t.row();
 
-                help(t, Icon.chartBar, "Start or stop profiling of the current processor.");
+                help(t, Icon.chartBar, "Start or stop profiling the current processor.");
                 help(t, Icon.refresh, "Restart the current processor and activate profiling from the beginning (existing profiling data are cleared).");
                 help(t, Icon.copy, "Copy the profiling data into the clipboard in a tab-separated format (instruction #, instruction text, execution count).");
                 help(t, Icon.cancel, "Clear the current processor's profiling data.");
-                help(t, Icon2.sum, "Show/hide profiling totals.");
-                help(t, Icon2.sortDesc, "Sort the instructions by the recorded execution count.");
+                help(t, Icon2.time, "Display execution quota spent by instructions instead of execution steps (the [accent]wait[] instruction may spend lots of execution quota waiting).");
+                help(t, Icon2.sortDesc, "Sort the instructions by execution steps/quota.");
                 help(t, Icon2.percent, "Displays the percentage share of each instruction's execution count relative to the total number of executions.");
                 help(t, Icon2.branching, "Show the percentage of jumps made by a jump instruction relative to the total number of executions of that instruction.");
+                help(t, Icon2.sum, "Show profiling totals.");
                 help(t, Icon.tag, "Use the instruction's category color in the list.");
                 help(t, Icon.infoCircle, "Show this help.");
 
@@ -301,15 +351,15 @@ public class ProfileDialog extends BaseDialog {
 
     private static class ProgressBackground extends Element {
         public float progress = 0f;
-        public Color color;
         public Color barColor;
+        public Color barColor2;
         public Color fillColor;
 
-        public ProgressBackground(Color outlineColor, Color interiorColor) {
+        public ProgressBackground(Color barColor, Color barColor2, Color fillColor) {
             touchable = Touchable.disabled;
-            this.color = outlineColor;
-            this.barColor = interiorColor.cpy().mul(0.66f);
-            this.fillColor = interiorColor.cpy().mul(0.33f);
+            this.barColor = barColor;
+            this.barColor2 = barColor2;
+            this.fillColor = fillColor;
         }
 
         @Override
@@ -321,12 +371,6 @@ public class ProfileDialog extends BaseDialog {
 
             Draw.color(barColor);
             Fill.rect(x + barWidth / 2f, y + height / 2f, barWidth, height);
-
-//            Draw.color(color);
-//            float stroke = Lines.getStroke();
-//            Lines.stroke(3f);
-//            Lines.rect(x, y, width, height);
-//            Lines.stroke(stroke);
 
             Draw.reset();
         }

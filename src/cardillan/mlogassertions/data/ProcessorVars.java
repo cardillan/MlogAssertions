@@ -23,11 +23,12 @@ public class ProcessorVars extends BaseVariableValues {
     public ProcessorVars(LogicBuild build) {
         super(build);
         this.executor = build.executor;
-        this.data = new LVar[executor.vars.length + 4 + (executor.privileged ? 1 : 0)];
+        this.data = new LVar[executor.vars.length + 5 + (executor.privileged ? 1 : 0)];
         length = 0;
 
         store(objvar("Text buffer", () -> cachedTextBuffer()));
         store(numvar("Time waited", () -> (double)timeWaited()));
+        store(numvar("Accumulator", () -> (double)executor.build.accumulator));
         store(executor.counter);
         store(executor.unit);
         store(executor.ipt);
