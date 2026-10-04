@@ -7,6 +7,7 @@ import arc.scene.ui.Label;
 import arc.util.Align;
 
 public class EllipsisLabel extends Label {
+    public static final int maxStringLength = 256;
 
     private String originalText;
     private int maxLines = 1;
@@ -27,7 +28,7 @@ public class EllipsisLabel extends Label {
 
     @Override
     public void setText(CharSequence text) {
-        originalText = text == null ? "" : text.toString();
+        originalText = text == null ? "" : text.length() > maxStringLength ? text.subSequence(0, maxStringLength).toString() : text.toString();
 
         if (!updating) {
             super.setText(originalText);
@@ -45,19 +46,20 @@ public class EllipsisLabel extends Label {
 
         Font font = getStyle().font;
         float maxHeight = font.getCapHeight() + (maxLines - 1) * font.getLineHeight();
-        //String originalText = this.originalText.replace("\n", " ");
 
         GlyphLayout layout = new GlyphLayout();
 
-        layout.setText(font, originalText, Color.white, getWidth(), Align.left, true);
+        if (originalText.length() < maxStringLength) {
+            layout.setText(font, originalText, Color.white, getWidth(), Align.left, true);
 
-        if (layout.height <= maxHeight) {
-            super.layout();
-            return;
+            if (layout.height <= maxHeight) {
+                super.layout();
+                return;
+            }
         }
 
         int low = 0;
-        int high = Math.min(200, originalText.length());
+        int high = originalText.length();
 
         while (low < high) {
             int mid = (low + high + 1) / 2;

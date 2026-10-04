@@ -100,12 +100,12 @@ public class Instrumentation {
             }
 
             if (step) {
-                if (steps[index] == 0) coverage++;
-
                 totalSteps++;
                 int updatedSteps = steps[index]++;
                 if (updatedSteps > maxSteps) maxSteps = updatedSteps;
             }
+
+            if (time[index] == 0 && curTime > 0) coverage++;
 
             totalTime += curTime;
             float updatedTime = time[index] += curTime;
