@@ -5,6 +5,7 @@ import arc.func.Cons;
 import arc.struct.ObjectMap;
 import arc.struct.Seq;
 import arc.util.Log;
+import cardillan.mlogassertions.data.CustomGameRules;
 import cardillan.mlogassertions.data.Snapshot;
 import cardillan.mlogassertions.data.SnapshotManager;
 import mindustry.game.EventType;
@@ -98,8 +99,12 @@ public class InstrumentationEngine {
             Events.on(EventType.ResetEvent.class, e -> instrumentations.clear());
 
             Events.on(EventType.BlockBuildEndEvent.class, e -> {
-                if (e.breaking && (e.tile.build instanceof LogicBuild b)) {
-                    instrumentations.remove(b);
+                if (e.tile.build instanceof LogicBuild build) {
+                    if (e.breaking) {
+                        instrumentations.remove(build);
+                    } else if (CustomGameRules.autoProfile) {
+                        startProfiling(build);
+                    }
                 }
             });
 
@@ -117,9 +122,14 @@ public class InstrumentationEngine {
 
             Events.on(EventType.ConfigEvent.class, e -> {
                 if (e.tile instanceof LogicBuild build) {
-                    Instrumentation instrumentation = instrumentations.remove(build);
-                    if (instrumentation != null && instrumentation.profiling) {
+                    if (CustomGameRules.autoProfile) {
                         startProfiling(build);
+                    } else {
+                        Instrumentation instrumentation = instrumentations.get(build);
+                        if (instrumentation != null && build.executor.instructions != instrumentation.instructions) {
+                            instrumentations.remove(build);
+                            if (instrumentation.profiling) startProfiling(build);
+                        }
                     }
                 }
             });

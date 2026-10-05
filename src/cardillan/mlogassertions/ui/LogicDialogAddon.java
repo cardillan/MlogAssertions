@@ -5,6 +5,8 @@ import arc.Events;
 import arc.scene.ui.TextButton;
 import arc.scene.ui.layout.Table;
 import arc.util.Log;
+import arc.util.Reflect;
+import cardillan.mlogassertions.Accessor;
 import mindustry.Vars;
 import mindustry.core.GameState;
 import mindustry.game.EventType;
@@ -33,19 +35,15 @@ public class LogicDialogAddon {
 
     public static void init() {
         try {
+            globalsDialog = Accessor.from(Vars.ui.logic).access("globalsDialog").get(GlobalVarsDialog.class);
+
             executorField = LogicDialog.class.getDeclaredField("executor");
             executorField.setAccessible(true);
 
-            Field dialogField = LogicDialog.class.getDeclaredField("globalsDialog");
-            dialogField.setAccessible(true);
-            globalsDialog = (GlobalVarsDialog) dialogField.get(Vars.ui.logic);
-
             wasPausedField = BaseDialog.class.getDeclaredField("wasPaused");
             wasPausedField.setAccessible(true);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
+        } catch (Accessor.AccessException | NoSuchFieldException e) {
             Log.err("[Mlog Dev Tools] Cannot access LogicDialog fields", e);
-
-            // No point modifying the Logic dialog if we can't fully operate it
             return;
         }
 

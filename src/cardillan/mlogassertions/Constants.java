@@ -13,6 +13,9 @@ public class Constants {
     public static final String detachCamera = "mlogdevtools-detach-camera";
     public static final String reattachCamera = "mlogdevtools-reattach-camera";
 
+    // Custom rules
+    public static final String rulesAutoProfile = "rules.mlogdevtools.autoprofile";
+
     // Mod settings
     public static final String disableBreakpoints = "mlogdevtools-disable-breakpoints";
     public static final String assertsAreBreakpoints = "mlogdevtools-asserts-are-breakpoints";

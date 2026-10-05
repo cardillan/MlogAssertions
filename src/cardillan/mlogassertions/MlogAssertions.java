@@ -1,6 +1,7 @@
 package cardillan.mlogassertions;
 
 import arc.Events;
+import cardillan.mlogassertions.data.CustomGameRules;
 import cardillan.mlogassertions.data.MapIndex;
 import cardillan.mlogassertions.data.MemoryVars;
 import cardillan.mlogassertions.data.SnapshotManager;
@@ -25,6 +26,9 @@ public class MlogAssertions extends Mod {
             // Map
             MapIndex.init();
             SnapshotManager.init();
+
+            // Game rules
+            CustomGameRules.init();
 
             // UI
             Assertions.init();

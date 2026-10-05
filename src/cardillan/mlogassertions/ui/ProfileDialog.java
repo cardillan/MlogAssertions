@@ -277,7 +277,7 @@ public class ProfileDialog extends BaseDialog {
                 t.check("Do not show again", b -> Core.settings.put(Constants.startProfilerImmediatelly, b))
                         .padBottom(30f).growX().fillX();
                 t.row();
-                t.button("Start profiling", Icon.play, Styles.flatBordert, () -> setup(InstrumentationEngine.startProfiling(build)))
+                t.button("Start profiling", Icon.chartBar, Styles.flatBordert, () -> setup(InstrumentationEngine.startProfiling(build)))
                         .height(64f).growX().fillX();
             }).left();
         }
