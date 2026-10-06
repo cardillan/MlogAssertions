@@ -85,7 +85,7 @@ It is possible to activate creating a snapshot when a breakpoint it hit or an as
 
 # Profiler
 
-By activating a profiler, it is possible to get execution statistics for the processor, i.e. the number of times each instruction has been executed. The profiling data are displaed on the **Profiler** screen available from the **Vars** screen. When the processor is running, the profiling data are uptated in real-time. They can also be copied to the clipboard for later analysis. Profiling can be started and stopped from the **Profiler** screen, or using the `profile` instruction.
+By activating a profiler, it is possible to get execution statistics for the processor, i.e. the number of times each instruction has been executed. The profiling data are displaed on the **Profiler** screen available from the **Vars** screen. When the processor is running, the profiling data are uptated in real-time. They can also be copied to the clipboard for later analysis. Profiling can be started and stopped from the **Profiler** screen, using the [`profile` instruction](#instruction-profile), or using a [custom game rule](#custom-game-rules).
 
 Profiling a program allows you to identify the instructions the processor has spent the most time executing. Profiling is relatively low-cost (at least compared to the snapshotting), and can be safely left active on many processors for long periods of time.
 
@@ -243,6 +243,12 @@ Creates a snapshot of a given block. The instruction takes these parameters:
 
 There's no rate limit on creating snaphsots, but obviously there can be performance problems when the feature is abused.
 
+# Custom game rules
+
+The mod adds a new game rule: _Automatically profile all processors_. When activated, all processors on the map are automatically profiled, whether they already existed when the map was loaded, or were added later. The setting remains stored with your map file, but the map is still loadable even if the mod is disabled or removed. When activated while playing the map, all processors start profiling immediately.
+
+This option is particularly useful when trying to profile startup/initialization code of many processors on the map.
+
 # Settings
 
 ## Disable breakpoints
@@ -298,8 +304,4 @@ Number of game ticks between the frequency of variable updates on the Vars/Memor
 
 ## Significant digits
 
-THe number of significant digits used when displaying decimal numbers in the Vars/Memory/Properties screens.
-
-## Alignment
-
-The default alignment of values displayed on the Vars/Memory/Sensors screens.
+The number of significant digits used when displaying decimal numbers in the Vars/Memory/Properties screens.
