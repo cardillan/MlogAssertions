@@ -209,12 +209,21 @@ public class MemoryText {
 
             if (type == ValueType.string) {
                 //when the literal isn't quoted, take the text as it is
+                String value;
                 if (isStringLiteral(literal)) {
-                    set(data, address, unescape(literal.substring(1, literal.length() - 1)));
+                    value = unescape(literal.substring(1, literal.length() - 1));
                 } else if (literal.startsWith("\"")) {
                     error(errors, i);
+                    value = null;
                 } else {
-                    set(data, address, literal);
+                    value = literal;
+                }
+                if (value != null) {
+                    if (utf8size(value) > 65535) {
+                        error(errors, i);
+                    } else {
+                        set(data, address, value);
+                    }
                 }
             } else if (literal.equals("null")) {
                 //the values which are not representable in memory blocks are written as null
@@ -230,6 +239,15 @@ public class MemoryText {
         }
 
         return errors.isEmpty() ? null : errors.toString();
+    }
+
+    private static int utf8size(String str){
+        int size = 0;
+        for (int i = 0; i < str.length(); i++) {
+            char c = str.charAt(i);
+            size += c != 0 && c < 0x80 ? 1 : c < 0x800 ? 2 : 3;
+        }
+        return size;
     }
 
     private static void set(VariableValues data, int address, Object value) {
