@@ -1,7 +1,5 @@
 package cardillan.mlogassertions;
 
-import arc.util.Log;
-
 import java.lang.reflect.Field;
 
 public class Accessor {

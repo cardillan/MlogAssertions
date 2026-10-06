@@ -6,15 +6,10 @@ import cardillan.mlogassertions.Accessor;
 import cardillan.mlogassertions.Constants;
 import cardillan.mlogassertions.logic.InstrumentationEngine;
 import mindustry.Vars;
-import mindustry.editor.MapEditorDialog;
-import mindustry.editor.MapInfoDialog;
 import mindustry.game.EventType;
 import mindustry.game.Gamemode;
 import mindustry.game.Rules;
-import mindustry.ui.dialogs.CustomGameDialog;
 import mindustry.ui.dialogs.CustomRulesDialog;
-import mindustry.ui.dialogs.MapPlayDialog;
-import mindustry.ui.dialogs.PausedDialog;
 
 import java.lang.reflect.Field;
 

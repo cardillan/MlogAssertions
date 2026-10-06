@@ -31,8 +31,13 @@ public class Constants {
     public static final String snapshotOnAssertion = "mlogdevtools-snapshot-on-assertion";
 
     public static final String variableUpdateFrequency = "mlogdevtools-variable-update-frequency";
+    public static final String varsHexadecimal = "mlogdevtools-vars-hexadecimal";
+    public static final String varsSorted = "mlogdevtools-vars-sorted";
+    public static final String varsHideTemps = "mlogdevtools-vars-hide-temps";
+    public static final String varsHideLinks = "mlogdevtools-vars-hide-links";
+    public static final String varsFullPrecision = "mlogdevtools-vars-full-precision";
     public static final String varsSignificantDigits = "mlogdevtools-vars-significant-digits";
-    public static final String varsAlignment = "mlogdevtools-vars-alignment-0";
+    public static final String varsAlignment = "mlogdevtools-vars-alignment";
 
     public static final String startProfilerImmediatelly = "mlogdevtools-start-profiler-immediatelly";
 }

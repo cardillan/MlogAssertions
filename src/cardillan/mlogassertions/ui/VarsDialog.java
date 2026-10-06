@@ -13,6 +13,7 @@ import arc.scene.ui.layout.Table;
 import arc.util.Align;
 import arc.util.Log;
 import arc.util.Time;
+import cardillan.mlogassertions.Constants;
 import cardillan.mlogassertions.data.*;
 import mindustry.core.GameState;
 import mindustry.gen.Building;
@@ -37,12 +38,12 @@ public class VarsDialog extends BaseDialog {
     private static final float reset = 1e10f;
     private static final int live = 0;
 
-    public static boolean hex = false;
-    public static boolean sorted = true;
-    public static boolean filtered = false;
-    public static boolean hideLinks = false;
-    public static boolean fullPrecision = false;
-    public static int alignment = Align.right;
+    public static boolean hex = Core.settings.getBool(Constants.varsHexadecimal, false);
+    public static boolean sorted = Core.settings.getBool(Constants.varsSorted, true);
+    public static boolean filtered = Core.settings.getBool(Constants.varsHideTemps, false);
+    public static boolean hideLinks = Core.settings.getBool(Constants.varsHideLinks, false);
+    public static boolean fullPrecision = Core.settings.getBool(Constants.varsFullPrecision, false);
+    public static int alignment = Core.settings.getInt(Constants.varsAlignment, Align.left);
 
     private static int lastSnapshotId = -1;
 
@@ -426,11 +427,10 @@ public class VarsDialog extends BaseDialog {
                 buttons.button("@back", Icon.left, this::hide).name("back");
                 buttons.button("@edit", Icon.edit, () -> editCommands()).name("edit");
                 if (Core.graphics.isPortrait()) buttons.row();
-                buttons.button("@varsdialog.hex", Styles.squareTogglet, () -> refreshView(hex = !hex)).name("hex").checked(hex);
-                if (significantDigits < 16) {
-                    buttons.button("@varsdialog.fullprecision", Styles.squareTogglet, () -> refreshView(fullPrecision = !fullPrecision))
-                            .name("fullprecision").checked(fullPrecision);
-                }
+                buttons.button("@varsdialog.hex", Styles.squareTogglet, () -> refreshView(Constants.varsHexadecimal, hex = !hex))
+                        .name("hex").checked(hex);
+                buttons.button("@varsdialog.fullprecision", Styles.squareTogglet, () -> refreshView(Constants.varsFullPrecision, fullPrecision = !fullPrecision))
+                        .name("fullprecision").checked(fullPrecision);
             }
         } else {
             // Snapshots are enabled: most commands are displayed above the list
@@ -516,33 +516,31 @@ public class VarsDialog extends BaseDialog {
                 t.row();
 
                 ButtonGroup<TextButton> hexGroup = new ButtonGroup<>();
-                t.button("@varsdialog.dec", style, () -> refreshView(hex = false)).name("dec").group(hexGroup).checked(!hex);
-                t.button("@varsdialog.hex", style, () -> refreshView(hex = true)).name("hex").group(hexGroup).checked(hex);
+                t.button("@varsdialog.dec", style, () -> refreshView(Constants.varsHexadecimal, hex = false)).name("dec").group(hexGroup).checked(!hex);
+                t.button("@varsdialog.hex", style, () -> refreshView(Constants.varsHexadecimal, hex = true)).name("hex").group(hexGroup).checked(hex);
                 t.row();
                 ButtonGroup<TextButton> sortedGroup = new ButtonGroup<>();
-                t.button("@varsdialog.sorted", style, () -> updateView(sorted = true)).name("sorted").group(sortedGroup).checked(sorted);
-                t.button("@varsdialog.unsorted", style, () -> updateView(sorted = false)).name("unsorted").group(sortedGroup).checked(!sorted);
+                t.button("@varsdialog.sorted", style, () -> updateView(Constants.varsSorted, sorted = true)).name("sorted").group(sortedGroup).checked(sorted);
+                t.button("@varsdialog.unsorted", style, () -> updateView(Constants.varsSorted, sorted = false)).name("unsorted").group(sortedGroup).checked(!sorted);
                 t.row();
                 ButtonGroup<TextButton> tempsGroup = new ButtonGroup<>();
-                t.button("@varsdialog.showall", style, () -> updateView(filtered = false)).name("showall").group(tempsGroup).checked(!filtered);
-                t.button("@varsdialog.hidetemps", style, () -> updateView(filtered = true)).name("hidetemps").group(tempsGroup).checked(filtered);
+                t.button("@varsdialog.showall", style, () -> updateView(Constants.varsHideTemps, filtered = false)).name("showall").group(tempsGroup).checked(!filtered);
+                t.button("@varsdialog.hidetemps", style, () -> updateView(Constants.varsHideTemps, filtered = true)).name("hidetemps").group(tempsGroup).checked(filtered);
                 t.row();
                 ButtonGroup<TextButton> linksGroup = new ButtonGroup<>();
-                t.button("@varsdialog.showlinks", style, () -> updateView(hideLinks = false)).name("showlinks").group(linksGroup).checked(!hideLinks);
-                t.button("@varsdialog.hidelinks", style, () -> updateView(hideLinks = true)).name("hidelinks").group(linksGroup).checked(hideLinks);
+                t.button("@varsdialog.showlinks", style, () -> updateView(Constants.varsHideLinks, hideLinks = false)).name("showlinks").group(linksGroup).checked(!hideLinks);
+                t.button("@varsdialog.hidelinks", style, () -> updateView(Constants.varsHideLinks, hideLinks = true)).name("hidelinks").group(linksGroup).checked(hideLinks);
                 t.row();
-                if (significantDigits < 16) {
-                    ButtonGroup<TextButton> precisionGroup = new ButtonGroup<>();
-                    t.button(Core.bundle.format("varsdialog.limitedprecission", significantDigits), style,
-                            () -> updateView(fullPrecision = false)).name("limitedprecission").group(precisionGroup).checked(!fullPrecision);
-                    t.button("@varsdialog.fullprecision", style, () -> updateView(fullPrecision = true)).name("hidelinks").group(precisionGroup).checked(fullPrecision);
-                    t.row();
-                }
+                ButtonGroup<TextButton> precisionGroup = new ButtonGroup<>();
+                t.button(Core.bundle.format("varsdialog.limitedprecission", significantDigits), style,
+                        () -> updateView(Constants.varsFullPrecision, fullPrecision = false)).name("limitedprecission").group(precisionGroup).checked(!fullPrecision);
+                t.button("@varsdialog.fullprecision", style, () -> updateView(Constants.varsFullPrecision, fullPrecision = true)).name("hidelinks").group(precisionGroup).checked(fullPrecision);
+                t.row();
                 ButtonGroup<TextButton> alignmentGroup = new ButtonGroup<>();
                 t.defaults().height(45f).growX().fillX().uniformX().colspan(2).pad(3f).left();
-                t.button("Left", style, () -> updateView(alignment = Align.left)).group(alignmentGroup).checked(alignment == Align.left);
-                t.button("Center", style, () -> updateView(alignment = Align.center)).group(alignmentGroup).checked(alignment == Align.center);
-                t.button("Right", style, () -> updateView(alignment = Align.right)).group(alignmentGroup).checked(alignment == Align.right);
+                t.button("Left", style, () -> updateView(Constants.varsAlignment, alignment = Align.left)).group(alignmentGroup).checked(alignment == Align.left);
+                t.button("Center", style, () -> updateView(Constants.varsAlignment, alignment = Align.center)).group(alignmentGroup).checked(alignment == Align.center);
+                t.button("Right", style, () -> updateView(Constants.varsAlignment, alignment = Align.right)).group(alignmentGroup).checked(alignment == Align.right);
                 t.row();
 
                 t.defaults().height(60f).growX().fillX().uniformX().colspan(6).pad(15f);
@@ -660,15 +658,13 @@ public class VarsDialog extends BaseDialog {
         }
     }
 
-    private void refreshView(boolean update) {
+    private void refreshView(String setting, boolean update) {
+        Core.settings.put(setting, update);
         Arrays.fill(counter, reset);
     }
 
-    private void updateView(int update) {
-        updateView(true);
-    }
-
-    private void updateView(boolean update) {
+    private void updateView(String setting, Object update) {
+        Core.settings.put(setting, update);
         snapshots.view().setView(sorted, filtered, hideLinks);
         if (snapshots.view().size() != length) {
             setup();

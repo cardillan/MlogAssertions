@@ -7,7 +7,6 @@ import arc.scene.ui.Label;
 import arc.scene.ui.Slider;
 import arc.scene.ui.layout.Scl;
 import arc.scene.ui.layout.Table;
-import arc.util.Align;
 import cardillan.mlogassertions.data.SnapshotManager;
 import cardillan.mlogassertions.ui.Assertions;
 import cardillan.mlogassertions.ui.LogicDialogAddon;
@@ -68,13 +67,9 @@ public class Settings {
                             : format(Constants.variableUpdateFrequency, "ticks", i),
                     i -> VarsDialog.updateFrequency = i);
 
-            t.sliderPref(Constants.varsSignificantDigits, 7, 3, 16, 1,
-                    i -> i == 16 ? bundle(Constants.varsSignificantDigits, "full") : Integer.toString(i),
+            t.sliderPref(Constants.varsSignificantDigits, 7, 3, 15, 1,
+                    i -> Integer.toString(i),
                     i -> VarsDialog.significantDigits = i);
-
-            steppedPref(t, Constants.varsAlignment, Align.left, new int[]{Align.left, Align.center, Align.right},
-                    i -> bundle(Constants.varsAlignment, String.valueOf(i)),
-                    i -> VarsDialog.alignment = i);
 
             t.checkPref(Constants.startProfilerImmediatelly, false);
         });
@@ -93,7 +88,6 @@ public class Settings {
 
         VarsDialog.updateFrequency = Core.settings.getInt(Constants.variableUpdateFrequency);
         VarsDialog.significantDigits = Core.settings.getInt(Constants.varsSignificantDigits);
-        VarsDialog.alignment = Core.settings.getInt(Constants.varsAlignment);
     }
 
     private static String bundle(String key) {

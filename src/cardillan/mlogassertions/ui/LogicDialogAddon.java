@@ -5,7 +5,6 @@ import arc.Events;
 import arc.scene.ui.TextButton;
 import arc.scene.ui.layout.Table;
 import arc.util.Log;
-import arc.util.Reflect;
 import cardillan.mlogassertions.Accessor;
 import mindustry.Vars;
 import mindustry.core.GameState;
