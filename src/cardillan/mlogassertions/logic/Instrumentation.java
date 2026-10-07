@@ -27,13 +27,13 @@ public class Instrumentation {
     public final BitSet covered;
     public final int[] branching;
     public final int[] steps;
-    public final float[] time;
+    public final double[] time;
     public int coverage = 0;
     public int maxSteps = 0;
     public int totalSteps = 0;
-    public float maxTime = 0;
-    public float totalTime = 0;
-    public float lostQuota = 0;
+    public double maxTime = 0;
+    public double totalTime = 0;
+    public double lostQuota = 0;
 
     // Snapshotting
     public Snapshot master;
@@ -48,7 +48,7 @@ public class Instrumentation {
         this.covered = new BitSet(size);
         this.branching = new int[size];
         this.steps = new int[size];
-        this.time = new float[size];
+        this.time = new double[size];
         this.colors = new Color[size];
         this.source = new String[size];
 
@@ -80,6 +80,7 @@ public class Instrumentation {
         Arrays.fill(steps, 0);
         Arrays.fill(time, 0f);
         for (int i = 0; i < branching.length; i++) branching[i] = Math.min(branching[i], 0);
+        covered.clear();
         coverage = 0;
         maxSteps = 0;
         totalSteps = 0;
@@ -90,25 +91,39 @@ public class Instrumentation {
 
     private void recordStep(LExecutor exec, int index) {
         if (profiling && index >= 0 && index < steps.length) {
+            // Without yielding, there's never a difference
+            totalSteps++;
+            totalTime++;
+
+            if (steps[index] == 0) coverage++;
+            int updatedSteps = ++steps[index];
+            time[index] = updatedSteps;
+
+            maxSteps = Math.max(updatedSteps, maxSteps);
+            maxTime = Math.max(updatedSteps, maxTime);
+            if (branching[index] >= 0 && (int) (exec.counter.numval) != index + 1) branching[index]++;
+        }
+    }
+
+    private void recordStepWithYielding(LExecutor exec, int index) {
+        if (profiling && index >= 0 && index < steps.length) {
             if (!covered.get(index)) {
                 covered.set(index);
                 coverage++;
             }
 
-            int newCounter = (int) (exec.counter.numval);
-            if (newCounter != index + 1 && branching[index] >= 0) branching[index]++;
-
             boolean step = true;
-            float curTime = 1f;
+            double curTime = 1f;
             if (exec.yield) {
                 // Yielding: account for possibly lost execution quota
                 LogicBlock.LogicBuild build = exec.build;
-                float futureAccumulator = build.accumulator + build.edelta() * build.ipt;
-                float loss = futureAccumulator - maxInstructionScale * build.ipt;
+                double futureAccumulator = build.accumulator + build.edelta() * build.ipt;
+                double loss = futureAccumulator - maxInstructionScale * build.ipt;
                 curTime = Math.max(0, loss);
                 lostQuota += curTime;
 
                 // Detect wait 0: the instruction yields, but makes a step
+                int newCounter = (int) (exec.counter.numval);
                 step = newCounter != index;
             }
 
@@ -120,7 +135,7 @@ public class Instrumentation {
 
             if (curTime > 0) {
                 totalTime += curTime;
-                float updatedTime = time[index] += curTime;
+                double updatedTime = time[index] += curTime;
                 if (updatedTime > maxTime) maxTime = updatedTime;
             }
         }
@@ -136,7 +151,11 @@ public class Instrumentation {
     private InstrumentedInstruction instrument(LExecutor.LInstruction instruction) {
         // Repeated instrumentation shouldn't happen, but if it does, we need to handle it gracefully.
         if (instruction instanceof InstrumentedInstruction ix) instruction = ix.instruction();
-        return instruction instanceof LExecutor.WaitI wait ? new InstrumentedWait(wait) : new BasicInstrumentedInstruction(instruction);
+        boolean noYields = InstrumentationEngine.noYielding.contains(instruction.getClass())
+                || instruction instanceof LogicInstructions.DevToolsInstruction ix && !ix.yields();
+
+        return instruction instanceof LExecutor.WaitI wait ? new InstrumentedWait(wait)
+                : noYields ? new BasicInstrumentedInstruction(instruction) : new YieldingInstrumentedInstruction(instruction);
     }
 
     private static StringBuilder sbr = new StringBuilder();
@@ -193,6 +212,42 @@ public class Instrumentation {
         }
     }
 
+    private class YieldingInstrumentedInstruction implements InstrumentedInstruction {
+        LExecutor.LInstruction instruction;
+        LVar[] vars = null;
+
+        public YieldingInstrumentedInstruction(LExecutor.LInstruction instruction) {
+            this.instruction = instruction;
+        }
+
+        @Override
+        public LExecutor.LInstruction instruction() {
+            return instruction;
+        }
+
+        public LVar[] vars() {
+            if (vars == null) vars = InstrumentationEngine.getVars(instruction, 0);
+            return vars;
+        }
+
+        @Override
+        public void run(LExecutor exec) {
+            int index = (int) (exec.counter.numval - 1);
+            instruction.run(exec);
+            recordStepWithYielding(exec, index);
+
+            if (snapshotSteps > 0) {
+                snapshotSteps--;
+                createSnapshot(index, vars());
+            }
+
+            if (exec.stop) {
+                profiling = false;
+                snapshotSteps = 0;
+            }
+        }
+    }
+
     private class InstrumentedWait extends LExecutor.WaitI implements InstrumentedInstruction {
         LExecutor.WaitI instruction;
         LVar[] vars = null;
@@ -216,7 +271,7 @@ public class Instrumentation {
         public void run(LExecutor exec) {
             int index = (int) (exec.counter.numval - 1);
             instruction.run(exec);
-            recordStep(exec, index);
+            recordStepWithYielding(exec, index);
 
             curTime = instruction.curTime;
             if (curTime == 0 && snapshotSteps > 0) {

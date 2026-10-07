@@ -115,7 +115,7 @@ public class ProfileDialog extends BaseDialog {
 
         w = w();
         float labelPad = 8f;
-        float iWidth = branches ? w - 90f : w;
+        float iWidth = branches ? w - 114f : w;
 
         if (instrumentation != null && instrumentation.size > 0) {
             indexes = new int[instrumentation.size];
@@ -163,36 +163,43 @@ public class ProfileDialog extends BaseDialog {
                                         .wrap(false).ellipsis(true).get().setAlignment(Align.left);
                             })).minWidth(iWidth).width(iWidth).growX().fillX();
 
+                            Label branchLabel = new Label("");
                             if (branches) {
-                                Label branchLabel = instrumentation.branching[indexes[ind]] < 0 ? new Label("") :
-                                        new Label(() -> formatPercent(instrumentation.branching[indexes[ind]], instrumentation.steps[indexes[ind]], "%.1f%%"));
                                 t.stack(new Image(Tex.whiteui, basicColor), new Table(l -> {
                                     l.add(branchLabel).color(Pal.accent).padLeft(labelPad).padRight(labelPad);
-                                })).minWidth(86f).width(86f);
-
+                                })).minWidth(110f).width(110f);
                             }
 
                             Label countLabel = new Label("");
                             countLabel.update(() -> {
-                                if (prevIndex[ind] != indexes[ind]) {
-                                    prevIndex[ind] = indexes[ind];
-                                    numImage.setColor(colors ? instrumentation.colors[indexes[ind]] : basicColor);
-                                    numLabel.setText(String.valueOf(indexes[ind]));
-                                    source.setText(VarsDialog.escape(instrumentation.source[indexes[ind]]));
+                                int index = indexes[ind];
+
+                                if (prevIndex[ind] != index) {
+                                    prevIndex[ind] = index;
+                                    numImage.setColor(colors ? instrumentation.colors[index] : basicColor);
+                                    numLabel.setText(String.valueOf(index));
+                                    source.setText(VarsDialog.escape(instrumentation.source[index]));
                                 }
 
-                                boolean covered = instrumentation.covered.get(indexes[ind]);
+                                boolean covered = instrumentation.steps[index] > 0 || instrumentation.covered.get(index);
                                 source.setColor(covered ? Color.white : Color.lightGray);
+
+                                if (branches) {
+                                    branchLabel.setText(instrumentation.branching[index] < 0 ? "" : percents
+                                            ? formatPercent(instrumentation.branching[index], instrumentation.steps[index], "%.1f%%")
+                                            : formatNumber(instrumentation.branching[index]));
+                                }
+
                                 if (execTime) {
                                     countLabel.setText(percents
-                                            ? formatPercent(instrumentation.time[indexes[ind]], instrumentation.totalTime, "%.2f%%")
-                                            : formatNumber(instrumentation.time[indexes[ind]]));
-                                    ratio.progress = instrumentation.time[indexes[ind]] / instrumentation.maxTime;
+                                            ? formatPercent(instrumentation.time[index], instrumentation.totalTime, "%.2f%%")
+                                            : formatNumber(instrumentation.time[index]));
+                                    ratio.progress = (float) (instrumentation.time[index] / instrumentation.maxTime);
                                 } else {
                                     countLabel.setText(percents
-                                            ? formatPercent(instrumentation.steps[indexes[ind]], instrumentation.totalSteps, "%.2f%%")
-                                            : formatNumber(instrumentation.steps[indexes[ind]]));
-                                    ratio.progress = instrumentation.steps[indexes[ind]] / (float) instrumentation.maxSteps;
+                                            ? formatPercent(instrumentation.steps[index], instrumentation.totalSteps, "%.2f%%")
+                                            : formatNumber(instrumentation.steps[index]));
+                                    ratio.progress = instrumentation.steps[index] / (float) instrumentation.maxSteps;
                                 }
                                 ratio.fillColor = covered ? fillColor : emptyColor;
                             });
@@ -295,11 +302,11 @@ public class ProfileDialog extends BaseDialog {
         return result.startsWith("100.") ? result.substring(1, result.length()).replace('0', '9') : result;
     }
 
-    private String formatNumber(float number) {
+    private String formatNumber(double number) {
         return formatNumber((int) number);
     }
 
-    private String formatPercent(float part, float total, String format) {
+    private String formatPercent(double part, double total, String format) {
         if (total <= 0 || part <= 0) return "-";
         if (part >= total) return "100%";
         String result = String.format(format, 100 * part / total);
@@ -382,8 +389,8 @@ public class ProfileDialog extends BaseDialog {
                 help(t, Icon.edit, "Reset, restart or copy profiling data.");
                 help(t, Icon2.time, "Display execution quota spent by instructions instead of execution steps (the [accent]wait[] instruction may spend lots of execution quota waiting).");
                 help(t, Icon2.sortDesc, "Sort the instructions by execution steps/quota.");
-                help(t, Icon2.percent, "Displays the percentage share of each instruction's execution count relative to the total number of executions.");
-                help(t, Icon2.branching, "Show the percentage of jumps made by a jump instruction relative to the total number of executions of that instruction.");
+                help(t, Icon2.percent, "Display percentages instead of raw values.");
+                help(t, Icon2.branching, "Show the number of jumps made by jump instructions.");
                 help(t, Icon2.sum, "Show profiling totals.");
                 help(t, Icon.tag, "Use the instruction's category color in the list.");
                 help(t, Icon.infoCircle, "Show this help.");

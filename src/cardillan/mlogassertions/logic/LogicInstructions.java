@@ -17,6 +17,7 @@ public class LogicInstructions {
 
     public interface DevToolsInstruction extends LExecutor.LInstruction {
         LVar[] vars();
+        boolean yields();
     }
 
     public static class AssertI implements DevToolsInstruction {
@@ -37,6 +38,11 @@ public class LogicInstructions {
         @Override
         public LVar[] vars() {
             return new LVar[] { value, compare, message };
+        }
+
+        @Override
+        public boolean yields() {
+            return true;
         }
 
         @Override
@@ -76,6 +82,11 @@ public class LogicInstructions {
         @Override
         public LVar[] vars() {
             return new LVar[] { multiple, min, value, max, message };
+        }
+
+        @Override
+        public boolean yields() {
+            return true;
         }
 
         @Override
@@ -119,6 +130,11 @@ public class LogicInstructions {
         }
 
         @Override
+        public boolean yields() {
+            return true;
+        }
+
+        @Override
         public final void run(LExecutor exec) {
             if (ConditionOp.strictEqual.test(expected, actual)) {
                 Assertions.reset(exec.build);
@@ -136,6 +152,11 @@ public class LogicInstructions {
         }
 
         public AssertFlushI() {
+        }
+
+        @Override
+        public boolean yields() {
+            return false;
         }
 
         @Override
@@ -166,6 +187,11 @@ public class LogicInstructions {
         @Override
         public LVar[] vars() {
             return new LVar[] { flushIndex, expected, message };
+        }
+
+        @Override
+        public boolean yields() {
+            return true;
         }
 
         @Override
@@ -206,6 +232,11 @@ public class LogicInstructions {
         }
 
         @Override
+        public boolean yields() {
+            return true;
+        }
+
+        @Override
         public final void run(LExecutor exec) {
             if (expectedType.matches(actualValue)) {
                 Assertions.reset(exec.build);
@@ -234,6 +265,11 @@ public class LogicInstructions {
         }
 
         @Override
+        public boolean yields() {
+            return false;
+        }
+
+        @Override
         public void run(LExecutor exec) {
             if (op.test(value, compare)) {
                 breakpoint(exec.build, Core.bundle.format("breakpoint.message", exec.counter.numval - 1));
@@ -254,6 +290,11 @@ public class LogicInstructions {
         @Override
         public LVar[] vars() {
             return vars;
+        }
+
+        @Override
+        public boolean yields() {
+            return true;
         }
 
         @Override
@@ -285,6 +326,11 @@ public class LogicInstructions {
         }
 
         @Override
+        public boolean yields() {
+            return false;
+        }
+
+        @Override
         public final void run(LExecutor exec) {
             Log.log(level, buildMessage(exec, "[Mlog Dev Tools] ", true, vars[0], vars));
         }
@@ -305,6 +351,11 @@ public class LogicInstructions {
         @Override
         public LVar[] vars() {
             return new LVar[] {target };
+        }
+
+        @Override
+        public boolean yields() {
+            return false;
         }
 
         @Override
@@ -332,6 +383,11 @@ public class LogicInstructions {
         @Override
         public LVar[] vars() {
             return new LVar[] {target };
+        }
+
+        @Override
+        public boolean yields() {
+            return false;
         }
 
         @Override
@@ -372,6 +428,11 @@ public class LogicInstructions {
         @Override
         public LVar[] vars() {
             return new LVar[] {target, steps, message };
+        }
+
+        @Override
+        public boolean yields() {
+            return false;
         }
 
         @Override

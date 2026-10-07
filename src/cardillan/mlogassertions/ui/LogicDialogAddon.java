@@ -14,7 +14,9 @@ import mindustry.gen.Icon;
 import mindustry.logic.GlobalVarsDialog;
 import mindustry.logic.LExecutor;
 import mindustry.logic.LogicDialog;
+import mindustry.ui.Displayable;
 import mindustry.ui.dialogs.BaseDialog;
+import mindustry.world.blocks.logic.LogicBlock;
 
 import java.lang.reflect.Field;
 
@@ -47,7 +49,7 @@ public class LogicDialogAddon {
         }
 
         Events.on(EventType.TapEvent.class, e -> {
-            if (tripleTapSpeed <= 0) return;
+            if (tripleTapSpeed <= 0 || e.tile.build != null  && !e.tile.build.displayable()) return;
 
             if (lastTappedBuild != e.tile.build ||  e.tile.build == null) {
                 lastTappedBuild = e.tile.build;

@@ -3,6 +3,7 @@ package cardillan.mlogassertions.logic;
 import arc.Events;
 import arc.func.Cons;
 import arc.struct.ObjectMap;
+import arc.struct.ObjectSet;
 import arc.struct.Seq;
 import arc.util.Log;
 import cardillan.mlogassertions.data.CustomGameRules;
@@ -30,6 +31,7 @@ public class InstrumentationEngine {
     static Method parseMethod;
     static final ObjectMap<Class<?>, Field[]> varFields = new ObjectMap<>();
     static final ObjectMap<Class<?>, LCategory> categories = new ObjectMap<>();
+    static final ObjectSet<Class<?>> noYielding = new ObjectSet<>();
 
     static final ObjectMap<LogicBuild, Instrumentation> instrumentations = new ObjectMap<>();
 
@@ -53,7 +55,7 @@ public class InstrumentationEngine {
             registerInstruction(EndI.class, new EndStatement());
             registerInstruction(ExplosionI.class, new ExplosionStatement());
             registerInstruction(FetchI.class, new FetchStatement());
-            registerInstruction(FlushMessageI.class, new FlushMessageStatement());
+            registerInstruction(FlushMessageI.class, new FlushMessageStatement(), true);
             registerInstruction(FormatI.class, new FormatStatement());
             registerInstruction(GetBlockI.class, new GetBlockStatement());
             registerInstruction(GetFlagI.class, new GetFlagStatement());
@@ -87,13 +89,13 @@ public class InstrumentationEngine {
             registerInstruction(SpawnBulletI.class, new SpawnBulletStatement());
             registerInstruction(SpawnUnitI.class, new SpawnUnitStatement());
             registerInstruction(SpawnWaveI.class, new SpawnWaveStatement());
-            registerInstruction(StopI.class, new StopStatement());
+            registerInstruction(StopI.class, new StopStatement(), true);
             registerInstruction(SyncI.class, new SyncStatement());
             registerInstruction(UnitBindI.class, new UnitBindStatement());
             registerInstruction(UnitControlI.class, new UnitControlStatement());
             registerInstruction(UnitLocateI.class, new UnitLocateStatement());
             registerInstruction(UnpackColorI.class, new UnpackColorStatement());
-            registerInstruction(WaitI.class, new WaitStatement());
+            registerInstruction(WaitI.class, new WaitStatement(), true);
             registerInstruction(WriteI.class, new WriteStatement());
 
             Events.on(EventType.ResetEvent.class, e -> instrumentations.clear());
@@ -139,6 +141,11 @@ public class InstrumentationEngine {
     }
 
     private static void registerInstruction(Class<? extends LInstruction> instructionClass, LStatement statement) {
+        registerInstruction(instructionClass, statement, false);
+    }
+
+    private static void registerInstruction(Class<? extends LInstruction> instructionClass, LStatement statement, boolean yields) {
+        if (!yields) noYielding.add(instructionClass);
         getVarFields(instructionClass);
         categories.put(instructionClass, statement.category());
     }
