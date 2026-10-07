@@ -3,7 +3,7 @@ name: "mlog-assertions-8"
 subtitle: "Mlog development made easy",
 author: "cardillan"
 main: "cardillan.mlogassertions.MlogAssertions"
-version: 0.11.5
+version: 0.11.6
 minGameVersion: 160.5
 java: true
 hidden: true
@@ -11,15 +11,15 @@ hidden: true
 description: '''
 This mod aims to make debugging in Mindustry Logic a bit easier:[[]lightgray]
 
-Enhanced [[]accent]Vars[[]] screen: showing numeric values in full precision and color values, sorting variables by name, copying variables and the text buffer contents to the clipboard.
+Enhanced [[]accent]Vars[[]] screen: full precision values, sorting and filtering variables, copying variables to the clipboard.
 
-[[]accent]Memory[[]] screen for inspecting contents of memory blocks, using the same interface as the [[]accent]Vars[[]] screen. Includes a command to clear (reset) the contents of memory blocks.
+[[]accent]Memory[[]] screen for inspecting contents of memory blocks, using the same interface as the [[]accent]Vars[[]] screen.
 
-Settings for overriding instruction limit, by up to 1000 instructions. This allows you to insert debugging code (e.g., additional [[]accent]print[[]] or [[]accent]assert[[]] instructions) into your code, even if the original instruction limit is exceeded.
+Settings for overriding instruction limit, by up to 1000 instructions, to make space for additional debugging code.
 
-[[]accent]Snapshots[[]] allow saving, reviewing and restoring the state of logic processors, memory blocks and all other blocks on the map. A snapshot can be created manually or using a [[]accent]snapshot[[]] instruction. A limited number of snapshots is kept for each block, allowing to review the exact block state at the time the smapshot has been created.
+[[]accent]Snapshots[[]] allow saving, reviewing and restoring the state of logic processors, memory blocks and other entities.
 
-A [[]accent]profiler[[]] for gathering statistics about individual processor instructions execution.
+A [[]accent]profiler[[]] for gathering statistics about program execution.
 
 Custom mlog instructions for performing runtime checks, logging messages, reporting errors, triggering a bbreakpoint, taking snaphots and managing profiling.
 
