@@ -442,7 +442,7 @@ public class LogicInstructions {
                         ? "Mlog " + type + " snapshot"
                         : buildMessage(exec, "", false, message, new Object[0]));
 
-                if (type == SnapshotType.recording && target.obj() instanceof LogicBuild build) {
+                if (master != null && type == SnapshotType.recording && target.obj() instanceof LogicBuild build) {
                     master.recording().add(master);
                     InstrumentationEngine.startInstructionSnapshots(build, steps.numi(), master);
                 }

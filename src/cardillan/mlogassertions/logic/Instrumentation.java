@@ -144,8 +144,10 @@ public class Instrumentation {
     private void createSnapshot(int index, LVar[] vars) {
         String text = index >= 0 && index < source.length ? source[index] : "unknown instruction";
         Snapshot snapshot = SnapshotManager.create(executor.build, SnapshotType.recording, index + ": " + text, vars);
-        master.recording().add(snapshot);
-        SnapshotManager.register(snapshot);
+        if (snapshot != null) {
+            master.recording().add(snapshot);
+            SnapshotManager.register(snapshot);
+        }
     }
 
     private InstrumentedInstruction instrument(LExecutor.LInstruction instruction) {

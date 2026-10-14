@@ -233,7 +233,7 @@ public class InstrumentationEngine {
     }
 
     public static Instrumentation getInstrumentation(LogicBuild build, boolean instrument, Cons<Instrumentation> action) {
-        if (!initialized || build.executor.instructions.length == 0) return null;
+        if (!initialized || build.executor.instructions.length == 0 || !build.displayable()) return null;
 
         Instrumentation instrumentation = instrumentations.get(build);
         if (instrumentation == null || instrumentation.instructions != build.executor.instructions) {
