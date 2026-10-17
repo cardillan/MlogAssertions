@@ -47,7 +47,7 @@ public class SnapshotManager {
 
     public static VariableValues liveView(Senseable entity) {
         return entity instanceof MemoryBuild build ? new MemoryVars(build) :
-                entity instanceof LogicBuild build ? new ProcessorVars(build) :
+                entity instanceof LogicBuild build && build.executor.counter != null ? new ProcessorVars(build) :
                         new SensorVars(entity);
     }
 
